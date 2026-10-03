@@ -8,7 +8,7 @@ Deploy early, playtest early, freeze features before the event.
 | 0 | **Skeleton + design**: folders, configs, docs | Design agreed and written down | ✅ |
 | 1 | **Game engine core** (`server/src/sim`): servers, Rush Hour, ± servers, budget, health, score, timer, crash/reboot, seeded RNG; tests, bots, balance script | Tests pass; idle bot crashes; spam and stingy bots lose to sensible play; same seed + actions ⇒ same result | ✅ Rush Hour + servers only; other disasters in M5 |
 | 2 | **Server + team flow**: Express, Socket.IO, create/join/rejoin/leave, lobby, host START, session phases, 10 Hz match loop | Several browser tabs form a team and play the same match; refresh rejoins | ✅ Phases so far: lobby → countdown → playing → final (one round) |
-| 3 | **Player UI (basic)**: Home, Lobby, Game screen (health, budget, alert, app map, server rack, buttons + shortcuts), Final | A real person plays a full round on a PC without explanation | 🟨 Home, Lobby, Final done; basic game screen works — needs the real map + alert rhythm |
+| 3 | **Player UI (basic)**: Home, Lobby, Game screen (health, budget, alert, app map, server rack, buttons + shortcuts), Final | A real person plays a full round on a PC without explanation | 🟨 Built: live map, alert + hint, feed, health timeline, down state. Needs a real-person test |
 | 4 | **First deploy** to a hosted URL; try from a lab PC | Reachable and playable outside localhost | ⬜ |
 | 5 | **Full app**: database + network stages, all disasters, all buttons, bottleneck highlight | Every disaster has a button that measurably fixes it | ⬜ |
 | 6 | **Roles + reconnect polish**: role split, buttons move on disconnect, host handover, shared-PC reset | Pull a PC's network mid-round — the team keeps playing | ⬜ |

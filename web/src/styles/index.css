@@ -36,6 +36,9 @@
   --animate-fade-pulse: fade-pulse 1.6s var(--ease-snap) infinite;
   --animate-twinkle: twinkle 2.4s ease-in-out infinite;
   --animate-alarm: alarm 1s steps(2) infinite;
+  --animate-alarm-stroke: alarm-stroke 1s steps(2) infinite;
+  --animate-slide-in: slide-in 0.3s var(--ease-snap) both;
+  --animate-flash: flash 0.7s ease-out both;
 
   @keyframes rise-in {
     from {
@@ -67,6 +70,23 @@
   @keyframes alarm {
     50% {
       background-color: transparent;
+    }
+  }
+  @keyframes alarm-stroke {
+    50% {
+      stroke-opacity: 0.25;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+  }
+  @keyframes flash {
+    from {
+      opacity: 0.2;
+      transform: translateY(-6px);
     }
   }
 }

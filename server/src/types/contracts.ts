@@ -35,7 +35,7 @@ export type SessionView = {
 
 export type ServerSlotView = {
   id: number;
-  state: "booting" | "busy" | "idle";
+  state: "booting" | "busy" | "idle" | "down";
   /** 0 → 1 while booting. */
   bootProgress: number;
 };
@@ -65,6 +65,10 @@ export type MatchView = {
   downSecondsLeft: number | null;
   critical: boolean;
   rush: boolean;
+  /** Crowd size relative to normal (1 = usual, 2.5 = rush). Drives the map, never shown as a number. */
+  crowd: number;
+  /** 0 → 1 share of arriving people who got in this moment. */
+  servedShare: number;
 };
 
 export type JoinResult = {

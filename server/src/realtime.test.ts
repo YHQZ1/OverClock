@@ -151,6 +151,11 @@ describe("live match", () => {
     await playing;
     const start = await firstFrame;
     expect(start.servers).toHaveLength(ROUND_1.startServers);
+    expect(start.servedShare).toBe(1);
+
+    const running = await nextMatch(a, (m) => m.tick > 0);
+    expect(running.crowd).toBeGreaterThan(0.5);
+    expect(running.crowd).toBeLessThan(2);
 
     // A teammate presses + SERVERS; everyone sees the new (booting) server.
     const grown = nextMatch(a, (m) => m.servers.length === ROUND_1.startServers + 1);

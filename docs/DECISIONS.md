@@ -28,6 +28,8 @@ Short record of what we chose and why.
 | **Admin page deferred**                                                      | Core team flow first.                                                                          |
 | **Look: sharp, minimal, dark, full-width** — Inter only, square corners, hairline dividers, no gradients or pills; split layout (statement left, action column right) | Feels deliberate rather than templated. Tried and dropped: warm paper + clay (too close to Claude), Google four-colour palette, rounded-card "hero + two cards". |
 | **One accent: lavender `#A594F9`** (primary button, active row, highlights) — one token in `web/src/styles/tokens.css` | Quiet and distinct; not blue/orange/neon. Green / yellow / red stay reserved for game signals (healthy / struggling / broken). |
+| **Every alert says what's wrong *and* what to do** ("People can't get in! — Add servers now") | First-timers shouldn't need to work out the fix; idle servers get a gentle "remove them to save money" nudge. |
+| **The map is drawn from relative values only** (crowd vs normal, share getting in) | Lets the picture show a rush and people being turned away without ever showing technical numbers. |
 | **No C/J shortcuts on Home**; forms keep Enter / Esc. Lobby and in-game buttons keep shortcuts | Home is clicked once per team; shortcuts matter where speed matters (the game).               |
 | **Team codes: 4 letters, no I or O**                                         | Easy to read off a projector and type.                                                         |
 

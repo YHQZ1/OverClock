@@ -27,6 +27,7 @@ export function useGameSocket(): void {
     socket.on("disconnect", onDisconnect);
     socket.on("session:state", store.setSession);
     socket.on("match:state", store.setMatch);
+    socket.on("match:event", store.pushEvents);
     socket.connect();
 
     return () => {
@@ -34,6 +35,7 @@ export function useGameSocket(): void {
       socket.off("disconnect", onDisconnect);
       socket.off("session:state", store.setSession);
       socket.off("match:state", store.setMatch);
+      socket.off("match:event", store.pushEvents);
       socket.disconnect();
     };
   }, []);
