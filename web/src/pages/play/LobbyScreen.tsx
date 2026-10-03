@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { TopBar } from "../../components/TopBar";
-import { useShortcut } from "../../hooks/useShortcut";
 import type { SessionView } from "@server/types/contracts.js";
+import { useState, type ReactNode } from "react";
+import { TopBar } from "../../components/TopBar";
+import { Button, Frame, Label, SPLIT, cx } from "../../components/ui";
+import { useShortcut } from "../../hooks/useShortcut";
 import { MAX_PLAYERS } from "./constants";
-import "./lobby.css";
 
 const HOW_TO_PLAY = [
   { title: "Keep everyone happy", text: "Health drops when people can’t get in. Don’t let it hit zero." },
@@ -42,100 +42,121 @@ export function LobbyScreen({ session, playerId, onLeave, onStart }: Props) {
   useShortcut("s", () => void start(), { enabled: isHost });
 
   return (
-    <div className="frame">
+    <Frame>
       <TopBar right="Lobby" />
 
-      <main className="lobby">
-        <section className="lobby__main">
-          <div className="lobby__code">
-            <h1 className="lobby__team">{session.teamName}</h1>
-            <p className="label">Team code</p>
-            <div className="code" aria-label={`Team code ${session.code.split("").join(" ")}`}>
+      <main className={SPLIT}>
+        <section className="flex flex-col">
+          <div className="px-10 pt-[clamp(24px,5vh,56px)] pb-7">
+            <h1 className="mb-[clamp(16px,4vh,40px)] text-[clamp(40px,7vh,72px)] leading-none font-semibold tracking-[-0.045em]">
+              {session.teamName}
+            </h1>
+            <Label>Team code</Label>
+            <div className="mt-2.5 mb-[18px] flex" aria-label={`Team code ${session.code.split("").join(" ")}`}>
               {session.code.split("").map((ch, i) => (
-                <span key={i} className="code__char">
+                <span
+                  key={i}
+                  className="grid h-[clamp(92px,15vh,160px)] w-[clamp(80px,13vh,136px)] place-items-center border border-line-strong text-[clamp(52px,9vh,96px)] font-semibold tracking-[-0.04em] not-first:border-l-0"
+                >
                   {ch}
                 </span>
               ))}
             </div>
-            <p className="lobby__hint">
-              Teammates: open Overclock on your PC, choose <strong>Join a team</strong> and type this code.
+            <p className="max-w-[44ch] text-base text-muted">
+              Teammates: open Overclock on your PC, choose <strong className="font-medium text-ink">Join a team</strong>{" "}
+              and type this code.
             </p>
           </div>
 
-          <div className="lobby__how">
-            <h2 className="lobby__how-title">How to play</h2>
-            <ol className="how">
-              {HOW_TO_PLAY.map((h) => (
-                <li key={h.title} className="how__item">
-                  <h3 className="how__title">{h.title}</h3>
-                  <p className="how__text">{h.text}</p>
+          <div className="mt-auto border-t border-line">
+            <h2 className="px-10 pt-[18px] text-[13px] font-medium text-muted">How to play</h2>
+            <ol className="grid grid-cols-3">
+              {HOW_TO_PLAY.map((h, i) => (
+                <li key={h.title} className="py-2.5 pr-7 pb-[22px] pl-10 not-first:border-l not-first:border-line not-first:pl-7">
+                  <h3 className="mb-1.5 flex gap-2.5 text-[15px] font-semibold tracking-[-0.01em]">
+                    <span className="text-accent">{i + 1}</span>
+                    {h.title}
+                  </h3>
+                  <p className="text-sm text-muted">{h.text}</p>
                 </li>
               ))}
             </ol>
           </div>
 
-          <div className="lobby__tools">
-            <button type="button" className="btn btn--ghost" onClick={toggleFullscreen}>
+          <div className="flex gap-1 border-t border-line px-7 py-4">
+            <Button variant="ghost" onClick={toggleFullscreen}>
               <kbd>F</kbd> Go fullscreen
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={onLeave}>
+            </Button>
+            <Button variant="ghost" onClick={onLeave}>
               <kbd>L</kbd> Leave team
-            </button>
+            </Button>
           </div>
         </section>
 
-        <section className="lobby__side">
-          <div className="block">
-            <div className="block__head">
-              <h2 className="block__title">Players</h2>
-              <span className="label">
+        <section className="flex flex-col border-l border-line">
+          <div className="border-b border-line px-8 py-6">
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">Players</h2>
+              <Label>
                 {session.players.length} of {MAX_PLAYERS}
-              </span>
+              </Label>
             </div>
-            <ul className="rows">
+            <ul className="grid border-t border-line">
               {session.players.map((p) => (
-                <li key={p.id} className={`row${p.connected ? "" : " row--away"}`}>
-                  <span className="row__mark">{p.name.charAt(0).toUpperCase()}</span>
-                  <span className="row__text">
+                <PlayerRow key={p.id} mark={p.name.charAt(0).toUpperCase()} dim={!p.connected}>
+                  <span className="flex-1 font-medium">
                     {p.name}
-                    {p.id === playerId && <span className="row__muted"> (you)</span>}
-                    {!p.connected && <span className="row__muted"> · reconnecting…</span>}
+                    {p.id === playerId && <span className="font-normal text-faint"> (you)</span>}
+                    {!p.connected && <span className="font-normal text-faint"> · reconnecting…</span>}
                   </span>
-                  {p.isHost && <span className="row__meta">Host</span>}
-                </li>
+                  {p.isHost && <span className="text-[13px] font-medium text-accent">Host</span>}
+                </PlayerRow>
               ))}
               {Array.from({ length: emptySlots }, (_, i) => (
-                <li key={`empty-${i}`} className="row row--empty">
-                  <span className="row__mark" />
-                  <span className="row__text">Waiting for a teammate…</span>
-                </li>
+                <PlayerRow key={`empty-${i}`} empty>
+                  <span className="flex-1 text-faint">Waiting for a teammate…</span>
+                </PlayerRow>
               ))}
             </ul>
           </div>
 
           {/* Theme picker returns once the themes are decided (GAME.md → Themes). */}
 
-          <div className="lobby__start">
+          <div className="mt-auto px-8 pt-6 pb-7">
             {isHost ? (
               <>
-                <button
-                  type="button"
-                  className="btn btn--primary btn--block"
-                  disabled={starting}
-                  onClick={() => void start()}
-                >
+                <Button variant="primary" block disabled={starting} onClick={() => void start()}>
                   {starting ? "Starting…" : "Start game"} <kbd>S</kbd>
-                </button>
-                {startError && <p className="lobby__note lobby__note--error">{startError}</p>}
+                </Button>
+                {startError && <p className="mt-2.5 text-[13px] text-bad">{startError}</p>}
               </>
             ) : (
-              <p className="lobby__waiting">
-                <span className="pulse" aria-hidden /> Waiting for the host to start…
+              <p className="flex items-center gap-2.5 text-muted">
+                <span className="size-2 animate-fade-pulse bg-accent" aria-hidden /> Waiting for the host to start…
               </p>
             )}
           </div>
         </section>
       </main>
-    </div>
+    </Frame>
+  );
+}
+
+type PlayerRowProps = { mark?: string; empty?: boolean; dim?: boolean; children: ReactNode };
+
+function PlayerRow({ mark, empty = false, dim = false, children }: PlayerRowProps) {
+  return (
+    <li className="flex h-11 items-center gap-3 border-b border-line px-1">
+      <span
+        className={cx(
+          "grid size-6 place-items-center border border-line-strong text-xs font-semibold",
+          empty && "border-dashed",
+          dim && "opacity-40",
+        )}
+      >
+        {mark}
+      </span>
+      {children}
+    </li>
   );
 }

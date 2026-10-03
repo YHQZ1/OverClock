@@ -1,9 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { AppMap } from "../../components/AppMap";
 import { TopBar } from "../../components/TopBar";
+import { Button, Field, Frame, SPLIT, cx } from "../../components/ui";
 import { useShortcut } from "../../hooks/useShortcut";
 import { CODE_LENGTH } from "./constants";
-import "./home.css";
 
 type Mode = "create" | "join" | null;
 
@@ -15,6 +15,7 @@ type Props = {
 
 const TEAM_NAME_MAX = 20;
 const PLAYER_NAME_MAX = 16;
+const HOW_IT_WORKS = ["Make a team", "Survive three rounds", "Climb the leaderboard"];
 
 export function HomeScreen({ onCreate, onJoin }: Props) {
   const [mode, setMode] = useState<Mode>(null);
@@ -22,28 +23,28 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
   useShortcut("Escape", () => setMode(null), { enabled: mode !== null, inInputs: true });
 
   return (
-    <div className="frame">
+    <Frame>
       <TopBar right="Teams of 1–3 · one PC each" />
 
-      <main className="home">
-        <section className="home__intro">
-          <div>
-            <h1 className="home__title">
+      <main className={SPLIT}>
+        <section className="flex min-w-0 flex-col justify-between">
+          <div className="px-10 pt-[clamp(28px,6vh,64px)] pb-8">
+            <h1 className="text-[clamp(56px,11vh,104px)] leading-[0.98] font-semibold tracking-[-0.05em]">
               Keep the site
               <br />
-              <span className="home__accent">alive.</span>
+              <span className="text-accent">alive.</span>
             </h1>
-            <p className="home__lede">
+            <p className="mt-6 max-w-[48ch] text-base text-muted">
               Your team runs a busy online service. Crowds pour in, things break, and it’s on you to keep it running —
               without wasting money doing it.
             </p>
           </div>
-          <div className="home__map">
+          <div className="grid place-items-center border-t border-line px-10 py-[clamp(12px,3vh,28px)]">
             <AppMap />
           </div>
         </section>
 
-        <section className="home__menu">
+        <section className="flex flex-col border-l border-line">
           <MenuItem
             title="Create a team"
             blurb="Start a new team and bring up to two friends along."
@@ -67,14 +68,17 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
             <JoinForm onSubmit={onJoin} onBack={() => setMode(null)} />
           </MenuItem>
 
-          <ol className="home__how">
-            <li>Make a team</li>
-            <li>Survive three rounds</li>
-            <li>Climb the leaderboard</li>
+          <ol className="grid gap-1.5 px-8 pt-5 pb-6 text-sm text-muted">
+            {HOW_IT_WORKS.map((step, i) => (
+              <li key={step} className="flex gap-3.5">
+                <span className="w-3 font-semibold text-accent">{i + 1}</span>
+                {step}
+              </li>
+            ))}
           </ol>
         </section>
       </main>
-    </div>
+    </Frame>
   );
 }
 
@@ -90,39 +94,68 @@ type MenuItemProps = {
 };
 
 function MenuItem({ title, blurb, facts, art, open, collapsed, onOpen, children }: MenuItemProps) {
-  const state = open ? " is-open" : collapsed ? " is-collapsed" : "";
+  const titleEl = (
+    <h2
+      className={cx(
+        "font-semibold tracking-[-0.03em] transition-[font-size] duration-500 ease-move",
+        collapsed ? "text-lg" : "text-[26px]",
+      )}
+    >
+      {title}
+    </h2>
+  );
 
   // One element for every state so size changes can animate.
   return (
-    <div className={`item${state}`} onClick={open ? undefined : onOpen}>
+    <div
+      onClick={open ? undefined : onOpen}
+      className={cx(
+        "group relative flex min-h-[70px] shrink basis-0 flex-col overflow-hidden border-b border-line px-8",
+        "transition-[flex-grow,padding,background-color,color] duration-500 ease-move",
+        // Accent edge that draws down from the top when a tile opens
+        "before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:origin-top before:bg-accent",
+        "before:transition-transform before:duration-500 before:ease-move",
+        open && "grow-[3] bg-surface py-7 before:scale-y-100",
+        collapsed && "grow-0 cursor-pointer py-5 text-muted hover:bg-surface before:scale-y-0",
+        !open && !collapsed && "grow cursor-pointer py-7 hover:bg-surface before:scale-y-0",
+      )}
+    >
       {open ? (
-        <div className="item__head">
-          <h2 className="item__title">{title}</h2>
-        </div>
+        <div className="flex w-full items-center justify-between gap-4">{titleEl}</div>
       ) : (
-        <button type="button" className="item__head item__trigger">
-          <h2 className="item__title">{title}</h2>
-          <span className="item__arrow" aria-hidden>
+        <button type="button" className="flex w-full cursor-pointer items-center justify-between gap-4 text-left">
+          {titleEl}
+          <span
+            className="text-xl text-faint transition duration-200 group-hover:translate-x-1 group-hover:text-accent"
+            aria-hidden
+          >
             →
           </span>
         </button>
       )}
-      <div className="item__reveal">
-        <div className="item__inner">
+
+      {/* Body folds open/closed from its top edge */}
+      <div
+        className={cx(
+          "grid min-h-0 flex-1 transition-[grid-template-rows,opacity] duration-500 ease-move",
+          collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr]",
+        )}
+      >
+        <div className="flex min-h-0 flex-col overflow-hidden">
           {open ? (
             children
           ) : (
             <>
-              <p className="item__blurb">{blurb}</p>
-              <div className="item__details">
-                <ul className="item__facts">
+              <p className="mt-2 max-w-[34ch] text-muted">{blurb}</p>
+              <div className="mt-auto flex items-end justify-between gap-4 pt-4">
+                <ul className="grid gap-1 text-[13px] text-faint group-hover:text-muted">
                   {facts.map((f) => (
-                    <li key={f}>{f}</li>
+                    <li key={f} className="flex items-center gap-2.5 before:size-1 before:bg-accent">
+                      {f}
+                    </li>
                   ))}
                 </ul>
-                <div className="item__art" aria-hidden>
-                  {art}
-                </div>
+                <div aria-hidden>{art}</div>
               </div>
             </>
           )}
@@ -132,12 +165,22 @@ function MenuItem({ title, blurb, facts, art, open, collapsed, onOpen, children 
   );
 }
 
+const ART_BOX = "h-[30px] w-6 border border-line-strong";
+
 /** Four code boxes, one with a blinking cursor. */
 function CodeArt() {
   return (
-    <div className="art-code">
+    <div className="flex">
       {[0, 1, 2, 3].map((i) => (
-        <span key={i} className={i === 0 ? "is-cursor" : undefined} />
+        <span
+          key={i}
+          className={cx(
+            "relative not-first:border-l-0",
+            ART_BOX,
+            i === 0 &&
+              "after:absolute after:inset-y-[7px] after:left-1/2 after:w-[1.5px] after:animate-blink after:bg-accent",
+          )}
+        />
       ))}
     </div>
   );
@@ -146,23 +189,10 @@ function CodeArt() {
 /** Three team seats: taken, you, open. */
 function SeatsArt() {
   return (
-    <div className="art-seats">
-      <span className="is-taken" />
-      <span className="is-you" />
-      <span className="is-open" />
-    </div>
-  );
-}
-
-function FormActions({ submitLabel, pending, onBack }: { submitLabel: string; pending: boolean; onBack: () => void }) {
-  return (
-    <div className="item__actions">
-      <button type="button" className="btn btn--ghost" onClick={onBack} disabled={pending}>
-        <kbd>Esc</kbd> Back
-      </button>
-      <button type="submit" className="btn btn--primary" disabled={pending}>
-        {pending ? "One moment…" : submitLabel} <kbd>Enter</kbd>
-      </button>
+    <div className="flex gap-1.5">
+      <span className={cx(ART_BOX, "bg-line-strong")} />
+      <span className={cx(ART_BOX, "border-accent bg-accent-dim")} />
+      <span className={cx(ART_BOX, "border-dashed")} />
     </div>
   );
 }
@@ -184,6 +214,35 @@ function useSubmit() {
   return { error, setError, pending, run };
 }
 
+type FormShellProps = {
+  onSubmit: (e: FormEvent) => void;
+  onBack: () => void;
+  error: string | null;
+  pending: boolean;
+  submitLabel: string;
+  children: ReactNode;
+};
+
+/** Fields, then the error line, then Back / submit pinned to the bottom. */
+function FormShell({ onSubmit, onBack, error, pending, submitLabel, children }: FormShellProps) {
+  return (
+    <form className="mt-[22px] flex flex-1 animate-rise-in flex-col gap-3.5" onSubmit={onSubmit} noValidate>
+      {children}
+      <p className="-mt-1 min-h-5 text-[13px] text-bad" role="alert">
+        {error}
+      </p>
+      <div className="mt-auto flex justify-between">
+        <Button variant="ghost" onClick={onBack} disabled={pending}>
+          <kbd>Esc</kbd> Back
+        </Button>
+        <Button type="submit" variant="primary" disabled={pending}>
+          {pending ? "One moment…" : submitLabel} <kbd>Enter</kbd>
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack: () => void }) {
   const [teamName, setTeamName] = useState("");
   const [playerName, setPlayerName] = useState("");
@@ -199,31 +258,23 @@ function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack:
   };
 
   return (
-    <form className="item__form" onSubmit={submit} noValidate>
-      <label className="field">
-        <span className="label">Team name</span>
-        <input
-          autoFocus
-          value={teamName}
-          maxLength={TEAM_NAME_MAX}
-          placeholder="e.g. The Night Owls"
-          onChange={(e) => (setTeamName(e.target.value), setError(null))}
-        />
-      </label>
-      <label className="field">
-        <span className="label">Your name</span>
-        <input
-          value={playerName}
-          maxLength={PLAYER_NAME_MAX}
-          placeholder="e.g. Priya"
-          onChange={(e) => (setPlayerName(e.target.value), setError(null))}
-        />
-      </label>
-      <p className="item__error" role="alert">
-        {error}
-      </p>
-      <FormActions submitLabel="Create team" pending={pending} onBack={onBack} />
-    </form>
+    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Create team">
+      <Field
+        label="Team name"
+        autoFocus
+        value={teamName}
+        maxLength={TEAM_NAME_MAX}
+        placeholder="e.g. The Night Owls"
+        onChange={(e) => (setTeamName(e.target.value), setError(null))}
+      />
+      <Field
+        label="Your name"
+        value={playerName}
+        maxLength={PLAYER_NAME_MAX}
+        placeholder="e.g. Priya"
+        onChange={(e) => (setPlayerName(e.target.value), setError(null))}
+      />
+    </FormShell>
   );
 }
 
@@ -241,40 +292,32 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
   };
 
   return (
-    <form className="item__form" onSubmit={submit} noValidate>
-      <label className="field">
-        <span className="label">Team code</span>
-        <input
-          autoFocus
-          className="input--code"
-          value={code}
-          placeholder="ABCD"
-          autoComplete="off"
-          spellCheck={false}
-          onChange={(e) => {
-            setCode(
-              e.target.value
-                .toUpperCase()
-                .replace(/[^A-Z]/g, "")
-                .slice(0, CODE_LENGTH),
-            );
-            setError(null);
-          }}
-        />
-      </label>
-      <label className="field">
-        <span className="label">Your name</span>
-        <input
-          value={playerName}
-          maxLength={PLAYER_NAME_MAX}
-          placeholder="e.g. Rahul"
-          onChange={(e) => (setPlayerName(e.target.value), setError(null))}
-        />
-      </label>
-      <p className="item__error" role="alert">
-        {error}
-      </p>
-      <FormActions submitLabel="Join team" pending={pending} onBack={onBack} />
-    </form>
+    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Join team">
+      <Field
+        label="Team code"
+        autoFocus
+        className="text-lg font-semibold tracking-[0.35em] uppercase"
+        value={code}
+        placeholder="ABCD"
+        autoComplete="off"
+        spellCheck={false}
+        onChange={(e) => {
+          setCode(
+            e.target.value
+              .toUpperCase()
+              .replace(/[^A-Z]/g, "")
+              .slice(0, CODE_LENGTH),
+          );
+          setError(null);
+        }}
+      />
+      <Field
+        label="Your name"
+        value={playerName}
+        maxLength={PLAYER_NAME_MAX}
+        placeholder="e.g. Rahul"
+        onChange={(e) => (setPlayerName(e.target.value), setError(null))}
+      />
+    </FormShell>
   );
 }

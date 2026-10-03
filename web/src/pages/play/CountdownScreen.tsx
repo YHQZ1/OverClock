@@ -1,16 +1,31 @@
 import { TopBar } from "../../components/TopBar";
-import "./phases.css";
+import { Frame, Label } from "../../components/ui";
 
 export function CountdownScreen({ seconds }: { seconds: number }) {
   return (
-    <div className="frame">
+    <Frame>
       <TopBar right="Round 1" />
-      <main className="countdown">
-        <p className="label">Get ready</p>
-        <div key={seconds} className="countdown__n">
+      <main className="grid place-content-center justify-items-center gap-2">
+        <Label>Get ready</Label>
+        <div
+          key={seconds}
+          className="animate-pop-in text-[clamp(120px,30vh,240px)] leading-none font-semibold tracking-[-0.06em]"
+        >
           {seconds}
         </div>
       </main>
-    </div>
+    </Frame>
+  );
+}
+
+/** A centred one-line message (loading, restoring…). */
+export function MessageScreen({ message, right }: { message: string; right?: string }) {
+  return (
+    <Frame>
+      <TopBar right={right} />
+      <main className="grid place-content-center">
+        <Label>{message}</Label>
+      </main>
+    </Frame>
   );
 }

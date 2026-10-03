@@ -1,13 +1,11 @@
-import { TopBar } from "../../components/TopBar";
 import { createTeam, joinTeam, leaveTeam, startGame } from "../../socket/api";
 import { useGameSocket } from "../../socket/useGameSocket";
 import { useGameStore } from "../../store/game";
-import { CountdownScreen } from "./CountdownScreen";
+import { CountdownScreen, MessageScreen } from "./CountdownScreen";
 import { FinalScreen } from "./FinalScreen";
 import { GameScreen } from "./GameScreen";
 import { HomeScreen } from "./HomeScreen";
 import { LobbyScreen } from "./LobbyScreen";
-import "./phases.css";
 
 /** Renders the screen for the team's current phase — the server decides which. */
 export function PlayPage() {
@@ -20,14 +18,7 @@ export function PlayPage() {
 
   let screen;
   if (restoring) {
-    screen = (
-      <div className="frame">
-        <TopBar />
-        <main className="countdown">
-          <p className="label">Getting you back into your team…</p>
-        </main>
-      </div>
-    );
+    screen = <MessageScreen message="Getting you back into your team…" />;
   } else if (!session || !playerId) {
     screen = <HomeScreen onCreate={createTeam} onJoin={joinTeam} />;
   } else {
@@ -50,7 +41,11 @@ export function PlayPage() {
   return (
     <>
       {screen}
-      {!connected && !restoring && session && <div className="offline">Connection lost — reconnecting…</div>}
+      {!connected && !restoring && session && (
+        <div className="fixed inset-x-0 top-0 z-10 border-b border-bad bg-bg px-10 py-2.5 text-sm font-medium text-bad">
+          Connection lost — reconnecting…
+        </div>
+      )}
     </>
   );
 }

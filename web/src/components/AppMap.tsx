@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import "./AppMap.css";
 
 /* Abstract preview of the in-game app map: a crowd of people streams into
    the internet, spreads across the servers and meets at the database.
@@ -99,8 +98,14 @@ type NodeProps = { x: number; y: number; size: number; icon: IconName; iconScale
 function Node({ x, y, size, icon, iconScale = 1 }: NodeProps) {
   return (
     <g transform={`translate(${x} ${y})`}>
-      <rect className="appmap__node" x={-half(size)} y={-half(size)} width={size} height={size} />
-      <g className="appmap__icon" transform={`scale(${iconScale}) translate(-12 -12)`}>
+      <rect className="fill-bg stroke-line-strong" x={-half(size)} y={-half(size)} width={size} height={size} />
+      <g
+        className="fill-none stroke-ink"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform={`scale(${iconScale}) translate(-12 -12)`}
+      >
         <Icon name={icon} />
       </g>
     </g>
@@ -112,16 +117,16 @@ export function AppMap() {
   const reduceMotion = useMemo(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
 
   return (
-    <svg className="appmap" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="People flowing through the app">
+    <svg className="block h-auto w-full max-w-[760px]" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="People flowing through the app">
       <defs>
         <pattern id="appmap-grid" width="16" height="16" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="0.8" className="appmap__grid-dot" />
+          <circle cx="1" cy="1" r="0.8" className="fill-line-strong" />
         </pattern>
       </defs>
       <rect width={W} height={H - 26} fill="url(#appmap-grid)" />
 
       {/* tracks */}
-      <g className="appmap__track">
+      <g className="fill-none stroke-line-strong" strokeWidth={1}>
         {ENTRY_YS.map((y) => (
           <path key={`e${y}`} d={entryPath(y)} />
         ))}
@@ -134,7 +139,7 @@ export function AppMap() {
       </g>
 
       {/* the crowd */}
-      <g className="appmap__crowd">
+      <g className="fill-muted">
         {crowdDots.map((c, i) => (
           <circle
             key={i}
@@ -142,7 +147,7 @@ export function AppMap() {
             cy={c.y}
             r={2}
             opacity={c.o}
-            className={c.twinkle ? "is-twinkle" : undefined}
+            className={c.twinkle ? "animate-twinkle" : undefined}
             style={c.twinkle ? { animationDelay: `${(i % 7) * 0.3}s` } : undefined}
           />
         ))}
@@ -150,7 +155,7 @@ export function AppMap() {
 
       {/* people in motion */}
       {!reduceMotion && (
-        <g className="appmap__flow">
+        <g className="fill-accent">
           {FLOWS.map((f, i) => (
             <circle key={i} r={2.6} opacity={0}>
               <animateMotion path={f.d} dur={`${f.dur}s`} begin={`${f.begin}s`} repeatCount="indefinite" />
@@ -175,7 +180,7 @@ export function AppMap() {
       <Node x={DB.x} y={MID} size={DB.size} icon="db" />
 
       {/* labels */}
-      <g className="appmap__label">
+      <g className="fill-muted text-[13px] font-medium">
         <text x={64} y={H - 4} textAnchor="middle">
           People
         </text>

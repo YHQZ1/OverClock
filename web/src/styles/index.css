@@ -1,0 +1,107 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+/* Design tokens → Tailwind theme. Sharp, minimal, monochrome dark with one
+   accent. ok / warn / bad are reserved for game signals only. */
+@theme {
+  --color-*: initial;
+  --color-bg: #0b0b0c;
+  --color-surface: #111113;
+  --color-raised: #17171a;
+  --color-ink: #ececee;
+  --color-muted: #9b9ba3;
+  --color-faint: #5c5c64;
+  --color-line: #222226;
+  --color-line-strong: #34343a;
+  --color-accent: #a594f9;
+  --color-accent-hover: #b6a8fb;
+  --color-accent-dim: rgb(165 148 249 / 0.12);
+  --color-on-accent: #0b0b0c;
+  --color-ok: #4ade80;
+  --color-warn: #facc15;
+  --color-bad: #f87171;
+  --color-black: #000;
+  --color-white: #fff;
+  --color-transparent: transparent;
+
+  --font-sans: "Inter Variable", "Segoe UI", system-ui, sans-serif;
+
+  --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* size changes: visible, not snappy */
+  --ease-move: cubic-bezier(0.65, 0, 0.25, 1);
+
+  --animate-rise-in: rise-in 0.35s var(--ease-snap) 0.2s both;
+  --animate-pop-in: pop-in 0.9s var(--ease-snap) both;
+  --animate-blink: blink 1.1s steps(1) infinite;
+  --animate-fade-pulse: fade-pulse 1.6s var(--ease-snap) infinite;
+  --animate-twinkle: twinkle 2.4s ease-in-out infinite;
+  --animate-alarm: alarm 1s steps(2) infinite;
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(1.25);
+    }
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-pulse {
+    50% {
+      opacity: 0.25;
+    }
+  }
+  @keyframes twinkle {
+    50% {
+      opacity: 0.1;
+    }
+  }
+  @keyframes alarm {
+    50% {
+      background-color: transparent;
+    }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-[15px] leading-[1.55] text-ink antialiased;
+    color-scheme: dark;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  :focus-visible {
+    @apply outline outline-offset-2 outline-accent;
+  }
+
+  kbd {
+    @apply inline-grid h-5 min-w-5 place-items-center border border-line-strong px-[5px] font-sans text-[11px] leading-none font-medium text-muted;
+  }
+
+  input::placeholder {
+    @apply text-faint;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

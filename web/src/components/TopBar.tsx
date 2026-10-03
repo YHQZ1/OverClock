@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 
 export function TopBar({ right }: { right?: ReactNode }) {
   return (
-    <header className="topbar">
-      <div className="brand">
-        <span className="brand__mark" aria-hidden />
+    <header className="flex h-14 items-center justify-between border-b border-line px-10">
+      <div className="flex items-center gap-2.5 text-[15px] font-semibold tracking-[-0.01em]">
+        <span className="size-2.5 bg-accent" aria-hidden />
         Overclock
       </div>
-      {right && <div className="topbar__right">{right}</div>}
+      {right && <div className="text-[13px] text-muted">{right}</div>}
     </header>
   );
 }

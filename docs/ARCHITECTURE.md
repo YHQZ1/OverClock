@@ -84,6 +84,8 @@ web/src/
 ├── main.tsx, App.tsx       # router: /play, /screen
 ├── socket/                 # useGameSocket — the one Socket.IO connection
 ├── store/                  # Zustand: latest session + match snapshot from the server
+├── styles/index.css        # Tailwind v4 import + @theme design tokens (the only CSS file)
+├── components/             # TopBar, AppMap, ui.tsx (Button, Field, Label, Frame)
 ├── themes/                 # ThemeProvider: ids → theme text/icons
 ├── pages/
 │   ├── play/               # PlayPage renders a screen per phase:
