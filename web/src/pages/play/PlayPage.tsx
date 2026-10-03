@@ -1,20 +1,56 @@
-import { useState } from "react";
+import { TopBar } from "../../components/TopBar";
+import { createTeam, joinTeam, leaveTeam, startGame } from "../../socket/api";
+import { useGameSocket } from "../../socket/useGameSocket";
+import { useGameStore } from "../../store/game";
+import { CountdownScreen } from "./CountdownScreen";
+import { FinalScreen } from "./FinalScreen";
+import { GameScreen } from "./GameScreen";
 import { HomeScreen } from "./HomeScreen";
 import { LobbyScreen } from "./LobbyScreen";
-import { mockCreate, mockJoin, type MockSession } from "./mockSession";
+import "./phases.css";
 
-// Renders one screen per session phase. For now the phase is local mock
-// state; Milestone 2 replaces it with session:state from the server.
+/** Renders the screen for the team's current phase — the server decides which. */
 export function PlayPage() {
-  const [session, setSession] = useState<MockSession | null>(null);
+  useGameSocket();
+  const session = useGameStore((s) => s.session);
+  const playerId = useGameStore((s) => s.playerId);
+  const match = useGameStore((s) => s.match);
+  const connected = useGameStore((s) => s.connected);
+  const restoring = useGameStore((s) => s.restoring);
 
-  if (!session) {
-    return (
-      <HomeScreen
-        onCreate={(team, player) => setSession(mockCreate(team, player))}
-        onJoin={(code, player) => setSession(mockJoin(code, player))}
-      />
+  let screen;
+  if (restoring) {
+    screen = (
+      <div className="frame">
+        <TopBar />
+        <main className="countdown">
+          <p className="label">Getting you back into your team…</p>
+        </main>
+      </div>
     );
+  } else if (!session || !playerId) {
+    screen = <HomeScreen onCreate={createTeam} onJoin={joinTeam} />;
+  } else {
+    switch (session.phase) {
+      case "lobby":
+        screen = <LobbyScreen session={session} playerId={playerId} onLeave={() => void leaveTeam()} onStart={startGame} />;
+        break;
+      case "countdown":
+        screen = <CountdownScreen seconds={session.countdown ?? 0} />;
+        break;
+      case "playing":
+        screen = <GameScreen match={match} />;
+        break;
+      case "final":
+        screen = <FinalScreen session={session} onDone={leaveTeam} />;
+        break;
+    }
   }
-  return <LobbyScreen session={session} onLeave={() => setSession(null)} />;
+
+  return (
+    <>
+      {screen}
+      {!connected && !restoring && session && <div className="offline">Connection lost — reconnecting…</div>}
+    </>
+  );
 }

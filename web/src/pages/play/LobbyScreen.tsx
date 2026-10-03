@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { TopBar } from "../../components/TopBar";
 import { useShortcut } from "../../hooks/useShortcut";
-import { MAX_PLAYERS, type MockSession } from "./mockSession";
+import type { SessionView } from "@server/types/contracts.js";
+import { MAX_PLAYERS } from "./constants";
 import "./lobby.css";
 
 const HOW_TO_PLAY = [
@@ -11,15 +12,25 @@ const HOW_TO_PLAY = [
 ];
 
 type Props = {
-  session: MockSession;
+  session: SessionView;
+  playerId: string;
   onLeave: () => void;
+  /** Resolves to an error message, or null once the game is starting. */
+  onStart: () => Promise<string | null>;
 };
 
-export function LobbyScreen({ session, onLeave }: Props) {
-  const [startNote, setStartNote] = useState(false);
-  const you = session.players.find((p) => p.isYou);
-  const isHost = you?.isHost ?? false;
+export function LobbyScreen({ session, playerId, onLeave, onStart }: Props) {
+  const [startError, setStartError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const isHost = session.players.some((p) => p.id === playerId && p.isHost);
   const emptySlots = MAX_PLAYERS - session.players.length;
+
+  const start = async () => {
+    if (starting) return;
+    setStarting(true);
+    setStartError(await onStart());
+    setStarting(false);
+  };
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -28,7 +39,7 @@ export function LobbyScreen({ session, onLeave }: Props) {
 
   useShortcut("f", toggleFullscreen);
   useShortcut("l", onLeave);
-  useShortcut("s", () => setStartNote(true), { enabled: isHost });
+  useShortcut("s", () => void start(), { enabled: isHost });
 
   return (
     <div className="frame">
@@ -83,11 +94,12 @@ export function LobbyScreen({ session, onLeave }: Props) {
             </div>
             <ul className="rows">
               {session.players.map((p) => (
-                <li key={p.name} className="row">
+                <li key={p.id} className={`row${p.connected ? "" : " row--away"}`}>
                   <span className="row__mark">{p.name.charAt(0).toUpperCase()}</span>
                   <span className="row__text">
                     {p.name}
-                    {p.isYou && <span className="row__muted"> (you)</span>}
+                    {p.id === playerId && <span className="row__muted"> (you)</span>}
+                    {!p.connected && <span className="row__muted"> · reconnecting…</span>}
                   </span>
                   {p.isHost && <span className="row__meta">Host</span>}
                 </li>
@@ -106,10 +118,15 @@ export function LobbyScreen({ session, onLeave }: Props) {
           <div className="lobby__start">
             {isHost ? (
               <>
-                <button type="button" className="btn btn--primary btn--block" onClick={() => setStartNote(true)}>
-                  Start game <kbd>S</kbd>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--block"
+                  disabled={starting}
+                  onClick={() => void start()}
+                >
+                  {starting ? "Starting…" : "Start game"} <kbd>S</kbd>
                 </button>
-                {startNote && <p className="lobby__note">The game isn’t connected yet — coming soon.</p>}
+                {startError && <p className="lobby__note lobby__note--error">{startError}</p>}
               </>
             ) : (
               <p className="lobby__waiting">

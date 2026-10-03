@@ -2,14 +2,15 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { AppMap } from "../../components/AppMap";
 import { TopBar } from "../../components/TopBar";
 import { useShortcut } from "../../hooks/useShortcut";
-import { CODE_LENGTH } from "./mockSession";
+import { CODE_LENGTH } from "./constants";
 import "./home.css";
 
 type Mode = "create" | "join" | null;
 
+/** Each resolves to an error message to show, or null once seated. */
 type Props = {
-  onCreate: (teamName: string, playerName: string) => void;
-  onJoin: (code: string, playerName: string) => void;
+  onCreate: (teamName: string, playerName: string) => Promise<string | null>;
+  onJoin: (code: string, playerName: string) => Promise<string | null>;
 };
 
 const TEAM_NAME_MAX = 20;
@@ -153,31 +154,48 @@ function SeatsArt() {
   );
 }
 
-function FormActions({ submitLabel, onBack }: { submitLabel: string; onBack: () => void }) {
+function FormActions({ submitLabel, pending, onBack }: { submitLabel: string; pending: boolean; onBack: () => void }) {
   return (
     <div className="item__actions">
-      <button type="button" className="btn btn--ghost" onClick={onBack}>
+      <button type="button" className="btn btn--ghost" onClick={onBack} disabled={pending}>
         <kbd>Esc</kbd> Back
       </button>
-      <button type="submit" className="btn btn--primary">
-        {submitLabel} <kbd>Enter</kbd>
+      <button type="submit" className="btn btn--primary" disabled={pending}>
+        {pending ? "One moment…" : submitLabel} <kbd>Enter</kbd>
       </button>
     </div>
   );
 }
 
+/** Shared submit flow: validate locally, ask the server, show its answer. */
+function useSubmit() {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const run = async (localError: string | null, request: () => Promise<string | null>) => {
+    if (localError) return setError(localError);
+    setPending(true);
+    const serverError = await request();
+    // On success this form unmounts as the lobby takes over.
+    if (serverError) {
+      setError(serverError);
+      setPending(false);
+    }
+  };
+  return { error, setError, pending, run };
+}
+
 function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack: () => void }) {
   const [teamName, setTeamName] = useState("");
   const [playerName, setPlayerName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { error, setError, pending, run } = useSubmit();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const team = teamName.trim();
     const player = playerName.trim();
-    if (team.length < 2) return setError("Give your team a name (at least 2 letters).");
-    if (!player) return setError("Tell us your name.");
-    onSubmit(team, player);
+    const localError =
+      team.length < 2 ? "Give your team a name (at least 2 letters)." : !player ? "Tell us your name." : null;
+    void run(localError, () => onSubmit(team, player));
   };
 
   return (
@@ -204,7 +222,7 @@ function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack:
       <p className="item__error" role="alert">
         {error}
       </p>
-      <FormActions submitLabel="Create team" onBack={onBack} />
+      <FormActions submitLabel="Create team" pending={pending} onBack={onBack} />
     </form>
   );
 }
@@ -212,14 +230,14 @@ function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack:
 function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () => void }) {
   const [code, setCode] = useState("");
   const [playerName, setPlayerName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { error, setError, pending, run } = useSubmit();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const player = playerName.trim();
-    if (code.length !== CODE_LENGTH) return setError(`The team code has ${CODE_LENGTH} letters.`);
-    if (!player) return setError("Tell us your name.");
-    onSubmit(code, player);
+    const localError =
+      code.length !== CODE_LENGTH ? `The team code has ${CODE_LENGTH} letters.` : !player ? "Tell us your name." : null;
+    void run(localError, () => onSubmit(code, player));
   };
 
   return (
@@ -256,7 +274,7 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
       <p className="item__error" role="alert">
         {error}
       </p>
-      <FormActions submitLabel="Join team" onBack={onBack} />
+      <FormActions submitLabel="Join team" pending={pending} onBack={onBack} />
     </form>
   );
 }

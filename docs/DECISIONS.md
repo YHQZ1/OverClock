@@ -49,6 +49,9 @@ Short record of what we chose and why.
 | **Server decides the screen** (session phase machine)                               | Keeps a team's PCs in sync; refresh/reconnect just works.                                                                         |
 | **Server-authoritative, deterministic sim at 10 ticks/sec**                         | Fairness, replays for disputes, easy testing.                                                                                     |
 | **One web service** serves API + socket + web build                                 | One deploy, no CORS, local fallback is one command. Single instance.                                                              |
+| **Seat (code + rejoin token) in `sessionStorage`**, per tab                         | Refresh rejoins; several tabs can test a team on one PC; cleared on Leave / Done so a shared PC never reuses a seat.               |
+| **Services push updates through a `Broadcaster` interface**                         | Services never import Socket.IO, so they're unit-testable; the socket layer implements it with one room per team.               |
+| **Joining is lobby-only; host leaving hands host to the next player**               | No mid-round joins (roles/fairness); a lobby never gets stuck without a host.                                                     |
 | **Dev `tsx watch`; prod `tsc` → `node dist`**                                       | Fast reload locally, plain Node in production.                                                                                    |
 | **Continuous milestones, not day-by-day**                                           | Keep momentum; finish → verify → next.                                                                                            |
 

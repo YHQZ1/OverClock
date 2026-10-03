@@ -97,7 +97,12 @@ The web app has **no game logic** — it displays what the server sends.
 Desktop-first (≥1366×768), mouse + keyboard shortcuts, lightweight
 animations (lab PCs can be slow), visual-first alerts (no guaranteed audio).
 
-## Real-time contract (draft)
+## Real-time contract
+
+Typed in `server/src/types/contracts.ts`; payloads validated by Zod in
+`server/src/validators/socket.schemas.ts`. Requests that need an answer use
+Socket.IO acks: `{ ok: true, data } | { ok: false, error }` where `error` is a
+player-friendly message.
 
 Client → server
 
@@ -119,7 +124,7 @@ Server → client
 |---|---|
 | `session:state` | phase, round, players, host, roles, theme, timers — on every change |
 | `match:state` | game snapshot, 10/sec while playing |
-| `match:event` | disaster started/ended, critical, recovered, crashed, … |
+| `match:event` | array of engine events: rush started/ended, critical, recovered, crashed, … |
 | `leaderboard:update` | top teams |
 | `error` | user-facing message ("No team with that code", "Team is full") |
 

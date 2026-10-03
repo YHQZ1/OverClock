@@ -1,0 +1,276 @@
+.game {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 30%);
+  min-height: 0;
+}
+
+.game__stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ---------- alert strip ---------- */
+
+.alert {
+  padding: 14px 40px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-faint);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.alert--strained {
+  border-bottom-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  color: var(--warn);
+}
+
+.alert--failing {
+  border-bottom-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
+  animation: alert-pulse 1s steps(2) infinite;
+}
+
+@keyframes alert-pulse {
+  50% {
+    background: transparent;
+  }
+}
+
+/* ---------- stats ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 40px 22px;
+}
+
+.stat + .stat {
+  border-left: 1px solid var(--line);
+}
+
+.stat__value {
+  font-size: clamp(32px, 6vh, 48px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__value.is-negative {
+  color: var(--bad);
+}
+
+.stat__sub {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.meter {
+  height: 6px;
+  margin-top: 6px;
+  background: var(--line);
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  transition: width 0.2s linear;
+}
+
+.meter--ok span {
+  background: var(--ok);
+}
+
+.meter--strained span {
+  background: var(--warn);
+}
+
+.meter--failing span {
+  background: var(--bad);
+}
+
+/* ---------- server rack ---------- */
+
+.rack {
+  flex: 1;
+  padding: 24px 40px;
+}
+
+.rack__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.rack__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+}
+
+.dot--ok {
+  background: var(--ok);
+}
+
+.dot--strained {
+  background: var(--warn);
+}
+
+.dot--failing {
+  background: var(--bad);
+}
+
+.rack__slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 44px);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  position: relative;
+  width: 44px;
+  height: 56px;
+  border: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+
+.slot--busy {
+  border-color: var(--ink-muted);
+  background: var(--ink);
+}
+
+.slot--idle {
+  border-style: dashed;
+}
+
+.slot__boot {
+  position: absolute;
+  inset: auto 0 0;
+  background: var(--accent);
+  transition: height 0.1s linear;
+}
+
+/* ---------- controls ---------- */
+
+.game__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 32px;
+  border-left: 1px solid var(--line);
+}
+
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  padding: 0 22px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--ink-faint);
+  background: var(--surface-raised);
+}
+
+.control:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.control:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.control--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.control--primary:hover:not(:disabled) {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+}
+
+.control--primary kbd {
+  border-color: rgba(11, 11, 12, 0.25);
+  color: rgba(11, 11, 12, 0.65);
+}
+
+.control__label,
+.control kbd {
+  position: relative;
+}
+
+/* Cooldown sweeps away from the right edge */
+.control__cooldown {
+  position: absolute;
+  inset: 0 0 0 auto;
+  background: rgba(11, 11, 12, 0.35);
+  transition: width 0.1s linear;
+}
+
+.game__hint {
+  margin: 8px 0 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+/* ---------- site down ---------- */
+
+.down {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  background: rgba(11, 11, 12, 0.82);
+  z-index: 2;
+}
+
+.down__title {
+  margin: 0;
+  color: var(--bad);
+  font-size: clamp(48px, 10vh, 88px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.down__sub {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 18px;
+}
