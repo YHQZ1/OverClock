@@ -1,0 +1,13 @@
+{
+  "name": "@overclock/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p .",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p . --noEmit"
+  }
+}

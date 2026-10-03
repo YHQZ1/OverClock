@@ -1,0 +1,35 @@
+# Render Blueprint: one web service (API + WebSocket + built web app) and
+# one managed Postgres database.
+#
+# Render looks for render.yaml at the repo root by default; when creating the
+# Blueprint, set the blueprint path to infra/render.yaml.
+#
+# Event day: upgrade the web service off the free plan (free instances sleep
+# when idle and can restart, which would end live matches). Keep exactly ONE
+# instance — live match state is held in memory.
+
+services:
+  - type: web
+    name: overclock
+    runtime: node
+    plan: free # switch to starter (or higher) before the event
+    # region: singapore  # pick the region closest to the venue
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /health
+    autoDeploy: false # never redeploy mid-event by accident
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: overclock-db
+          property: connectionString
+      - key: ADMIN_PASSCODE
+        sync: false # set manually in the dashboard (only needed once /admin exists)
+
+databases:
+  - name: overclock-db
+    plan: free
+    databaseName: overclock
+    user: overclock

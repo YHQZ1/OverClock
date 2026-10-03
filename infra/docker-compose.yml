@@ -1,0 +1,26 @@
+# Local development services. Start with `pnpm db:up` from the repo root.
+# Production uses Render managed Postgres (see render.yaml).
+#
+# Later (before the rehearsal): add `server` here built from a Dockerfile so the whole
+# game can run on a laptop at the venue if the internet fails.
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: overclock-postgres
+    environment:
+      POSTGRES_USER: overclock
+      POSTGRES_PASSWORD: overclock
+      POSTGRES_DB: overclock
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U overclock -d overclock"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

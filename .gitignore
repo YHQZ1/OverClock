@@ -1,0 +1,39 @@
+# Single ignore file for the whole repo — no per-folder .gitignore files.
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment (keep the documented example)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Tests
+coverage/
+.vitest/
+
+# Vite
+.vite/
+*.local
+
+# Local Docker data (if Postgres is ever bind-mounted)
+infra/data/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
