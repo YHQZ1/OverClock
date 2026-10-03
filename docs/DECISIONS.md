@@ -25,6 +25,10 @@ Short record of what we chose and why.
 | **Shared-PC safety**: clear saved session on end/abandon; "Done — next team" | The next team must never land in the previous team's game.                                     |
 | **Per-round variant pool** (same disasters/strength, different order/timing) | Teams watching earlier teams can't memorise; bots check variants score within a few %.         |
 | **Admin page deferred**                                                      | Core team flow first.                                                                          |
+| **Look: sharp, minimal, dark, full-width** — Inter only, square corners, hairline dividers, no gradients or pills; split layout (statement left, action column right) | Feels deliberate rather than templated. Tried and dropped: warm paper + clay (too close to Claude), Google four-colour palette, rounded-card "hero + two cards". |
+| **One accent: lavender `#A594F9`** (primary button, active row, highlights) — one token in `web/src/styles/tokens.css` | Quiet and distinct; not blue/orange/neon. Green / yellow / red stay reserved for game signals (healthy / struggling / broken). |
+| **No C/J shortcuts on Home**; forms keep Enter / Esc. Lobby and in-game buttons keep shortcuts | Home is clicked once per team; shortcuts matter where speed matters (the game).               |
+| **Team codes: 4 letters, no I or O**                                         | Easy to read off a projector and type.                                                         |
 
 ## Technical
 
@@ -34,6 +38,7 @@ Short record of what we chose and why.
 | **TypeScript everywhere**                                                           | One language; server types reused in the web app.                                                                                 |
 | **Folders `web/`, `server/`, `docs/`, `infra/`** at the root                        | Two apps — an `apps/` level adds nothing.                                                                                         |
 | **React + Vite** (not Next.js)                                                      | No SSR/SEO needs.                                                                                                                 |
+| **Fonts self-hosted** (Fontsource: Inter)                                           | Lab firewall may block Google Fonts; no CDN dependency at the event.                                                              |
 | **Zustand** for client state                                                        | Tiny; holds the latest server snapshot.                                                                                           |
 | **Express 5** (not Fastify)                                                         | Familiar, low risk; tiny HTTP surface.                                                                                            |
 | **Socket.IO** (not raw `ws`)                                                        | Auto-reconnect, rooms, and HTTP long-polling fallback if WebSockets are blocked.                                                  |
@@ -51,8 +56,7 @@ Short record of what we chose and why.
 | Question             | Notes                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------- |
 | Budget hits 0        | Proposal: paid buttons lock; servers keep running but each second at zero costs points. |
-| The three themes     | Not decided. Candidates: ticket booking, food delivery, flash sale.                     |
-| Look and feel        | Colours, style, fonts — decide before the first real UI.                                |
+| The three themes     | Not decided. Direction: relatable worlds from games/shows (inspired by, no names/art). Home/Lobby stay theme-neutral meanwhile. |
 | Round contents       | Lengths, disasters per round, button unlock order.                                      |
 | Tie-breaks           | Proposal: less downtime, then fewer crashes.                                            |
 | Duplicate team names | Proposal: allow; show code suffix if two match.                                         |

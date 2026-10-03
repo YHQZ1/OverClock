@@ -150,8 +150,10 @@ reboot at 30% health and play on. Nobody is eliminated.
 
 Same simulation, different words and icons — harder to spot patterns, and
 scores stay comparable. Host picks one of three or 🎲 Random. **The three
-themes are not decided yet** (candidates: ticket booking, food delivery,
-flash sale).
+themes are not decided yet** — direction: relatable worlds students know from
+games and shows (inspired by, not using their names or art). Until then, all
+shared screens (Home, Lobby) use theme-neutral words ("people", "your
+service"), and the Lobby has no theme picker.
 
 ## Screens
 
