@@ -13,6 +13,7 @@ Short record of what we chose and why.
 | **Buttons split by role** across a team's PCs                                | More interactive; teammates must talk.                                                         |
 | **One leaderboard**, team size shown                                         | Simple. Revisit if solo players dominate.                                                      |
 | **Only completed sessions are recorded**                                     | Leaving halfway records nothing.                                                               |
+| **Budget can go negative**: + SERVERS locks at 0, running servers keep draining, negative budget subtracts from score | Overspending always hurts; no hard stop mid-round.                                              |
 | **Score = fans served − fans lost + budget saved**                           | Rewards uptime _and_ not wasting resources; makes button-mashing a losing strategy.            |
 | **No fixed "right" number of servers**                                       | Real world: you never know exactly how many you need. Deciding under uncertainty is the skill. |
 | **Serving fans always outweighs saving budget**                              | Otherwise "never add servers, bank the budget" would win. Enforced by a stingy-bot test.       |
@@ -55,7 +56,6 @@ Short record of what we chose and why.
 
 | Question             | Notes                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------- |
-| Budget hits 0        | Proposal: paid buttons lock; servers keep running but each second at zero costs points. |
 | The three themes     | Not decided. Direction: relatable worlds from games/shows (inspired by, no names/art). Home/Lobby stay theme-neutral meanwhile. |
 | Round contents       | Lengths, disasters per round, button unlock order.                                      |
 | Tie-breaks           | Proposal: less downtime, then fewer crashes.                                            |

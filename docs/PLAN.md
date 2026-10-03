@@ -6,7 +6,7 @@ Deploy early, playtest early, freeze features before the event.
 | # | Milestone | Done when | Status |
 |---|---|---|---|
 | 0 | **Skeleton + design**: folders, configs, docs | Design agreed and written down | ✅ |
-| 1 | **Game engine core** (`server/src/sim`): servers, Rush Hour, ± servers, budget, health, score, timer, crash/reboot, seeded RNG; tests, bots, balance script | Tests pass; idle bot crashes; spam and stingy bots lose to sensible play; same seed + actions ⇒ same result | ⬜ |
+| 1 | **Game engine core** (`server/src/sim`): servers, Rush Hour, ± servers, budget, health, score, timer, crash/reboot, seeded RNG; tests, bots, balance script | Tests pass; idle bot crashes; spam and stingy bots lose to sensible play; same seed + actions ⇒ same result | ✅ Rush Hour + servers only; other disasters in M5 |
 | 2 | **Server + team flow**: Express, Socket.IO, create/join/rejoin/leave, lobby, host START, session phases, 10 Hz match loop | Several browser tabs form a team and play the same match; refresh rejoins | ⬜ |
 | 3 | **Player UI (basic)**: Home, Lobby, Game screen (health, budget, alert, app map, server rack, buttons + shortcuts), Final | A real person plays a full round on a PC without explanation | 🟨 Home + mock Lobby done (early start) |
 | 4 | **First deploy** to a hosted URL; try from a lab PC | Reachable and playable outside localhost | ⬜ |
