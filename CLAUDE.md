@@ -9,7 +9,8 @@ docs/PLAN.md, top first. Read `docs/` before design changes.
 ## Commands
 
 - `pnpm dev` — server + web in watch mode
-- `pnpm test` / `pnpm typecheck` — run before calling anything done
+- `pnpm test` (unit + integration) / `pnpm typecheck` — run before calling anything done
+- `pnpm test:balance`, `pnpm test:e2e`, `pnpm test:load` — slower suites (docs/TESTING.md)
 - `pnpm db:up` — local Postgres (infra/docker-compose.yml)
 - `pnpm --filter @overclock/server balance` — bot balance report
 
@@ -17,7 +18,8 @@ docs/PLAN.md, top first. Read `docs/` before design changes.
 
 - `web/` — React + Vite + TS + Tailwind v4. Routes: `/play`, `/screen` (`/admin` deferred).
 - `server/` — Express 5 + Socket.IO + TS. `server.ts → app.ts → routes → controllers → services`, plus `sockets/`, `sim/`, `db/`, `validators/`, `middlewares/`, `utils/`, `config/`, `types/`.
-- `docs/` — GAME, ARCHITECTURE, DECISIONS, PLAN, BALANCE, RUNBOOK.
+- `docs/` — GAME, ARCHITECTURE, DECISIONS, PLAN, BALANCE, TESTING, RUNBOOK.
+- `e2e/` — Playwright tests. Server tests in `server/tests/{unit,integration,balance,load}`, web in `web/tests/unit`.
 - `infra/` — docker-compose, render.yaml, .env.example.
 
 ## Rules

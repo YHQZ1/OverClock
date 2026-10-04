@@ -25,6 +25,9 @@ Foundation from the first (co-op) version — kept and reused by the duel:
 - [x] Tailwind v4 styling with design tokens
 - [x] Tests: engine rules, determinism, balance invariants, end-to-end socket flows (37 for the duel)
 
+- [x] **Testing**: unit / integration / balance / web / e2e / load, organised
+      by kind; GitHub Actions for CI, E2E and nightly load (docs/TESTING.md)
+
 ## Build queue (duel)
 
 In order. Each item ends playable and tested.

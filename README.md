@@ -132,6 +132,9 @@ are saved to PostgreSQL.
   clock, no `Math.random`, no I/O. Randomness comes from a seeded generator,
   so **the same seed plus the same button presses always produce the same
   match** — which makes replays, fair disputes and testing easy.
+- **Tested five ways:** unit, integration (real sockets), balance (bots),
+  end-to-end (two players in real browsers) and load (~75 bot players at
+  once) — in GitHub Actions. See [docs/TESTING.md](docs/TESTING.md).
 - **Bots keep it balanced.** Bot players (idle, all-attack, all-defence,
   balanced, human-speed…) play thousands of matches in seconds; tests enforce
   rules like *"every attack has a counter that measurably helps"* and *"a
@@ -153,7 +156,7 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Getting started
 
-Requires **Node 22+**, **pnpm** and (for the database, once results are
+Requires **Node 22.12+**, **pnpm** and (for the database, once results are
 saved) **Docker**.
 
 ```sh
@@ -172,7 +175,10 @@ yourself. Each tab is its own seat, so you can test a full room on one PC.
 | `pnpm dev`                                  | Server and web in watch mode                   |
 | `pnpm build`                                | Production build of both                       |
 | `pnpm start`                                | Run the built server (it serves the web app too) |
-| `pnpm test`                                 | All tests (engine, balance invariants, live socket flows) |
+| `pnpm test`                                 | Quick tests: unit + integration                |
+| `pnpm test:unit` / `test:integration` / `test:balance` | One kind at a time                   |
+| `pnpm test:e2e`                             | Two players in real browsers (Playwright)      |
+| `pnpm test:load`                            | ~75 bot players at once; checks the server stays fast |
 | `pnpm typecheck`                            | Type-check everything                          |
 | `pnpm --filter @overclock/server balance`   | Bot balance report (thousands of matches, ~1s) |
 | `pnpm db:up` / `pnpm db:down`               | Start / stop local Postgres                    |
@@ -188,7 +194,9 @@ server/                the game server
   src/sim/             pure, deterministic game engine + bots
   src/services/        rooms, sessions, live matches, results
   src/sockets/         thin Socket.IO handlers (validate → service)
-docs/                  game rules, architecture, decisions, plan, balance, runbook
+e2e/                   Playwright end-to-end tests (real browsers)
+.github/workflows/      CI (every push), E2E (PRs to main), Load (nightly)
+docs/                  game rules, architecture, decisions, plan, balance, testing, runbook
 infra/                 docker-compose (Postgres), Render blueprint, env example
 ```
 
@@ -216,6 +224,7 @@ What's built and what's next: [docs/PLAN.md](docs/PLAN.md).
 | [DECISIONS.md](docs/DECISIONS.md)      | What we chose and why; what's still open                 |
 | [PLAN.md](docs/PLAN.md)                | What's built and the build queue                         |
 | [BALANCE.md](docs/BALANCE.md)          | Tuning values, bot results, playtest log                 |
+| [TESTING.md](docs/TESTING.md)          | Unit, integration, balance, e2e and load tests; CI        |
 | [RUNBOOK.md](docs/RUNBOOK.md)          | Running the game at SymbiTech, and what to do when things break |
 
 ## Design principles

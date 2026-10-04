@@ -73,6 +73,10 @@ choices are kept at the bottom so we remember why we moved on.
 | **Seat (code + token) in `sessionStorage`**, per tab | Refresh rejoins; several tabs can test a room on one PC; cleared on Leave / Done. |
 | **One web service** serves API + socket + web build | One deploy, no CORS, local fallback is one command. Single instance. |
 | **Dev `tsx watch`; prod `tsc` → `node dist`** | Fast reload locally, plain Node in production. |
+| **Tests split by kind** — unit / integration / balance (Vitest projects), web unit, e2e (Playwright), load (bot clients + `/api/metrics`) | Each answers a different question and runs at its own speed; see docs/TESTING.md. |
+| **CI: GitHub Actions** — `ci.yml` every push, `e2e.yml` on PRs/pushes to main, `load.yml` nightly + manual | Fast checks block every change; the slow, noisier suites run where they're worth the wait. |
+| **Load target: 30 rooms (~75 players)** — a full lab × 1.5; tick p95 ≤ 25 ms, lag p95 ≤ 50 ms | The event must never stall; measured, not guessed. |
+| **`/api/metrics`** (counts and timings only) | The load test asserts on real server numbers; also handy on event day. |
 | **`FAST_ROUNDS=1` dev switch** (5s buy, 20s rounds) | Test a full match in ~90s instead of ~7 minutes. Never set at the event. |
 | **pnpm 11 with `allowBuilds: esbuild`** | pnpm blocks dependency build scripts by default; `tsx` needs esbuild's. |
 | **No milestones — one build queue** (docs/PLAN.md) | Keep building, top of the queue first, verify as we go. |
