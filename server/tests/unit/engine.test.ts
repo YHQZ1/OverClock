@@ -213,11 +213,11 @@ describe("crash, reboot and money", () => {
 
   it("can't pay upkeep → the newest server switches off", () => {
     const s0 = createDuel(setup, 1);
-    const servers = Array.from({ length: 12 }, (_, id) => ({ id, bootTicksLeft: 0, meltedTicksLeft: 0 }));
+    const servers = Array.from({ length: 30 }, (_, id) => ({ id, bootTicksLeft: 0, meltedTicksLeft: 0 })); // more upkeep than income
     const broke = { ...s0, sites: { ...s0.sites, 1: { ...s0.sites[1], coins: 0, servers } } };
     const { events, state } = step(broke, [], setup);
     expect(events).toContainEqual({ side: 1, type: "serverSwitchedOff" });
-    expect(state.sites[1].servers).toHaveLength(11);
+    expect(state.sites[1].servers).toHaveLength(29);
     expect(state.sites[1].coins).toBe(0);
   });
 });

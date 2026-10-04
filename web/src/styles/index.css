@@ -41,6 +41,7 @@
   --animate-alarm-stroke: alarm-stroke 1s steps(2) infinite;
   --animate-slide-in: slide-in 0.3s var(--ease-snap) both;
   --animate-flash: flash 0.7s ease-out both;
+  --animate-coin-pop: coin-pop 0.95s ease-out both;
 
   @keyframes rise-in {
     from {
@@ -89,6 +90,19 @@
     from {
       opacity: 0.2;
       transform: translateY(-6px);
+    }
+  }
+  @keyframes coin-pop {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    25% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-16px);
     }
   }
 }

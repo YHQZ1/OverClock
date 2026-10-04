@@ -73,7 +73,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   bouncerBotBlock: 0.85,
   bouncerFalsePositive: 0.03,
 
-  incomePerPerson: 0.12,
+  incomePerPerson: 0.15,
   comebackGap: 0.15,
   comebackBoost: 1.25,
   sellRefund: 0.5,

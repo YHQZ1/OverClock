@@ -52,7 +52,7 @@ each other** in every pairing.
 | Knob | Value |
 | --- | --- |
 | Rounds | 1:30 / 2:00 / 2:00; 4 servers and 500 coins each; crowd 100/s growing 15–35% with natural rushes |
-| Income | 0.12 coins per visitor served (≈ 12/s at normal traffic); +25% when trailing by > 15% |
+| Income | 0.15 coins per visitor served (≈ 15/s at normal traffic, ≈ +9–11/s after upkeep); +25% when trailing by > 15% |
 | Database / shelf | 150 visitors/s, +120 per Backup database; a warm shelf answers 60%, warms in 8s |
 | Bouncer | stops 85% of bots, wrongly turns away 3% of real people |
 | Traffic splitter | without it, servers beyond 4 work at 60% |
@@ -90,6 +90,23 @@ Blindfold and Jam score 0 there — they only hurt players who press things.
 Match points: total + 0.5 × opponent total + 2,000 for a win.
 
 ## Bot results
+
+### 2026-10-05 · Income 0.12 → 0.15 per visitor · 40 seeds per pairing
+
+Playtest feedback: coins came too late — after the buy phase the next attack
+took 30–40s of saving, so most of a round was waiting. Compared:
+
+| Income | Kept / sec after upkeep | Rusher (spam) | Balanced | Turtle |
+| --- | --- | ---: | ---: | ---: |
+| 0.12 (old) | ~6–8 | 68% | 74% | 24% |
+| **0.15 (chosen)** | ~9–11 | 69% | 82% | 40% |
+| 0.18 | ~11–14 | 33% | 90% | 40% |
+
+Chose 0.15 with the user: a moderate step (an attack every ~25s), keeping
+money a real constraint. 0.18 punished spam harder — the next lever if
+playtests show spam winning. Starting coins (500 → 600) held back until a
+playtest says it's needed. The HUD shows a "+N" pop beside the coins every
+second, so income is felt.
 
 ### 2026-10-04 · New attack roster (9 attacks) · 40 seeds per pairing
 

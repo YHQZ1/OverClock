@@ -33,15 +33,29 @@ function Meter({ pct, className }: { pct: number; className: string }) {
   );
 }
 
-function Stat({ label, value, tone, children }: { label: string; value: string; tone?: string; children?: ReactNode }) {
+function Stat({ label, value, tone, extra, children }: { label: string; value: string; tone?: string; extra?: ReactNode; children?: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col px-6 pt-3 pb-3.5 not-first:border-l not-first:border-line">
       <Label>{label}</Label>
-      <span className={cx("text-[clamp(22px,4.4vh,34px)] leading-tight font-semibold tracking-[-0.04em] tabular-nums", tone)}>
-        {value}
+      <span className="flex items-baseline gap-3">
+        <span className={cx("text-[clamp(22px,4.4vh,34px)] leading-tight font-semibold tracking-[-0.04em] tabular-nums", tone)}>
+          {value}
+        </span>
+        {extra}
       </span>
       {children}
     </div>
+  );
+}
+
+/** "+18" floating up beside the coins once a second, so income is felt, not just read. */
+function CoinPop({ match }: { match: MatchView }) {
+  const earned = Math.round(match.me.incomePerSec);
+  if (match.phase !== "live" || earned <= 0 || match.me.downSecondsLeft !== null) return null;
+  return (
+    <span key={Math.ceil(match.timeLeftSec)} className="animate-coin-pop text-lg font-semibold text-accent tabular-nums" aria-hidden>
+      +{earned}
+    </span>
   );
 }
 
@@ -54,7 +68,7 @@ function Hud({ match, room }: { match: MatchView; room: RoomView }) {
       <Stat label={`${ours} · health`} value={String(me.health)} tone={me.health < 25 ? "text-bad" : undefined}>
         <Meter pct={me.health} className={levelBg(me.health)} />
       </Stat>
-      <Stat label="Coins" value={me.coins.toLocaleString()} tone="text-accent">
+      <Stat label="Coins" value={me.coins.toLocaleString()} tone="text-accent" extra={<CoinPop match={match} />}>
         <span className="truncate text-xs text-muted">
           +{me.incomePerSec}/s · −{me.upkeepPerSec}/s upkeep
         </span>
