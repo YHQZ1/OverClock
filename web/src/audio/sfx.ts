@@ -412,58 +412,173 @@ export const sfx = {
 // ---------- background music ----------
 
 /**
- * A light chiptune loop: square-wave melody and triangle bass over
- * Am – F – C – G. "menu" is gentle (melody + bass); "live" adds hats and a
- * soft kick, and `intensity` 0 → 1 speeds it up for the end of a round.
- * Notes are scheduled ahead on the audio clock so timing stays tight.
+ * Light, original background loops — one style per theme, each borrowing a
+ * genre's feel (never a real tune). "menu" mode is gentle (pad, bass, sparse
+ * melody); "live" adds drums, and `intensity` 0 → 1 speeds it up for the end
+ * of a round. Notes are scheduled ahead on the audio clock so timing stays tight.
  */
 export type MusicMode = "off" | "menu" | "live";
+/** arcade: menus · ticker: Nasdaq · race: FanCode · chip: Miniclip · trailer: BookMyShow */
+export type MusicStyle = "arcade" | "ticker" | "race" | "chip" | "trailer";
+
+/** MIDI note → Hz. */
+const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
+/** A chord: bass root and four melody tones, as MIDI notes. */
+const ch = (bass: number, ...tones: number[]) => ({ bass: hz(bass), tones: tones.map(hz) });
+
+type Style = {
+  bpm: number;
+  /** Extra bpm at full intensity (the last 20 seconds). */
+  boost: number;
+  chords: { bass: number; tones: number[] }[];
+  /** Melody shape per bar: index into the chord's tones (-1 = rest). */
+  patterns: number[][];
+  lead: { type: OscillatorType; gain: number; dur: number; cutoff: number };
+  /** pulse: root on the beat · run: driving eighths, engine-like · drone: one long low note per bar */
+  bass: "pulse" | "run" | "drone";
+  pad: { type: OscillatorType; gain: number; octave: number };
+  /** Eighth-note positions in the bar (0–7), live only. */
+  kick: number[];
+  snare: number[];
+  hats: "off" | "offbeats" | "all";
+};
+
+const ARCADE_PATTERNS = [
+  [0, 2, 1, 2, 3, 2, 1, 2],
+  [0, 1, 2, 3, 2, 1, 0, -1],
+  [3, 2, 1, 2, 0, 1, 2, 3],
+  [0, 2, 3, 2, 1, -1, 1, 2],
+];
+
+const STYLES: Record<MusicStyle, Style> = {
+  // The original chiptune: Am – F – C – G.
+  arcade: {
+    bpm: 104,
+    boost: 36,
+    chords: [ch(45, 69, 72, 76, 81), ch(41, 65, 69, 72, 77), ch(48, 72, 76, 79, 84), ch(43, 67, 71, 74, 79)],
+    patterns: ARCADE_PATTERNS,
+    lead: { type: "square", gain: 0.085, dur: 0.16, cutoff: 3600 },
+    bass: "pulse",
+    pad: { type: "triangle", gain: 0.05, octave: 0.5 },
+    kick: [0, 4],
+    snare: [],
+    hats: "offbeats",
+  },
+  // Trading floor: cool D minor, a ticking clock, short blips like a price ticker.
+  ticker: {
+    bpm: 98,
+    boost: 32,
+    chords: [ch(38, 62, 65, 69, 74), ch(46, 62, 65, 70, 74), ch(41, 60, 65, 69, 72), ch(48, 60, 64, 67, 72)],
+    patterns: [
+      [0, -1, 2, -1, 3, 2, -1, 1],
+      [0, 0, -1, 2, -1, 3, -1, -1],
+      [3, -1, 2, 1, -1, 2, -1, 0],
+      [0, -1, 1, -1, 2, -1, 3, 2],
+    ],
+    lead: { type: "sine", gain: 0.11, dur: 0.1, cutoff: 5000 },
+    bass: "pulse",
+    pad: { type: "sawtooth", gain: 0.035, octave: 0.5 },
+    kick: [0, 4],
+    snare: [],
+    hats: "all",
+  },
+  // Race broadcast: fast E minor, engine-like running bass, four-on-the-floor.
+  race: {
+    bpm: 132,
+    boost: 30,
+    chords: [ch(40, 64, 67, 71, 76), ch(36, 64, 67, 72, 76), ch(43, 67, 71, 74, 79), ch(38, 66, 69, 74, 78)],
+    patterns: [
+      [0, 1, 2, 1, 3, 1, 2, 1],
+      [3, 2, 1, 0, 1, 2, 3, -1],
+      [0, 2, 0, 3, 0, 2, 1, 2],
+      [2, 3, 2, 1, 0, -1, 0, 1],
+    ],
+    lead: { type: "sawtooth", gain: 0.06, dur: 0.12, cutoff: 3000 },
+    bass: "run",
+    pad: { type: "sawtooth", gain: 0.025, octave: 0.5 },
+    kick: [0, 2, 4, 6],
+    snare: [2, 6],
+    hats: "offbeats",
+  },
+  // Web-game bounce: bright C major, quick and cheerful.
+  chip: {
+    bpm: 120,
+    boost: 30,
+    chords: [ch(48, 72, 76, 79, 84), ch(43, 71, 74, 79, 83), ch(45, 72, 76, 81, 84), ch(41, 72, 77, 81, 84)],
+    patterns: [
+      [0, 1, 2, 3, 2, 1, 2, 3],
+      [3, -1, 3, 2, 1, -1, 0, 1],
+      [0, 2, 1, 3, 2, 0, 1, 2],
+      [2, 2, 3, -1, 1, 1, 0, -1],
+    ],
+    lead: { type: "square", gain: 0.075, dur: 0.11, cutoff: 4800 },
+    bass: "pulse",
+    pad: { type: "triangle", gain: 0.03, octave: 0.5 },
+    kick: [0, 4],
+    snare: [2, 6],
+    hats: "offbeats",
+  },
+  // Movie trailer: slow C minor, deep held strings, booming drums, a lonely bell.
+  trailer: {
+    bpm: 78,
+    boost: 40,
+    chords: [ch(36, 60, 63, 67, 72), ch(32, 60, 63, 68, 72), ch(39, 58, 63, 67, 70), ch(34, 58, 62, 65, 70)],
+    patterns: [
+      [0, -1, -1, 2, -1, -1, 3, -1],
+      [2, -1, -1, 1, -1, -1, 0, -1],
+      [3, -1, 2, -1, 1, -1, 2, -1],
+      [0, -1, -1, -1, 1, -1, 2, 3],
+    ],
+    lead: { type: "triangle", gain: 0.1, dur: 0.6, cutoff: 3000 },
+    bass: "drone",
+    pad: { type: "sawtooth", gain: 0.07, octave: 0.5 },
+    kick: [0, 3, 6],
+    snare: [4],
+    hats: "off",
+  },
+};
 
 export const music = (() => {
   const LOOKAHEAD = 0.2; // seconds of notes scheduled ahead
   /** Overall music loudness: light under the effects, but audible on laptop speakers. */
-  const LEVEL = 3;
-  // Chord roots and their arpeggio tones (A minor arcade progression).
-  const CHORDS = [
-    { bass: N.A2, tones: [N.A4, N.C5, N.E5, N.A5] },
-    { bass: 87.31, tones: [349.2, N.A4, N.C5, 698.5] }, // F
-    { bass: N.C3, tones: [N.C5, N.E5, N.G5, N.C6] },
-    { bass: 98, tones: [N.G4, 493.9, N.D5, N.G5] }, // G
-  ];
-  // Melody shape per bar: index into the chord's tones (-1 = rest).
-  const PATTERNS = [
-    [0, 2, 1, 2, 3, 2, 1, 2],
-    [0, 1, 2, 3, 2, 1, 0, -1],
-    [3, 2, 1, 2, 0, 1, 2, 3],
-    [0, 2, 3, 2, 1, -1, 1, 2],
-  ];
+  const LEVEL = 0.2;
 
   let mode: MusicMode = "off";
+  let style: Style = STYLES.arcade;
   let intensity = 0;
   let step = 0;
   let nextTime = 0;
   let timer: number | null = null;
 
-  const stepSec = () => 60 / (104 + intensity * 36) / 2; // eighth notes
+  const stepSec = () => 60 / (style.bpm + intensity * style.boost) / 2; // eighth notes
 
   function playStep(i: number, when: number, g: Graph) {
     const at = Math.max(0, when - g.ctx.currentTime);
-    const bar = Math.floor(i / 8) % CHORDS.length;
+    const s = style;
+    const bar = Math.floor(i / 8) % s.chords.length;
     const beat = i % 8;
-    const chord = CHORDS[bar]!;
-    const pattern = PATTERNS[Math.floor(i / 32) % PATTERNS.length]!;
+    const chord = s.chords[bar]!;
+    const pattern = s.patterns[Math.floor(i / 32) % s.patterns.length]!;
     const live = mode === "live";
 
     // Pad: a soft held chord each bar, so there's always a gentle bed of sound.
     if (beat === 0) {
       for (const f of chord.tones.slice(0, 3)) {
-        voice({ freq: f / 2, type: "triangle", dur: stepSec() * 8, at, gain: 0.05 * LEVEL, attack: 0.25, cutoff: 1400, cutoffTo: 700, detune: 7, reverb: 0.5 });
+        voice({ freq: f * s.pad.octave, type: s.pad.type, dur: stepSec() * 8, at, gain: s.pad.gain * LEVEL, attack: 0.25, cutoff: 1400, cutoffTo: 700, detune: 7, reverb: 0.5 });
       }
     }
 
-    // Bass: root on the beat (plus a quiet octave so laptop speakers can hear it),
-    // octave bounce on the off-beat in rounds.
-    if (beat % 2 === 0) {
+    // Bass.
+    if (s.bass === "drone") {
+      if (beat === 0) {
+        voice({ freq: chord.bass, type: "sawtooth", dur: stepSec() * 8, at, gain: 0.12 * LEVEL, attack: 0.08, cutoff: 500, cutoffTo: 160, detune: 5, reverb: 0.3 });
+        voice({ freq: chord.bass / 2, type: "sine", dur: stepSec() * 8, at, gain: 0.12 * LEVEL, attack: 0.08, reverb: 0.1 });
+      }
+    } else if (s.bass === "run") {
+      const f = beat % 2 === 0 ? chord.bass : chord.bass * 2;
+      voice({ freq: f, type: "sawtooth", dur: stepSec() * 0.9, at, gain: (live ? 0.08 : 0.05) * LEVEL, cutoff: live ? 900 : 600, cutoffTo: 200, reverb: 0.05 });
+    } else if (beat % 2 === 0) {
+      // Root on the beat (plus a quiet octave so laptop speakers can hear it).
       voice({ freq: chord.bass, type: "triangle", dur: 0.3, at, gain: 0.09 * LEVEL, reverb: 0.05 });
       voice({ freq: chord.bass * 2, type: "square", dur: 0.22, at, gain: 0.025 * LEVEL, cutoff: 900, cutoffTo: 300, reverb: 0.05 });
     } else if (live) {
@@ -475,20 +590,25 @@ export const music = (() => {
     if (note >= 0 && (live || beat % 2 === 0)) {
       voice({
         freq: chord.tones[note]!,
-        type: "square",
-        dur: live ? 0.16 : 0.3,
+        type: s.lead.type,
+        dur: live ? s.lead.dur : s.lead.dur * 1.8,
         at,
-        gain: (live ? 0.085 : 0.075) * LEVEL,
-        cutoff: live ? 3600 : 2600,
+        gain: s.lead.gain * (live ? 1 : 0.85) * LEVEL,
+        cutoff: live ? s.lead.cutoff : s.lead.cutoff * 0.7,
         cutoffTo: 900,
-        reverb: 0.25,
+        reverb: s.bass === "drone" ? 0.5 : 0.25,
       });
     }
 
-    // Drums (live only): kick on 1 and 3, hats on the off-beats.
+    // Drums (live only).
     if (live) {
-      if (beat === 0 || beat === 4) kick(at, (0.28 + intensity * 0.12) * LEVEL, 120, 48);
-      if (beat % 2 === 1) noise({ dur: 0.04, at, from: 8000, gain: 0.05 * LEVEL + intensity * 0.03, type: "highpass", reverb: 0 });
+      const boom = s.bass === "drone";
+      if (s.kick.includes(beat)) kick(at, (boom ? 0.45 : 0.28 + intensity * 0.12) * LEVEL, boom ? 90 : 120, boom ? 36 : 48);
+      if (s.snare.includes(beat)) {
+        noise({ dur: boom ? 0.5 : 0.12, at, from: boom ? 700 : 1800, gain: (boom ? 0.12 : 0.07) * LEVEL, q: 0.8, reverb: boom ? 0.6 : 0.15 });
+      }
+      const hat = s.hats === "all" || (s.hats === "offbeats" && beat % 2 === 1);
+      if (hat) noise({ dur: 0.04, at, from: 8000, gain: 0.05 * LEVEL + intensity * 0.03, type: "highpass", reverb: 0 });
     }
   }
 
@@ -515,6 +635,11 @@ export const music = (() => {
         window.clearInterval(timer);
         timer = null;
       }
+    },
+    setStyle(next: MusicStyle) {
+      if (STYLES[next] === style) return;
+      style = STYLES[next];
+      step = 0;
     },
     setIntensity(value: number) {
       intensity = Math.max(0, Math.min(1, value));
