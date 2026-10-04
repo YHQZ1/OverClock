@@ -4,6 +4,10 @@
 # Later (before the rehearsal): add `server` here built from a Dockerfile so the whole
 # game can run on a laptop at the venue if the internet fails.
 
+# Own project name, so the volume is overclock_pgdata — never another project's
+# "infra_pgdata" (compose otherwise names things after the folder).
+name: overclock
+
 services:
   postgres:
     image: postgres:17
@@ -13,9 +17,12 @@ services:
       POSTGRES_PASSWORD: overclock
       POSTGRES_DB: overclock
     ports:
-      - "5432:5432"
+      # 5433 on the host, so it never clashes with a Postgres already on 5432.
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # First start only: also creates overclock_test for the database tests.
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U overclock -d overclock"]
       interval: 5s

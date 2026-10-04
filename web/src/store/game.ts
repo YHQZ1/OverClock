@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
+import type { Leaderboards, MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
 import { describe, type FeedItem } from "../game/feed";
 import { wordsFor } from "../themes/themes";
 
@@ -16,6 +16,8 @@ type GameStore = {
   feed: FeedItem[];
   /** Health once per second of the current round, for both sites. */
   history: Record<"me" | "them", number[]>;
+  /** Top teams per format; pushed by the server after every saved match. Not seat data — kept on clear(). */
+  boards: Leaderboards | null;
 
   setConnected: (connected: boolean) => void;
   setRestoring: (restoring: boolean) => void;
@@ -23,6 +25,7 @@ type GameStore = {
   setRoom: (room: RoomView) => void;
   setMatch: (match: MatchView) => void;
   pushEvents: (events: SimEvent[]) => void;
+  setBoards: (boards: Leaderboards) => void;
   clear: () => void;
 };
 
@@ -38,6 +41,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   match: null,
   feed: [],
   history: EMPTY_HISTORY,
+  boards: null,
 
   setConnected: (connected) => set({ connected }),
   setRestoring: (restoring) => set({ restoring }),
@@ -71,6 +75,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const items = lines.map((l) => ({ ...l, id: nextFeedId++ })).reverse();
     set((s) => ({ feed: [...items, ...s.feed].slice(0, FEED_SIZE) }));
   },
+
+  setBoards: (boards) => set({ boards }),
 
   clear: () => set({ playerId: null, room: null, match: null, feed: [], history: EMPTY_HISTORY, restoring: false }),
 }));

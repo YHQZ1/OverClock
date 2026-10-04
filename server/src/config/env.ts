@@ -11,6 +11,11 @@ const envSchema = z.object({
   FAST_ROUNDS: z.stringbool().default(false),
   /** Round length when FAST_ROUNDS is on. */
   FAST_ROUND_SEC: z.coerce.number().int().min(5).max(120).default(20),
+  /** Postgres for results. Unset in dev: results live in memory until restart. Required in production. */
+  DATABASE_URL: z.url().optional(),
+}).refine((env) => env.NODE_ENV !== "production" || env.DATABASE_URL, {
+  message: "DATABASE_URL is required in production",
+  path: ["DATABASE_URL"],
 });
 
 export type Env = z.infer<typeof envSchema>;

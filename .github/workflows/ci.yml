@@ -15,6 +15,21 @@ jobs:
     name: Typecheck, test, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      # For the Postgres result-store tests (tests/integration/results.db.test.ts).
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: overclock
+          POSTGRES_PASSWORD: overclock
+          POSTGRES_DB: overclock_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U overclock -d overclock_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
 
@@ -34,8 +49,10 @@ jobs:
       - name: Unit tests (server + web)
         run: pnpm test:unit
 
-      - name: Integration tests (real server + sockets)
+      - name: Integration tests (real server + sockets + Postgres)
         run: pnpm test:integration
+        env:
+          TEST_DATABASE_URL: postgres://overclock:overclock@localhost:5433/overclock_test
 
       - name: Balance tests (bots)
         run: pnpm test:balance

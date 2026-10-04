@@ -6,7 +6,7 @@ repo root.
 | Kind | Command | Answers | Time | Runs in CI |
 | --- | --- | --- | --- | --- |
 | **Unit** | `pnpm test:unit` | Do the rules and the display logic work? | seconds | every push |
-| **Integration** | `pnpm test:integration` | Does the real server work with real socket clients? | seconds | every push |
+| **Integration** | `pnpm test:integration` | Does the real server work with real socket clients — and save results to Postgres? | seconds | every push |
 | **Balance** | `pnpm test:balance` | Is the game fair — no unbeatable strategy, every attack counterable? | ~10s | every push |
 | **End-to-end** | `pnpm test:e2e` | Can two people actually play a match in a real browser? | ~3 min | PRs to `main`, pushes to `main` |
 | **Load** | `pnpm test:load` | Does the server stay fast with a full lab playing at once? | ~1.5 min | nightly + on demand |
@@ -21,7 +21,9 @@ server/tests/
   unit/          engine rules (engine.test.ts), rooms, phase machine (session),
                  views (blindfold masking, hidden coins), scoring, validators
   integration/   a real server on a random port + Socket.IO clients:
-                 rooms, ready, vote, a full duel, attacks, forfeit, rejoin
+                 rooms, ready, vote, a full duel, attacks, forfeit, rejoin,
+                 leaderboard pushed after a saved match; results.db.test.ts —
+                 the Postgres result store against a real database
   balance/       bots play each other across seeds: idle loses, mirror matches
                  draw, no strategy wins > 90%, every attack has a counter that
                  cuts its damage at least in half
@@ -34,6 +36,18 @@ e2e/tests/       Playwright: home, form errors, a whole 1v1 match, jam + blindfo
 Server tests are split into Vitest **projects** (`server/vitest.config.ts`), so
 each kind runs on its own: `pnpm --filter @overclock/server test:unit`, etc.
 Coverage: `pnpm test:coverage` (HTML report in `server/coverage/`).
+
+## Database tests
+
+`tests/integration/results.db.test.ts` runs the Postgres result store against
+a real database. It needs `TEST_DATABASE_URL` — in `server/.env` locally
+(`pnpm db:up` creates `overclock_test` on port 5433) and set in CI, which runs a
+Postgres service. Without it those tests are skipped. The test database is
+wiped before each test; your dev database (`overclock`) is never touched.
+
+E2E and load runs start the server with `NODE_ENV=test`, which ignores
+`server/.env` — results stay in memory, so test matches never reach the dev
+leaderboard.
 
 ## End-to-end (Playwright)
 

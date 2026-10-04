@@ -156,14 +156,18 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Getting started
 
-Requires **Node 22.12+**, **pnpm** and (for the database, once results are
-saved) **Docker**.
+Requires **Node 22.12+**, **pnpm** and **Docker** (for the results database).
 
 ```sh
 pnpm install
 cp infra/.env.example server/.env
+pnpm db:up          # Postgres on localhost:5433 (also creates overclock_test)
 pnpm dev            # server on :3000, web on :5173 (proxied), hot reload
 ```
+
+The server applies database migrations itself on start. No Docker? Remove
+`DATABASE_URL` from `server/.env` and results are kept in memory until the
+server restarts.
 
 Open <http://localhost:5173/play> in two browser tabs to play against
 yourself. Each tab is its own seat, so you can test a full room on one PC.
@@ -181,7 +185,8 @@ yourself. Each tab is its own seat, so you can test a full room on one PC.
 | `pnpm test:load`                                       | ~75 bot players at once; checks the server stays fast |
 | `pnpm typecheck`                                       | Type-check everything                                 |
 | `pnpm --filter @overclock/server balance`              | Bot balance report (thousands of matches, ~1s)        |
-| `pnpm db:up` / `pnpm db:down`                          | Start / stop local Postgres                           |
+| `pnpm db:up` / `pnpm db:down`                          | Start / stop local Postgres (port 5433)               |
+| `pnpm --filter @overclock/server db:generate`          | Turn schema changes into a new SQL migration          |
 
 ## Project layout
 
@@ -209,8 +214,8 @@ the player screens (home, lobby, live game with an animated map, results).
 **The duel is playable end to end:** rooms with slots and ready, a vote
 between four themes (Nasdaq, FanCode, Miniclip, BookMyShow — each with its own
 colour, words and music), the shop (defences, boosts, attacks), three rounds
-with buy phases, round results and the final. **Next:** saving results, the
-live leaderboard and the big screen.
+with buy phases, round results and the final — saved to Postgres, with a live
+1v1 / 2v2 leaderboard. **Next:** the big screen.
 
 Tip: `FAST_ROUNDS=1 pnpm dev` runs 20-second rounds for quick testing.
 

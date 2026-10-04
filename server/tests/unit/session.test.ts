@@ -1,13 +1,15 @@
 // The room phase machine, driven directly (no sockets), with a fake clock.
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GameTiming } from "../../src/config/game.js";
 import type { Broadcaster } from "../../src/services/broadcaster.js";
 import { MatchService } from "../../src/services/match.service.js";
+import { ResultService } from "../../src/services/result.service.js";
+import { MemoryResultStore } from "../../src/services/result.store.js";
 import { RoomService } from "../../src/services/room.service.js";
 import { SessionService } from "../../src/services/session.service.js";
 import { ROUNDS } from "../../src/sim/index.js";
-import type { MatchView, RoomView } from "../../src/types/contracts.js";
+import type { Leaderboards, MatchView, RoomView } from "../../src/types/contracts.js";
 
 const TIMING: GameTiming = {
   voteSec: 0,
@@ -30,7 +32,14 @@ function setup(timing: Partial<GameTiming> = {}, random = () => 0) {
   const clock = () => now;
   const published: RoomView[] = [];
   const frames: MatchView[] = [];
-  const notify: Broadcaster = { room: (v) => published.push(v), match: (_c, _s, v) => frames.push(v), matchEvents: () => {} };
+  const boards: Leaderboards[] = [];
+  const notify: Broadcaster = {
+    room: (v) => published.push(v),
+    match: (_c, _s, v) => frames.push(v),
+    matchEvents: () => {},
+    leaderboard: (b) => boards.push(b),
+  };
+  const store = new MemoryResultStore();
   const rooms = new RoomService(clock);
   const t = { ...TIMING, ...timing };
   const matches = new MatchService(notify, t);
@@ -38,9 +47,10 @@ function setup(timing: Partial<GameTiming> = {}, random = () => 0) {
     now: clock,
     random,
     rounds: ROUNDS.map((r) => ({ ...r, durationSec: 1 })),
+    results: new ResultService(store, notify),
   });
   services.push(sessions);
-  return { rooms, matches, sessions, published, frames, advance: (ms: number) => (now += ms) };
+  return { rooms, matches, sessions, published, frames, boards, store, advance: (ms: number) => (now += ms) };
 }
 
 /** A 1v1 room with both players ready (so the match has started). */
@@ -101,11 +111,28 @@ describe("SessionService", () => {
     expect(room.final).toMatchObject({ recorded: true, endedEarly: null });
   });
 
+  it("saves a recorded match, then shows each team its place and pushes the boards", async () => {
+    const { matches, room, store, boards, published } = started();
+    for (let i = 0; i < 200 && room.phase !== "final"; i++) matches.tickAll();
+    await vi.waitFor(() => expect(room.final?.ranks).not.toBeNull());
+
+    const board = (await store.boards(10))["1v1"];
+    expect(board).toHaveLength(2);
+    expect(board.map((e) => e.matchId)).toEqual([room.final!.matchId, room.final!.matchId]);
+    expect(board.map((e) => e.team).sort()).toEqual(["A", "B"]);
+    expect(board[0]!.opponent).toBe(board[1]!.team);
+    expect(board[0]!.points).toBeGreaterThanOrEqual(board[1]!.points);
+    expect(room.final!.ranks).toEqual(board[0]!.side === 1 ? { 1: 1, 2: board[1]!.rank } : { 1: board[1]!.rank, 2: 1 });
+    expect(boards.at(-1)?.["1v1"]).toHaveLength(2);
+    expect(published.at(-1)?.final?.ranks).toEqual(room.final!.ranks);
+  });
+
   it("a team that leaves mid-match forfeits — not recorded", () => {
-    const { sessions, room, b } = started();
+    const { sessions, room, b, boards } = started();
     sessions.leaveRoom(room.code, b.id);
     expect(room.phase).toBe("final");
     expect(room.final).toMatchObject({ winner: 1, recorded: false, endedEarly: { side: 2, reason: "left" } });
+    expect(boards).toHaveLength(0); // nothing saved, no board update
   });
 
   it("a side gone too long mid-match forfeits", () => {

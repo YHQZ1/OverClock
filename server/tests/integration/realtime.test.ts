@@ -12,6 +12,7 @@ import type {
   AckResponse,
   ClientToServerEvents,
   JoinResult,
+  Leaderboards,
   MatchView,
   RoomView,
   ServerToClientEvents,
@@ -74,7 +75,7 @@ function ok<T>(res: AckResponse<T>): T {
   return res.data;
 }
 
-function next<E extends "room:state" | "match:state" | "match:event">(
+function next<E extends "room:state" | "match:state" | "match:event" | "leaderboard:update">(
   c: Client,
   event: E,
   predicate: (x: Parameters<ServerToClientEvents[E]>[0]) => boolean,
@@ -198,6 +199,22 @@ describe("the duel", () => {
     expect(final.rounds).toHaveLength(3);
     expect(final.final!.recorded).toBe(true);
     expect(final.final!.points[1]).toBeGreaterThan(0);
+  });
+
+  it("saves the result and pushes the leaderboard to every PC — even one not in the match", async () => {
+    await startServer({ ...FAST, voteSec: 0 });
+    const watcher = await client(); // e.g. the big screen
+    const { cs } = await room(2);
+    const [a] = cs as [Client, Client];
+    const board = next(watcher, "leaderboard:update", (b) => (b as Leaderboards)["1v1"].length === 2) as Promise<Leaderboards>;
+    const ranked = nextRoom(a, (r) => r.final?.ranks != null);
+    await readyAll(cs);
+
+    const [boards, final] = await Promise.all([board, ranked]);
+    expect(boards["1v1"].every((e) => e.matchId === final.final!.matchId)).toBe(true);
+    expect(boards["1v1"].map((e) => e.team).sort()).toEqual(["P1", "P2"]);
+    for (const e of boards["1v1"]) expect(final.final!.ranks![e.side]).toBe(e.rank); // a draw shares 1st
+    expect(await realtime!.services.results.boards()).toEqual(boards);
   });
 
   it("attacks reach the other team as a warning", async () => {

@@ -69,7 +69,10 @@ choices are kept at the bottom so we remember why we moved on.
 | **Express 5** (not Fastify) | Familiar, low risk; tiny HTTP surface. |
 | **Socket.IO** (not raw `ws`) | Auto-reconnect, rooms, and long-polling fallback if WebSockets are blocked. |
 | **Zod** for all inputs | A bad message must never break a match. |
-| **PostgreSQL + Drizzle**; Docker locally | Typed queries, simple migrations. |
+| **PostgreSQL + Drizzle** (postgres.js driver); Docker locally on **port 5433**, compose project `overclock` | Typed queries, simple SQL migrations applied on start. 5433 avoids a Postgres already on 5432; the project name keeps our volume separate from other projects' `infra_pgdata`. |
+| **Results behind a `ResultStore`** — Postgres, or memory when `DATABASE_URL` is unset (dev/tests); production requires it | Tests and Docker-less dev still work; the event can't silently lose results. |
+| **Each team's leaderboard entry is per match**; equal points share a place; replays (seed + action log per round) saved with every match | Teams are one-offs with no accounts; replays settle disputes. |
+| **`hidden` flag on leaderboard rows** (set from the admin page) | Rude team names must be removable from the projector. |
 | **server → app → routes → controllers → services**, plus `sockets/` and pure `sim/` | The usual layering, extended for real-time and the engine. |
 | **Server decides the screen** (room phase machine) | Keeps every PC in sync; refresh/reconnect just works. |
 | **Server-authoritative, deterministic sim at 10 ticks/sec** | Fairness, replays for disputes, easy testing. |

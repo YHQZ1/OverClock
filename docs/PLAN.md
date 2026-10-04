@@ -59,8 +59,9 @@ In order. Each item ends playable and tested.
 11. [x] **Game screen for the duel**: HUD (us vs them), alert with counter
         hints, live map per site (Tab), mini map, both health timelines,
         shop (Defend / Attack / Boost, shortcuts, Shift+N sells), feed
-12. [ ] **Results + leaderboard**: Postgres via Drizzle, save completed
-        matches, match points, 1v1 / 2v2 boards, live updates
+12. [x] **Results + leaderboard**: Postgres via Drizzle (Docker, port 5433),
+        completed matches saved with replays, match points, 1v1 / 2v2 boards
+        pushed live, place shown on the final screen; memory fallback without a DB
 13. [ ] **Big screen** `/screen`: leaderboards, matches in progress, awards
 14. [x] **Themes**: Nasdaq, FanCode, Miniclip, BookMyShow — vote cards with
         logos, accent colour, words (visitors, alerts, round lines), a music

@@ -1,5 +1,5 @@
 import type { Side, SimEvent } from "../sim/index.js";
-import type { MatchView, RoomView } from "../types/contracts.js";
+import type { Leaderboards, MatchView, RoomView } from "../types/contracts.js";
 
 /**
  * How services push updates to a room's PCs. Implemented by the socket
@@ -10,4 +10,6 @@ export interface Broadcaster {
   /** Each side gets its own view (the opponent's coins stay hidden). */
   match(code: string, side: Side, view: MatchView): void;
   matchEvents(code: string, events: SimEvent[]): void;
+  /** To every connected PC. */
+  leaderboard(boards: Leaderboards): void;
 }

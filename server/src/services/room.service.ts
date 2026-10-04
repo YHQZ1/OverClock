@@ -1,5 +1,5 @@
 import { MAX_PLAYERS, type ThemeId } from "../config/game.js";
-import type { Side } from "../sim/index.js";
+import type { ActionLog, Side } from "../sim/index.js";
 import type { CanStart, FinalSummary, Format, Phase, RoomView, RoundSummary, Slot } from "../types/contracts.js";
 import { playerId, rejoinToken, teamCode } from "../utils/codes.js";
 import { UserError } from "../utils/errors.js";
@@ -26,6 +26,8 @@ export type Room = {
   /** When the current timed phase ends (ms since epoch), or null. */
   phaseEndsAt: number | null;
   rounds: RoundSummary[];
+  /** Each played round's seed and action log, saved with the result to replay it exactly. */
+  replays: { seed: number; log: ActionLog }[];
   final: FinalSummary | null;
   /** When the last connected player dropped; null while anyone is connected. */
   allGoneSince: number | null;
@@ -59,6 +61,7 @@ export class RoomService {
       round: 0,
       phaseEndsAt: null,
       rounds: [],
+      replays: [],
       final: null,
       allGoneSince: null,
       sideGoneSince: { 1: null, 2: null },

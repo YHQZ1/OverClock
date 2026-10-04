@@ -164,17 +164,31 @@ Server → client
 | Method | Path               | Purpose                         |
 | ------ | ------------------ | ------------------------------- |
 | GET    | `/api/health`      | Health check                    |
-| GET    | `/api/leaderboard` | Top match points, per format    |
+| GET    | `/api/leaderboard` | Top 10 per format (`{ "1v1": [...], "2v2": [...] }`) |
 
 ## Data
 
-Only **completed** matches are written.
+Only **completed** matches are written, in one transaction, right after the
+final (`session.service` → `result.service` → `ResultStore`). Schema:
+`server/src/db/schema.ts`; migrations in `server/drizzle` (applied by the
+server on start; `db:generate` makes new ones).
 
-- `matches` — id, code, format (`1v1`/`2v2`), theme, seed, winner_side, completed_at, action_log (jsonb)
-- `match_teams` — id, match_id, side, name, players (jsonb), total_score, match_points, crashes, downtime_sec
-- `match_rounds` — id, match_id, round_no, side, score, served, turned_away, coins_earned, stats (jsonb)
+- `matches` — id (uuid, also `RoomView.final.matchId`), code, format (`1v1`/`2v2`), theme, winner_side (null = draw), completed_at
+- `match_teams` — one row per team: match_id, side, format, name, players (jsonb), total_score, match_points, won (null = draw), crashes, downtime_sec, **hidden** (admin)
+- `match_rounds` — one row per round: match_id, round_no, seed, winner_side, scores (jsonb, both sides), action_log (jsonb) — seed + log replay the round exactly
 
-Leaderboards are queries over `match_teams`, per format.
+Leaderboards are queries over `match_teams` per format, hidden rows left out,
+best match points first (equal points share a place; the earlier match lists
+first). After each save the top 10 per format are pushed to every connected
+PC (`leaderboard:update`) and each team's place goes into `final.ranks`.
+
+- **`ResultStore`**: `PgResultStore` (Drizzle + postgres.js) in dev/production;
+  `MemoryResultStore` in tests and when `DATABASE_URL` is unset (dev only —
+  production refuses to start without it). A failed save is logged and never
+  breaks the match.
+- Local Postgres: `pnpm db:up` (Docker, host port **5433**, compose project
+  `overclock`); test runs (`NODE_ENV=test`) ignore `server/.env`, so e2e and
+  load tests never touch the dev leaderboard.
 
 ## Edge cases
 

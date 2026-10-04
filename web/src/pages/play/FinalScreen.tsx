@@ -2,6 +2,7 @@ import type { RoomView, Side } from "@server/types/contracts.js";
 import { useState } from "react";
 import { TopBar } from "../../components/TopBar";
 import { Button, Frame, Label, SPLIT, cx } from "../../components/ui";
+import { Leaderboard } from "../../game/Leaderboard";
 import { useShortcut } from "../../hooks/useShortcut";
 
 type Props = { room: RoomView; mySide: Side | null; onDone: () => Promise<void> };
@@ -74,9 +75,15 @@ export function FinalScreen({ room, mySide, onDone }: Props) {
                     </div>
                   ))}
                   {final.recorded && (
-                    <div className="flex justify-between py-2">
+                    <div className="flex justify-between border-b border-line py-2">
                       <dt className="text-muted">Leaderboard points</dt>
                       <dd className="font-semibold tabular-nums text-accent">{n(final.points[side])}</dd>
+                    </div>
+                  )}
+                  {final.recorded && (
+                    <div className="flex justify-between py-2">
+                      <dt className="text-muted">Place on the {room.format} board</dt>
+                      <dd className="font-semibold tabular-nums">{final.ranks ? `#${final.ranks[side]}` : "…"}</dd>
                     </div>
                   )}
                 </dl>
@@ -85,11 +92,23 @@ export function FinalScreen({ room, mySide, onDone }: Props) {
           </div>
         </section>
 
-        <aside className="flex flex-col justify-end gap-4 border-l border-line px-8 py-7">
-          <p className="text-muted">
+        <aside className="flex min-h-0 flex-col gap-4 border-l border-line px-8 py-7">
+          {room.format && (
+            <Leaderboard
+              className="flex-1"
+              format={room.format}
+              matchId={final.recorded ? final.matchId : undefined}
+              mine={
+                final.recorded && mySide
+                  ? { side: mySide, rank: final.ranks?.[mySide] ?? null, team: room.teamNames[mySide], points: Math.round(final.points[mySide]) }
+                  : null
+              }
+            />
+          )}
+          <p className="text-sm text-muted">
             Leaderboard points count your score plus half of your opponent’s — beating a strong team is worth more.
           </p>
-          <p className="text-muted">Thanks for playing! This PC goes back to the start for the next players.</p>
+          <p className="text-sm text-muted">Thanks for playing! This PC goes back to the start for the next players.</p>
           <Button variant="primary" block disabled={leaving} onClick={done}>
             Done — next players <kbd>Enter</kbd>
           </Button>

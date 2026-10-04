@@ -67,6 +67,8 @@ export type CanStart = { ok: true; format: Format } | { ok: false; reason: strin
 export type RoundSummary = { round: number; scores: Record<Side, SiteScore>; winner: Side | null };
 
 export type FinalSummary = {
+  /** The id it's saved under; marks this match's rows on the leaderboard. */
+  matchId: string;
   totals: MatchTotals;
   winner: Side | null;
   /** Leaderboard points per side. */
@@ -74,7 +76,30 @@ export type FinalSummary = {
   /** False when the match ended early (e.g. a team left) — nothing goes on the leaderboard. */
   recorded: boolean;
   endedEarly: { side: Side; reason: "left" } | null;
+  /** Each team's place on its board, once the result is saved (null until then). */
+  ranks: Record<Side, number> | null;
 };
+
+// ---------- leaderboard ----------
+
+/** One team's result in one match. Every match is a one-off, so teams appear once per match played. */
+export type LeaderboardEntry = {
+  rank: number;
+  matchId: string;
+  side: Side;
+  team: string;
+  players: string[];
+  points: number;
+  total: number;
+  /** null = draw. */
+  won: boolean | null;
+  opponent: string;
+  theme: ThemeId;
+  /** ISO time. */
+  at: string;
+};
+
+export type Leaderboards = Record<Format, LeaderboardEntry[]>;
 
 /** Everything a PC needs to decide which screen to show. Same for the whole room. */
 export type RoomView = {
@@ -180,6 +205,8 @@ export interface ServerToClientEvents {
   "room:state": (room: RoomView) => void;
   "match:state": (match: MatchView) => void;
   "match:event": (events: SimEvent[]) => void;
+  /** Sent to every connected PC whenever a match is saved. */
+  "leaderboard:update": (boards: Leaderboards) => void;
 }
 
 /** Per-socket data: who this connection is. */

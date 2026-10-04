@@ -70,4 +70,13 @@ describe("game store", () => {
     store.clear();
     expect(useGameStore.getState()).toMatchObject({ playerId: null, room: null, match: null, feed: [] });
   });
+
+  it("keeps the leaderboard across players — it isn't anyone's seat", () => {
+    const store = useGameStore.getState();
+    const boards = { "1v1": [], "2v2": [] };
+    store.setBoards(boards);
+    store.seat("p1", room("ABCD"));
+    store.clear();
+    expect(useGameStore.getState().boards).toBe(boards);
+  });
 });

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { THEMES, type GameTiming, type ThemeId } from "../config/game.js";
 import { ROUNDS, matchPoints, matchTotals, other, type Scenario, type Side } from "../sim/index.js";
 import type { GameActionPayload, Phase, Slot } from "../types/contracts.js";
@@ -5,6 +6,8 @@ import { UserError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 import type { Broadcaster } from "./broadcaster.js";
 import type { MatchService, RoundEnd } from "./match.service.js";
+import type { ResultService } from "./result.service.js";
+import type { MatchRecord } from "./result.store.js";
 import { sideOf, type Room, type RoomService, type Seat } from "./room.service.js";
 
 export type SessionDeps = {
@@ -12,6 +15,8 @@ export type SessionDeps = {
   now?: () => number;
   /** Used only to break theme-vote ties. */
   random?: () => number;
+  /** Where completed matches are saved; without it nothing is recorded. */
+  results?: ResultService;
 };
 
 const MATCH_PHASES: readonly Phase[] = ["vote", "buy", "live", "roundResult"];
@@ -26,6 +31,7 @@ export class SessionService {
   private readonly scenarios: readonly Scenario[];
   private readonly now: () => number;
   private readonly random: () => number;
+  private readonly results: ResultService | undefined;
 
   constructor(
     private readonly rooms: RoomService,
@@ -37,6 +43,7 @@ export class SessionService {
     this.scenarios = deps.rounds ?? ROUNDS;
     this.now = deps.now ?? Date.now;
     this.random = deps.random ?? Math.random;
+    this.results = deps.results;
   }
 
   // ---------- seats ----------
@@ -158,6 +165,7 @@ export class SessionService {
     const room = this.rooms.get(code);
     if (!room || room.phase !== "live") return;
     room.rounds.push({ round: room.round, ...end.result });
+    room.replays.push({ seed: end.seed, log: end.log });
     logger.info("round finished", { code, round: room.round, seed: end.seed, actions: end.log.length, winner: end.result.winner });
     room.phase = "roundResult";
     this.schedule(room, this.timing.resultSec, () => {
@@ -183,6 +191,7 @@ export class SessionService {
     room.phase = "final";
     room.phaseEndsAt = null;
     room.final = {
+      matchId: randomUUID(),
       totals,
       winner,
       points: {
@@ -191,9 +200,42 @@ export class SessionService {
       },
       recorded: !forfeitedBy,
       endedEarly: forfeitedBy ? { side: forfeitedBy, reason: "left" } : null,
+      ranks: null,
     };
     logger.info("match finished", { code: room.code, winner, forfeit: forfeitedBy ?? null });
     this.publish(room);
+    if (room.final.recorded) void this.save(room);
+  }
+
+  /** Save the result, then show each team its place. A failed save never breaks the match. */
+  private async save(room: Room): Promise<void> {
+    if (!this.results || !room.final || !room.format || !room.theme) return;
+    const final = room.final;
+    const record: MatchRecord = {
+      id: final.matchId,
+      code: room.code,
+      format: room.format,
+      theme: room.theme,
+      winner: final.winner,
+      completedAt: new Date(this.now()),
+      teams: ([1, 2] as const).map((side) => ({
+        side,
+        name: this.rooms.teamName(room, side),
+        players: room.players.filter((p) => p.slot !== null && sideOf(p.slot) === side).map((p) => p.name),
+        total: Math.round(final.totals[side].total),
+        points: Math.round(final.points[side]),
+        won: final.winner === null ? null : final.winner === side,
+        crashes: final.totals[side].crashes,
+        downtimeSec: final.totals[side].downtimeSec,
+      })),
+      rounds: room.rounds.map((r, i) => ({ round: r.round, seed: room.replays[i]!.seed, winner: r.winner, scores: r.scores, log: room.replays[i]!.log })),
+    };
+    try {
+      final.ranks = await this.results.record(record);
+      if (this.rooms.get(room.code) === room) this.publish(room);
+    } catch (err) {
+      logger.error("couldn't save match", { id: record.id, error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   // ---------- housekeeping ----------

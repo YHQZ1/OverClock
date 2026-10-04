@@ -27,6 +27,7 @@ export function useGameSocket(): void {
     socket.on("room:state", store.setRoom);
     socket.on("match:state", store.setMatch);
     socket.on("match:event", store.pushEvents);
+    socket.on("leaderboard:update", store.setBoards);
     socket.connect();
 
     return () => {
@@ -35,6 +36,7 @@ export function useGameSocket(): void {
       socket.off("room:state", store.setRoom);
       socket.off("match:state", store.setMatch);
       socket.off("match:event", store.pushEvents);
+      socket.off("leaderboard:update", store.setBoards);
       socket.disconnect();
     };
   }, []);
