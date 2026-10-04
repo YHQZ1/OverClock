@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTitle } from "../hooks/useTitle";
 import { StaffSignIn } from "./StaffSignIn";
 import { useStaffFeed, type StaffFeed } from "./useStaffFeed";
 
@@ -22,6 +23,7 @@ function Gate({
   restart: () => void;
 }) {
   const feed = useStaffFeed();
+  useTitle(feed.signedIn ? title : "Staff sign-in");
   if (!feed.signedIn) return <StaffSignIn title={title} onSignedIn={restart} />;
   return <>{render(feed, restart)}</>;
 }

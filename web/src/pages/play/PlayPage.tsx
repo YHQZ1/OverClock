@@ -1,5 +1,7 @@
-import type { Side } from "@server/types/contracts.js";
+import type { RoomView, Side } from "@server/types/contracts.js";
 import { useSoundEffects } from "../../audio/useSoundEffects";
+import { useTitle } from "../../hooks/useTitle";
+import { THEME_INFO } from "../../themes/themes";
 import { createRoom, joinRoom, leaveRoom } from "../../socket/api";
 import { useGameSocket } from "../../socket/useGameSocket";
 import { useGameStore } from "../../store/game";
@@ -22,6 +24,8 @@ export function PlayPage() {
   const match = useGameStore((s) => s.match);
   const connected = useGameStore((s) => s.connected);
   const restoring = useGameStore((s) => s.restoring);
+
+  useTitle(restoring || !room || !playerId ? null : tabTitle(room));
 
   const slot = room?.players.find((p) => p.id === playerId)?.slot ?? null;
   const mySide: Side | null = slot === null ? null : slot <= 2 ? 1 : 2;
@@ -70,4 +74,24 @@ export function PlayPage() {
       )}
     </>
   );
+}
+
+/** What the browser tab says for each screen. */
+function tabTitle(room: RoomView): string {
+  const site = room.theme ? THEME_INFO[room.theme].name : null;
+  switch (room.phase) {
+    case "room":
+      return `Room ${room.code}`;
+    case "vote":
+      return "Pick the site";
+    case "briefing":
+      return site ? `How to play ${site}` : "How to play";
+    case "buy":
+    case "live":
+      return [`Round ${room.round}`, site].filter(Boolean).join(" · ");
+    case "roundResult":
+      return `Round ${room.round} result`;
+    case "final":
+      return "Match over";
+  }
 }
