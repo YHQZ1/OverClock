@@ -1,5 +1,6 @@
 packages:
   - "web"
   - "server"
+  - "e2e"
 allowBuilds:
   esbuild: true
