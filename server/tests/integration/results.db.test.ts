@@ -72,6 +72,20 @@ describe.skipIf(!URL)("PgResultStore (Postgres)", () => {
     expect(await store.ranks(fine.id)).toEqual({ 1: 1, 2: 3 });
   });
 
+  it("hands the awards every match with its rounds, hidden teams left out", async () => {
+    const m = record(5000, 3000);
+    m.rounds = [
+      { round: 1, seed: 1, winner: 1, scores: { 1: { total: 1 }, 2: { total: 2 } } as never, log: [] },
+      { round: 2, seed: 2, winner: 1, scores: { 1: { total: 3 }, 2: { total: 4 } } as never, log: [] },
+    ];
+    await store.save(m);
+    await store.hide(m.id, 2);
+    const [got] = await store.awardMatches();
+    expect(got).toMatchObject({ matchId: m.id, format: "1v1", winner: 1 });
+    expect(got!.teams.map((t) => t.side)).toEqual([1]);
+    expect(got!.rounds.map((r) => r.scores[1].total)).toEqual([1, 3]);
+  });
+
   it("saves all of a match or none of it", async () => {
     const broken = record(5000, 3000);
     broken.rounds[0]!.seed = 2 ** 40; // too big for the column: the last insert fails

@@ -13,6 +13,8 @@ import type {
   ClientToServerEvents,
   JoinResult,
   Leaderboards,
+  ScreenMatch,
+  ScreenSnapshot,
   MatchView,
   RoomView,
   ServerToClientEvents,
@@ -64,6 +66,7 @@ type AckData = {
   "room:ready": null;
   "room:teamName": null;
   "vote:theme": null;
+  "screen:watch": ScreenSnapshot;
 };
 
 function call<E extends keyof AckData>(c: Client, event: E, payload: unknown): Promise<AckResponse<AckData[E]>> {
@@ -75,7 +78,7 @@ function ok<T>(res: AckResponse<T>): T {
   return res.data;
 }
 
-function next<E extends "room:state" | "match:state" | "match:event" | "leaderboard:update">(
+function next<E extends "room:state" | "match:state" | "match:event" | "leaderboard:update" | "screen:matches" | "screen:awards">(
   c: Client,
   event: E,
   predicate: (x: Parameters<ServerToClientEvents[E]>[0]) => boolean,
@@ -255,6 +258,36 @@ describe("the duel", () => {
     expect(f.recorded).toBe(false);
     expect(f.winner).toBe(1);
     expect(f.endedEarly).toEqual({ side: 2, reason: "left" });
+  });
+});
+
+describe("big screen", () => {
+  it("gets boards and awards on watch, then matches in progress with both sites but no coins", async () => {
+    await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 5, rushes: [] })) });
+    const screen = await client();
+    const snap = ok(await call(screen, "screen:watch", {}));
+    expect(snap).toEqual({ boards: { "1v1": [], "2v2": [] }, awards: { comeback: null, destroyer: null, unbreakable: null }, matches: [] });
+
+    const { cs, code } = await room(2);
+    const live = next(screen, "screen:matches", (ms) => (ms as ScreenMatch[]).some((m) => m.code === code && m.phase === "live" && m.sites !== null)) as Promise<
+      ScreenMatch[]
+    >;
+    await readyAll(cs);
+    const m = (await live).find((x) => x.code === code)!;
+    expect(m).toMatchObject({ format: "1v1", round: 1, totalRounds: 3, teams: { 1: { name: "P1", players: ["P1"] }, 2: { name: "P2" } } });
+    expect(m.secondsLeft).toBeGreaterThan(0);
+    expect(m.sites![1].health).toBeGreaterThan(0);
+    expect(JSON.stringify(m)).not.toContain("coins");
+  });
+
+  it("gets the new awards when a match is saved", async () => {
+    await startServer({ ...FAST, voteSec: 0 });
+    const screen = await client();
+    ok(await call(screen, "screen:watch", {}));
+    const awards = next(screen, "screen:awards", () => true);
+    const { cs } = await room(2);
+    await readyAll(cs);
+    expect(await awards).toHaveProperty("unbreakable");
   });
 });
 

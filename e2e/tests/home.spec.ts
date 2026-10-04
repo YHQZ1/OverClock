@@ -9,6 +9,14 @@ test.describe("home", () => {
     expect(errors).toEqual([]);
   });
 
+  test("links to the leaderboard", async ({ browser, errors }) => {
+    const page = await player(browser, errors);
+    await page.getByRole("link", { name: /Leaderboard/ }).click();
+    await expect(page).toHaveURL(/\/screen$/);
+    await expect(page.getByRole("heading", { name: "Leaderboard · 2v2" })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
   test("explains form mistakes in plain words", async ({ browser, errors }) => {
     const page = await player(browser, errors);
     await page.getByRole("heading", { name: "Create a room" }).click();

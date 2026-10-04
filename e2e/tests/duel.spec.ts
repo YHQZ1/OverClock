@@ -25,6 +25,22 @@ test.describe("the duel", () => {
     expect(errors).toEqual([]);
   });
 
+  test("the big screen follows the match, then puts both teams on the leaderboard", async ({ browser, errors }) => {
+    const screen = await (await browser.newContext({ viewport: { width: 1920, height: 1080 } })).newPage();
+    screen.on("pageerror", (err) => errors.push(`screen pageerror: ${err.message}`));
+    await screen.goto("/screen");
+    await expect(screen.getByRole("heading", { name: "Leaderboard · 1v1" })).toBeVisible();
+
+    const { a } = await duel(browser, errors);
+    await waitForLive(a);
+    await expect(screen.getByText("Miniclip").first()).toBeVisible(); // the featured match, in its theme
+    await expect(screen.getByText("Priya", { exact: true }).first()).toBeVisible();
+
+    await expect(a.getByText("Match over")).toBeVisible({ timeout: 120_000 });
+    await expect(screen.getByText("vs Rahul").first()).toBeVisible({ timeout: 10_000 });
+    expect(errors).toEqual([]);
+  });
+
   test("attacks are announced, then land: jam freezes their shop, blindfold darkens their map", async ({ browser, errors }) => {
     const { a, b } = await duel(browser, errors);
     await waitForLive(a);

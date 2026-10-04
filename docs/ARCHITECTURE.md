@@ -148,7 +148,7 @@ Client → server
 | `game:sell`     | `{ item }`                                | Partial refund                         |
 | `game:use`      | `{ item }`                                | Utilities                              |
 | `game:attack`   | `{ attack }`                              | Cooldown + warning                     |
-| `screen:watch`  | `{}`                                      | Big screen                             |
+| `screen:watch`  | `{}`                                      | Big screen: joins the `screen` channel; ack = boards + awards + live matches |
 
 Server → client
 
@@ -157,7 +157,9 @@ Server → client
 | `room:state`         | phase, code, slots, players, ready flags, team names, votes, timers, round results — on every change |
 | `match:state`        | player-safe duel snapshot for this player's side, 10/sec in BUY/LIVE |
 | `match:event`        | engine events: purchases (with who), attacks incoming/landed, crashes, recoveries… |
-| `leaderboard:update` | top entries per format (1v1 / 2v2)                             |
+| `leaderboard:update` | top 10 per format (1v1 / 2v2) — every PC, after each saved match |
+| `screen:matches`     | big screens: every match in progress (`ScreenMatch`: both sites, no coins), 4×/sec |
+| `screen:awards`      | big screens: comeback / most destructive / unbreakable, after each saved match |
 
 ## HTTP API
 

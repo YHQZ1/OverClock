@@ -13,11 +13,11 @@ import {
   type Scenario,
   type Side,
 } from "../sim/index.js";
-import type { MatchView } from "../types/contracts.js";
+import type { MatchView, SiteView } from "../types/contracts.js";
 import { matchSeed } from "../utils/codes.js";
 import type { Broadcaster } from "./broadcaster.js";
 import type { Metrics } from "./metrics.js";
-import { toMatchView } from "./match.view.js";
+import { siteView, toMatchView } from "./match.view.js";
 
 /** Presses beyond this per tick are dropped — nobody clicks that fast. */
 const MAX_QUEUED_ACTIONS = 16;
@@ -80,6 +80,19 @@ export class MatchService {
   view(code: string, side: Side): MatchView | null {
     const live = this.rounds.get(code);
     return live ? toMatchView(live.state, side, live.setup, { round: live.round, phase: live.phase }) : null;
+  }
+
+  /** Both sites for a big screen — no coins, no blindfold masking. */
+  spectate(code: string): { round: number; phase: "buy" | "live"; timeLeftSec: number; sites: Record<Side, SiteView> } | null {
+    const live = this.rounds.get(code);
+    if (!live) return null;
+    const { state, setup } = live;
+    return {
+      round: live.round,
+      phase: live.phase,
+      timeLeftSec: Math.max(0, (state.durationTicks - state.tick) / setup.config.tickRate),
+      sites: { 1: siteView(state.sites[1], setup), 2: siteView(state.sites[2], setup) },
+    };
   }
 
   /** Advance every round by one tick (buy phase: purchases only) and broadcast. */

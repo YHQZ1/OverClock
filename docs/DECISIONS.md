@@ -53,7 +53,9 @@ choices are kept at the bottom so we remember why we moved on.
 | **Theme colour is decoration only**; green / yellow / red stay the health signals, always with words; BookMyShow's crowd is white | FanCode orange and BookMyShow red sit close to the warning and broken colours. |
 | **Original music per theme** (ticker, race, chip, trailer), synthesised like the rest; menus keep the arcade tune | Each world feels different; never copy a real tune. |
 | **ChronoNexia (the fest theme) later, as framing**: "the timeline has split — only one survives", both teams in the same voted world | Fits the vote (one world per match); added incrementally. |
-| **Admin page deferred** | Core flow first. |
+| **Spectating lives on the big screen** — a featured live match (both sites, no coins, no blindfold masking), rotating every 20s — not a separate spectator page | The projector is the advert; passers-by stop for crowds and crashes, not a table. Reuses the existing site views. |
+| **Awards**: comeback of the day (biggest deficit after any round, then won), most destructive (most attacks landed in a match), unbreakable (best total with no crash); hidden teams excluded | Simple, explainable, computed from saved matches. |
+| **Admin: a tiny passcode page** (hide team, end room, reset boards, live rooms) + a team-name word filter | Rude names on the projector are the real risk; everything else is a convenience. |
 
 ## Technical
 

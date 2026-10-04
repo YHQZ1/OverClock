@@ -202,8 +202,9 @@ they faced.
 
 - **Separate boards for 1v1 and 2v2.**
 - Updates **live** on every PC and the big screen.
-- **Fun awards** on the big screen (no fairness needed): biggest comeback,
-  most destructive attack, longest uptime, most coins earned.
+- **Fun awards** on the big screen (no fairness needed): **Comeback of the
+  day** (won from furthest behind after any round), **Most destructive** (most
+  attacks landed in one match), **Unbreakable** (best total without going down).
 
 ## Screens
 
@@ -211,12 +212,12 @@ they faced.
 | ------------- | ------------------------------------------------------------------------------ |
 | Home          | Pitch, live map preview, Create a room / Join a room                           |
 | Room          | Code, team names, 4 slots, ready toggles, how to play                          |
-| Theme vote    | 3–4 theme cards, live vote counts, 10s timer                                   |
+| Theme vote    | 4 theme cards (logo, what the site is, the rush moment), live vote counts, 10s |
 | Buy phase     | Shop, both sites (paused), round number, timer                                 |
 | Live          | HUD (health, coins, score, time) · alert bar · our site map · their site · shop · incoming warnings · "who bought what" feed |
 | Round result  | Round winner, served / turned away, best attack, biggest save                  |
 | Final         | Totals, winner, match points, leaderboard, "what you actually built" cards     |
-| Big screen `/screen` | Leaderboards (1v1 / 2v2), matches in progress, fun awards               |
+| Big screen `/screen` | A featured live match (both sites, its theme, rotating), other matches, 1v1 / 2v2 top 10, fun awards |
 
 ### Live screen (sketch)
 

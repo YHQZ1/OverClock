@@ -38,6 +38,8 @@ function setup(timing: Partial<GameTiming> = {}, random = () => 0) {
     match: (_c, _s, v) => frames.push(v),
     matchEvents: () => {},
     leaderboard: (b) => boards.push(b),
+    awards: () => {},
+    screenMatches: () => {},
   };
   const store = new MemoryResultStore();
   const rooms = new RoomService(clock);

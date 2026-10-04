@@ -3,6 +3,7 @@ import type { Broadcaster } from "../services/broadcaster.js";
 import type { Services } from "../services/index.js";
 import type { ClientToServerEvents, ServerToClientEvents, SocketData } from "../types/contracts.js";
 import { registerPlayerHandlers, roomChannel, sideChannel } from "./player.handlers.js";
+import { SCREEN_CHANNEL, registerScreenHandlers } from "./screen.handlers.js";
 
 export type IoServer = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
@@ -13,9 +14,14 @@ export function socketBroadcaster(io: IoServer): Broadcaster {
     match: (code, side, view) => io.to(sideChannel(code, side)).emit("match:state", view),
     matchEvents: (code, events) => io.to(roomChannel(code)).emit("match:event", events),
     leaderboard: (boards) => io.emit("leaderboard:update", boards),
+    awards: (awards) => io.to(SCREEN_CHANNEL).emit("screen:awards", awards),
+    screenMatches: (matches) => io.to(SCREEN_CHANNEL).emit("screen:matches", matches),
   };
 }
 
 export function attachSockets(io: IoServer, services: Services): void {
-  io.on("connection", (socket) => registerPlayerHandlers(socket, services));
+  io.on("connection", (socket) => {
+    registerPlayerHandlers(socket, services);
+    registerScreenHandlers(socket, services);
+  });
 }

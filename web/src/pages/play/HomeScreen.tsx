@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { Link } from "react-router";
 import { AppMap } from "../../components/AppMap";
 import { TopBar } from "../../components/TopBar";
 import { Button, Field, Frame, SPLIT, cx } from "../../components/ui";
@@ -23,7 +24,16 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
 
   return (
     <Frame>
-      <TopBar right="1v1 or 2v2 · one PC each" />
+      <TopBar
+        right={
+          <span className="flex items-center gap-6">
+            1v1 or 2v2 · one PC each
+            <Link to="/screen" className="font-medium text-ink transition-colors hover:text-accent">
+              Leaderboard →
+            </Link>
+          </span>
+        }
+      />
 
       <main className={SPLIT}>
         <section className="flex min-w-0 flex-col justify-between">

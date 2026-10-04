@@ -215,7 +215,9 @@ the player screens (home, lobby, live game with an animated map, results).
 between four themes (Nasdaq, FanCode, Miniclip, BookMyShow — each with its own
 colour, words and music), the shop (defences, boosts, attacks), three rounds
 with buy phases, round results and the final — saved to Postgres, with a live
-1v1 / 2v2 leaderboard. **Next:** the big screen.
+1v1 / 2v2 leaderboard and the projector **big screen** (`/screen`): the match in
+progress in its theme, both boards and fun awards. **Next:** a small admin page,
+then deploying and testing from a lab PC.
 
 Tip: `FAST_ROUNDS=1 pnpm dev` runs 20-second rounds for quick testing.
 

@@ -14,9 +14,10 @@ type Acked =
   | "room:slot"
   | "room:ready"
   | "room:teamName"
-  | "vote:theme";
+  | "vote:theme"
+  | "screen:watch";
 
-async function request<T>(event: Acked, payload: object): Promise<AckResponse<T>> {
+export async function request<T>(event: Acked, payload: object): Promise<AckResponse<T>> {
   try {
     const timed = socket.timeout(TIMEOUT_MS);
     const emit = timed.emitWithAck.bind(timed) as (e: string, p: object) => Promise<AckResponse<T>>;

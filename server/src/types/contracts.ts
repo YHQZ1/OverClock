@@ -101,6 +101,36 @@ export type LeaderboardEntry = {
 
 export type Leaderboards = Record<Format, LeaderboardEntry[]>;
 
+// ---------- big screen ----------
+
+/** A fun award on the big screen, from saved matches. */
+export type Award = { team: string; format: Format; detail: string; matchId: string };
+export type Awards = {
+  /** Won from the furthest behind. */
+  comeback: Award | null;
+  /** Most attacks landed in one match. */
+  destroyer: Award | null;
+  /** Highest score without ever going down. */
+  unbreakable: Award | null;
+};
+
+/** A match in progress as the big screen sees it — both sites, never anyone's coins. */
+export type ScreenMatch = {
+  code: string;
+  format: Format;
+  theme: ThemeId | null;
+  phase: "vote" | "buy" | "live" | "roundResult";
+  round: number;
+  totalRounds: number;
+  /** Clock: the live round's time left, else the phase timer. */
+  secondsLeft: number | null;
+  teams: Record<Side, { name: string; players: string[]; /** Completed rounds plus the round in play. */ total: number; roundsWon: number }>;
+  /** Both sites while a round is running (buy or live); null between rounds. */
+  sites: Record<Side, SiteView> | null;
+};
+
+export type ScreenSnapshot = { boards: Leaderboards; awards: Awards; matches: ScreenMatch[] };
+
 /** Everything a PC needs to decide which screen to show. Same for the whole room. */
 export type RoomView = {
   code: string;
@@ -199,6 +229,8 @@ export interface ClientToServerEvents {
   "room:teamName": (payload: TeamNamePayload, ack: Ack<null>) => void;
   "vote:theme": (payload: VotePayload, ack: Ack<null>) => void;
   "game:action": (payload: GameActionPayload) => void;
+  /** The big screen: subscribe to boards, awards and matches in progress. */
+  "screen:watch": (payload: Record<string, never>, ack: Ack<ScreenSnapshot>) => void;
 }
 
 export interface ServerToClientEvents {
@@ -207,6 +239,9 @@ export interface ServerToClientEvents {
   "match:event": (events: SimEvent[]) => void;
   /** Sent to every connected PC whenever a match is saved. */
   "leaderboard:update": (boards: Leaderboards) => void;
+  /** Big screens only. */
+  "screen:matches": (matches: ScreenMatch[]) => void;
+  "screen:awards": (awards: Awards) => void;
 }
 
 /** Per-socket data: who this connection is. */

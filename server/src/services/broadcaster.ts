@@ -1,5 +1,5 @@
 import type { Side, SimEvent } from "../sim/index.js";
-import type { Leaderboards, MatchView, RoomView } from "../types/contracts.js";
+import type { Awards, Leaderboards, MatchView, RoomView, ScreenMatch } from "../types/contracts.js";
 
 /**
  * How services push updates to a room's PCs. Implemented by the socket
@@ -12,4 +12,7 @@ export interface Broadcaster {
   matchEvents(code: string, events: SimEvent[]): void;
   /** To every connected PC. */
   leaderboard(boards: Leaderboards): void;
+  /** To big screens only. */
+  awards(awards: Awards): void;
+  screenMatches(matches: ScreenMatch[]): void;
 }

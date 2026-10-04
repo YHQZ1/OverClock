@@ -19,7 +19,8 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
 const statusOf = (pass: number): PartStatus => (pass >= 0.95 ? "ok" : pass >= 0.7 ? "strained" : "failing");
 
-function siteView(site: SiteState, { scenario, config }: MatchSetup): SiteView {
+/** One site as anyone may see it (the opponent, or a big screen): no coins, never masked. */
+export function siteView(site: SiteState, { scenario, config }: MatchSetup): SiteView {
   const tick = config.tickRate;
   const down = site.crashTicksLeft > 0;
   const online = site.servers.filter((u) => u.bootTicksLeft === 0 && u.meltedTicksLeft === 0).length;

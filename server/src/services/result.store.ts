@@ -3,8 +3,9 @@ import { alias } from "drizzle-orm/pg-core";
 import type { ThemeId } from "../config/game.js";
 import type { Db } from "../db/client.js";
 import { matchRounds, matches, matchTeams } from "../db/schema.js";
-import type { ActionLog, RoundResult, Side } from "../sim/index.js";
+import type { ActionLog, RoundResult, Side, SiteScore } from "../sim/index.js";
 import type { Format, LeaderboardEntry, Leaderboards } from "../types/contracts.js";
+import type { AwardMatch } from "./awards.js";
 
 /** A completed match, ready to save. */
 export type MatchRecord = {
@@ -34,6 +35,8 @@ export interface ResultStore {
   boards(limit: number): Promise<Leaderboards>;
   /** Each team's place on its board (ties share a place). */
   ranks(matchId: string): Promise<Record<Side, number> | null>;
+  /** Every saved match, hidden teams left out — for the big screen's awards. */
+  awardMatches(): Promise<AwardMatch[]>;
   /** Take one team's entry off every board (admin: e.g. a rude team name). */
   hide(matchId: string, side: Side): Promise<void>;
   close(): Promise<void>;
@@ -105,6 +108,16 @@ export class MemoryResultStore implements ResultStore {
 
   async hide(matchId: string, side: Side): Promise<void> {
     this.hidden.add(`${matchId}:${side}`);
+  }
+
+  async awardMatches(): Promise<AwardMatch[]> {
+    return this.records.map((r) => ({
+      matchId: r.id,
+      format: r.format,
+      winner: r.winner,
+      teams: r.teams.filter((t) => !this.hidden.has(`${r.id}:${t.side}`)),
+      rounds: r.rounds,
+    }));
   }
 
   async close(): Promise<void> {}
@@ -198,6 +211,24 @@ export class PgResultStore implements ResultStore {
       .update(matchTeams)
       .set({ hidden: true })
       .where(and(eq(matchTeams.matchId, matchId), eq(matchTeams.side, side)));
+  }
+
+  async awardMatches(): Promise<AwardMatch[]> {
+    const [ms, teams, rounds] = await Promise.all([
+      this.db.select({ id: matches.id, format: matches.format, winner: matches.winnerSide }).from(matches),
+      this.db
+        .select({ matchId: matchTeams.matchId, side: matchTeams.side, name: matchTeams.name, total: matchTeams.totalScore, crashes: matchTeams.crashes })
+        .from(matchTeams)
+        .where(eq(matchTeams.hidden, false)),
+      this.db.select({ matchId: matchRounds.matchId, roundNo: matchRounds.roundNo, scores: matchRounds.scores }).from(matchRounds),
+    ]);
+    const byMatch = new Map<string, AwardMatch>();
+    for (const m of ms) byMatch.set(m.id, { matchId: m.id, format: m.format, winner: m.winner as Side | null, teams: [], rounds: [] });
+    for (const t of teams) byMatch.get(t.matchId)?.teams.push({ side: t.side as Side, name: t.name, total: t.total, crashes: t.crashes });
+    for (const r of rounds.sort((a, b) => a.roundNo - b.roundNo)) {
+      byMatch.get(r.matchId)?.rounds.push({ scores: r.scores as Record<Side, SiteScore> });
+    }
+    return [...byMatch.values()];
   }
 
   async close(): Promise<void> {
