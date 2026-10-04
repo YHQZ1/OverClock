@@ -1,24 +1,33 @@
 import type { Awards, Leaderboards, ScreenMatch, ScreenSnapshot } from "@server/types/contracts.js";
 import { useEffect, useState } from "react";
-import { request } from "../../socket/api";
-import { socket } from "../../socket/socket";
+import { request } from "../socket/api";
+import { socket } from "../socket/socket";
+import { clearToken, getToken } from "./auth";
 
-export type ScreenFeed = {
+export type StaffFeed = {
   connected: boolean;
+  /** False once the server rejects the sign-in (expired, or the server restarted). */
+  signedIn: boolean;
   boards: Leaderboards | null;
   awards: Awards | null;
+  /** Every match in progress, a few times a second. */
   matches: ScreenMatch[];
 };
 
-/** Subscribes this tab as a big screen; re-subscribes after every reconnect. */
-export function useScreenFeed(): ScreenFeed {
-  const [feed, setFeed] = useState<ScreenFeed>({ connected: false, boards: null, awards: null, matches: [] });
+/** Subscribes this tab as staff; re-subscribes after every reconnect. */
+export function useStaffFeed(): StaffFeed {
+  const [feed, setFeed] = useState<StaffFeed>({ connected: false, signedIn: true, boards: null, awards: null, matches: [] });
 
   useEffect(() => {
     const watch = async () => {
       setFeed((f) => ({ ...f, connected: true }));
-      const res = await request<ScreenSnapshot>("screen:watch", {});
-      if (res.ok) setFeed({ connected: true, ...res.data });
+      const token = getToken();
+      const res = token ? await request<ScreenSnapshot>("screen:watch", { token }) : null;
+      if (res?.ok) setFeed({ connected: true, signedIn: true, ...res.data });
+      else if (!res || res.error === "Please sign in again.") {
+        clearToken();
+        setFeed((f) => ({ ...f, signedIn: false }));
+      }
     };
     const onDisconnect = () => setFeed((f) => ({ ...f, connected: false }));
     const onBoards = (boards: Leaderboards) => setFeed((f) => ({ ...f, boards }));

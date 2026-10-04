@@ -9,7 +9,11 @@ const SHOWN_PHASES = ["vote", "briefing", "buy", "live", "roundResult"] as const
 type ShownPhase = (typeof SHOWN_PHASES)[number];
 const shown = (phase: string): phase is ShownPhase => (SHOWN_PHASES as readonly string[]).includes(phase);
 
-/** The big screen: matches in progress (pushed a few times a second), boards and awards. */
+/**
+ * Staff pages (/live, /leaderboard, /admin): every match in progress, pushed
+ * a few times a second, plus boards and awards on sign-in. Which match the
+ * projector shows is decided on /live itself.
+ */
 export class ScreenService {
   private timer: NodeJS.Timeout | null = null;
 

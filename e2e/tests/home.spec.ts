@@ -9,11 +9,15 @@ test.describe("home", () => {
     expect(errors).toEqual([]);
   });
 
-  test("links to the leaderboard", async ({ browser, errors }) => {
+  test("the quiet Staff link asks for the passcode — no leaderboard for players", async ({ browser, errors }) => {
     const page = await player(browser, errors);
-    await page.getByRole("link", { name: /Leaderboard/ }).click();
-    await expect(page).toHaveURL(/\/screen$/);
-    await expect(page.getByRole("heading", { name: "Leaderboard · 2v2" })).toBeVisible();
+    await page.getByRole("link", { name: "Staff" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByLabel("Passcode")).toBeVisible();
+    for (const staffPage of ["/live", "/leaderboard"]) {
+      await page.goto(staffPage);
+      await expect(page.getByLabel("Passcode")).toBeVisible(); // the projector pages are staff-only too
+    }
     expect(errors).toEqual([]);
   });
 

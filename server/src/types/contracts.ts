@@ -75,7 +75,8 @@ export type FinalSummary = {
   points: Record<Side, number>;
   /** False when the match ended early (e.g. a team left) — nothing goes on the leaderboard. */
   recorded: boolean;
-  endedEarly: { side: Side; reason: "left" } | null;
+  /** side = the team that left; null when the organisers ended it. */
+  endedEarly: { side: Side; reason: "left" } | { side: null; reason: "admin" } | null;
   /** Each team's place on its board, once the result is saved (null until then). */
   ranks: Record<Side, number> | null;
 };
@@ -130,6 +131,21 @@ export type ScreenMatch = {
 };
 
 export type ScreenSnapshot = { boards: Leaderboards; awards: Awards; matches: ScreenMatch[] };
+
+/** A leaderboard row as the admin sees it: hidden ones included. */
+export type AdminEntry = Omit<LeaderboardEntry, "rank"> & { rank: number | null; hidden: boolean };
+export type AdminBoards = Record<Format, AdminEntry[]>;
+
+/** A live room as the admin sees it. */
+export type AdminRoom = {
+  code: string;
+  phase: Phase;
+  format: Format | null;
+  theme: ThemeId | null;
+  round: number;
+  players: { name: string; slot: Slot | null; connected: boolean }[];
+  teamNames: Record<Side, string>;
+};
 
 /** Everything a PC needs to decide which screen to show. Same for the whole room. */
 export type RoomView = {
@@ -232,20 +248,28 @@ export interface ClientToServerEvents {
   "vote:theme": (payload: VotePayload, ack: Ack<null>) => void;
   "briefing:continue": (payload: Record<string, never>, ack: Ack<null>) => void;
   "game:action": (payload: GameActionPayload) => void;
-  /** The big screen: subscribe to boards, awards and matches in progress. */
-  "screen:watch": (payload: Record<string, never>, ack: Ack<ScreenSnapshot>) => void;
+  /** Big screen and admin page: sign this connection in with a staff token, then get everything. */
+  "screen:watch": (payload: { token: string }, ack: Ack<ScreenSnapshot>) => void;
+  "admin:rooms": (payload: Record<string, never>, ack: Ack<AdminRoom[]>) => void;
+  /** Show the next / previous match, or a given one. */
+  "admin:endRoom": (payload: { code: string }, ack: Ack<null>) => void;
+  /** Every saved entry, hidden ones included (newest scores first). */
+  "admin:boards": (payload: Record<string, never>, ack: Ack<AdminBoards>) => void;
+  "admin:hide": (payload: { matchId: string; side: Side; hidden: boolean }, ack: Ack<null>) => void;
+  /** Wipe every saved result. `confirm` must be "RESET". */
+  "admin:resetBoards": (payload: { confirm: string }, ack: Ack<null>) => void;
 }
 
 export interface ServerToClientEvents {
   "room:state": (room: RoomView) => void;
   "match:state": (match: MatchView) => void;
   "match:event": (events: SimEvent[]) => void;
-  /** Sent to every connected PC whenever a match is saved. */
+  /** Big screens and admin pages, whenever a match is saved. */
   "leaderboard:update": (boards: Leaderboards) => void;
-  /** Big screens only. */
+  /** Staff pages only, a few times a second: every match in progress. */
   "screen:matches": (matches: ScreenMatch[]) => void;
   "screen:awards": (awards: Awards) => void;
 }
 
 /** Per-socket data: who this connection is. */
-export type SocketData = { code: string | null; playerId: string | null; side: Side | null };
+export type SocketData = { code: string | null; playerId: string | null; side: Side | null; /** Signed in as staff. */ admin: boolean };

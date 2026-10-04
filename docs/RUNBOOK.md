@@ -8,16 +8,22 @@ What to do on event day. Fill in the blanks during the rehearsal.
 - [ ] Exactly **one** instance; auto-deploy **off**
 - [ ] Database reachable; results export tested
 - [ ] Laptop fallback tested from a lab PC (see below)
-- [ ] Projector browser tested full screen on `/screen`
+- [ ] Projector browser tested full screen on `/live` and `/leaderboard` (signed in with the staff passcode)
+- [ ] `ADMIN_PASSCODE` set on Render (8+ characters, shared with organisers only)
+- [ ] After the rehearsal: `/admin` → **Reset the leaderboard**
 - [ ] Lab PCs: browser opens `/play`; fullscreen works; keyboard shortcuts work
 
 ## Setup at the venue
 
-1. Open `/screen` on the projector machine, full screen.
-2. On every lab PC: open `/play`, full screen, so players can just sit down.
-3. Seat PCs in **pairs** (1v1) and **blocks of four** (2v2) — teams should
+1. On the projector machine: open `/admin`, sign in with the staff passcode,
+   then **Open live matches** and **Open leaderboard** — two windows, each
+   full screen (F11). Alt+Tab between them (leaderboard at prize time).
+2. `/admin` itself (end a room, hide a team) can stay on the projector
+   machine in a third window, or on an organiser's laptop or phone.
+3. On every lab PC: open `/play`, full screen, so players can just sit down.
+4. Seat PCs in **pairs** (1v1) and **blocks of four** (2v2) — teams should
    be next to each other, opponents within shouting distance.
-4. Check one PC can create a room and another can join it (firewall check).
+5. Check one PC can create a room and another can join it (firewall check).
 
 ## Running a match
 
@@ -30,7 +36,7 @@ Players run it themselves:
    4 players = 2v2).
 4. Everyone **votes for a theme** (10 seconds).
 5. Three rounds: short buy phase, then live. Shop is open the whole time.
-6. Final screen: winner and scores; the leaderboard updates on its own.
+6. Final screen: winner, scores and their place; the big screen updates on its own.
 7. Players click **Done — next players**; the PC is ready for the next group.
 
 Organizer's job: point groups to free PCs, explain the one-line pitch
@@ -50,7 +56,10 @@ of them wait for a fourth to make a 2v2.)
 | --- | --- |
 | A player can't connect | Refresh; re-enter the code. Check the college firewall. |
 | A room won't start | Check everyone pressed Ready and the sides are 1v1 or 2v2. |
-| One match misbehaves | Have them make a new room and start again (until `/admin` exists). |
+| One match misbehaves | `/admin` → Rooms → **End** (not saved); they make a new room. |
+| A rude team name on the projector | `/admin` → Leaderboard → **Hide** (Unhide if it was a mistake). |
+| Everyone's crowding round one match | On `/live`: click it in the sidebar and press **P** to pin (stays until it ends). |
+| Prize time | Alt+Tab to the `/leaderboard` window. |
 | Server down / everything frozen | Check the Render dashboard and logs. Live matches are lost; saved results are safe. |
 | Internet down | Switch to the laptop fallback. |
 | Leaderboard looks wrong | Export results from the database; fix after the event. |
@@ -62,5 +71,5 @@ laptop the lab PCs can reach, then open `http://<laptop-ip>:3000/play` on each P
 
 ## After the event
 
-- [ ] Export all results (JSON/CSV) — from the database until `/admin` exists
+- [ ] Export all results (JSON/CSV) from the database
 - [ ] Downgrade the Render plan

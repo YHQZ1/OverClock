@@ -10,7 +10,7 @@ export interface Broadcaster {
   /** Each side gets its own view (the opponent's coins stay hidden). */
   match(code: string, side: Side, view: MatchView): void;
   matchEvents(code: string, events: SimEvent[]): void;
-  /** To every connected PC. */
+  /** To big screens and admin pages (players only see their own place). */
   leaderboard(boards: Leaderboards): void;
   /** To big screens only. */
   awards(awards: Awards): void;

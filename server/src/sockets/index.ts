@@ -13,7 +13,7 @@ export function socketBroadcaster(io: IoServer): Broadcaster {
     room: (view) => io.to(roomChannel(view.code)).emit("room:state", view),
     match: (code, side, view) => io.to(sideChannel(code, side)).emit("match:state", view),
     matchEvents: (code, events) => io.to(roomChannel(code)).emit("match:event", events),
-    leaderboard: (boards) => io.emit("leaderboard:update", boards),
+    leaderboard: (boards) => io.to(SCREEN_CHANNEL).emit("leaderboard:update", boards),
     awards: (awards) => io.to(SCREEN_CHANNEL).emit("screen:awards", awards),
     screenMatches: (matches) => io.to(SCREEN_CHANNEL).emit("screen:matches", matches),
   };

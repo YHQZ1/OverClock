@@ -25,19 +25,43 @@ test.describe("the duel", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the big screen follows the match, then puts both teams on the leaderboard", async ({ browser, errors }) => {
-    const screen = await (await browser.newContext({ viewport: { width: 1920, height: 1080 } })).newPage();
-    screen.on("pageerror", (err) => errors.push(`screen pageerror: ${err.message}`));
-    await screen.goto("/screen");
-    await expect(screen.getByRole("heading", { name: "Leaderboard · 1v1" })).toBeVisible();
+  test("/live follows the match, /leaderboard gets both teams after it; players see only their place", async ({ browser, errors }) => {
+    // One projector machine: sign in once, both staff pages share it.
+    const projector = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const live = await projector.newPage();
+    live.on("pageerror", (err) => errors.push(`live pageerror: ${err.message}`));
+    await live.goto("/live");
+    await live.getByLabel("Passcode").fill("admin"); // the test server's default staff passcode
+    await live.keyboard.press("Enter");
+    await expect(live.getByRole("heading", { name: "Matches" })).toBeVisible();
+    const board = await projector.newPage();
+    await board.goto("/leaderboard");
+    await expect(board.getByRole("heading", { name: "1v1" })).toBeVisible(); // already signed in
 
-    const { a } = await duel(browser, errors);
+    const { a, code } = await duel(browser, errors);
     await waitForLive(a);
-    await expect(screen.getByText("Miniclip").first()).toBeVisible(); // the featured match, in its theme
-    await expect(screen.getByText("Priya", { exact: true }).first()).toBeVisible();
+    await expect(live.getByText(`1v1 · room ${code}`)).toBeVisible(); // featured, in its theme
+    await expect(live.getByRole("button", { name: /Priya\s+vs\s+Rahul/ })).toBeVisible(); // in the sidebar
 
     await expect(a.getByText("Match over")).toBeVisible({ timeout: 120_000 });
-    await expect(screen.getByText("vs Rahul").first()).toBeVisible({ timeout: 10_000 });
+    await expect(board.getByText("vs Rahul").first()).toBeVisible({ timeout: 10_000 });
+    await expect(a.getByText(/Your place on the 1v1 leaderboard/)).toBeVisible();
+    await expect(a.getByText(/^#\d+$/).first()).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("an organiser ends a stuck room from /admin, and the players are told", async ({ browser, errors }) => {
+    const { a, code } = await duel(browser, errors);
+    const admin = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+    admin.on("pageerror", (err) => errors.push(`admin pageerror: ${err.message}`));
+    await admin.goto("/admin");
+    await admin.getByLabel("Passcode").fill("admin");
+    await admin.keyboard.press("Enter");
+    const row = admin.getByRole("listitem").filter({ hasText: code });
+    await expect(row).toBeVisible();
+    admin.once("dialog", (d) => void d.accept());
+    await row.getByRole("button", { name: "End" }).click();
+    await expect(a.getByText("The organisers ended this match")).toBeVisible();
     expect(errors).toEqual([]);
   });
 

@@ -11,6 +11,8 @@ import type { SessionDeps } from "../../src/services/session.service.js";
 import type {
   AckResponse,
   ClientToServerEvents,
+  AdminBoards,
+  AdminRoom,
   JoinResult,
   Leaderboards,
   ScreenMatch,
@@ -69,6 +71,11 @@ type AckData = {
   "vote:theme": null;
   "briefing:continue": null;
   "screen:watch": ScreenSnapshot;
+  "admin:rooms": AdminRoom[];
+  "admin:boards": AdminBoards;
+  "admin:endRoom": null;
+  "admin:hide": null;
+  "admin:resetBoards": null;
 };
 
 function call<E extends keyof AckData>(c: Client, event: E, payload: unknown): Promise<AckResponse<AckData[E]>> {
@@ -96,6 +103,15 @@ function next<E extends "room:state" | "match:state" | "match:event" | "leaderbo
 }
 const nextRoom = (c: Client, p: (r: RoomView) => boolean) => next(c, "room:state", p) as Promise<RoomView>;
 const nextMatch = (c: Client, p: (m: MatchView) => boolean) => next(c, "match:state", p) as Promise<MatchView>;
+
+/** A big screen / admin page, signed in with the staff passcode. */
+async function staff(): Promise<Client> {
+  const token = realtime!.services.admin.login("admin", "test");
+  const c = await client();
+  ok(await call(c, "screen:watch", { token }));
+  return c;
+}
+const nextMatches = (c: Client, p: (ms: ScreenMatch[]) => boolean) => next(c, "screen:matches", p) as Promise<ScreenMatch[]>;
 
 /** Create a room with `n` players; returns clients and their seats. */
 async function room(n: number) {
@@ -206,11 +222,13 @@ describe("the duel", () => {
     expect(final.final!.points[1]).toBeGreaterThan(0);
   });
 
-  it("saves the result and pushes the leaderboard to every PC — even one not in the match", async () => {
+  it("saves the result, shows each player their place, and pushes the leaderboard to staff screens only", async () => {
     await startServer({ ...FAST, voteSec: 0 });
-    const watcher = await client(); // e.g. the big screen
+    const watcher = await staff(); // the big screen
     const { cs } = await room(2);
     const [a] = cs as [Client, Client];
+    let playerGotBoards = false;
+    a.on("leaderboard:update", () => (playerGotBoards = true));
     const board = next(watcher, "leaderboard:update", (b) => (b as Leaderboards)["1v1"].length === 2) as Promise<Leaderboards>;
     const ranked = nextRoom(a, (r) => r.final?.ranks != null);
     await readyAll(cs);
@@ -220,6 +238,7 @@ describe("the duel", () => {
     expect(boards["1v1"].map((e) => e.team).sort()).toEqual(["P1", "P2"]);
     for (const e of boards["1v1"]) expect(final.final!.ranks![e.side]).toBe(e.rank); // a draw shares 1st
     expect(await realtime!.services.results.boards()).toEqual(boards);
+    expect(playerGotBoards).toBe(false);
   });
 
   it("attacks reach the other team as a warning", async () => {
@@ -281,14 +300,17 @@ describe("briefing", () => {
 describe("big screen", () => {
   it("gets boards and awards on watch, then matches in progress with both sites but no coins", async () => {
     await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 5, rushes: [] })) });
+    const token = realtime!.services.admin.login("admin", "test");
     const screen = await client();
-    const snap = ok(await call(screen, "screen:watch", {}));
-    expect(snap).toEqual({ boards: { "1v1": [], "2v2": [] }, awards: { comeback: null, destroyer: null, unbreakable: null }, matches: [] });
+    const snap = ok(await call(screen, "screen:watch", { token }));
+    expect(snap).toEqual({
+      boards: { "1v1": [], "2v2": [] },
+      awards: { comeback: null, destroyer: null, unbreakable: null },
+      matches: [],
+    });
 
     const { cs, code } = await room(2);
-    const live = next(screen, "screen:matches", (ms) => (ms as ScreenMatch[]).some((m) => m.code === code && m.phase === "live" && m.sites !== null)) as Promise<
-      ScreenMatch[]
-    >;
+    const live = nextMatches(screen, (ms) => ms.some((m) => m.code === code && m.phase === "live" && m.sites !== null));
     await readyAll(cs);
     const m = (await live).find((x) => x.code === code)!;
     expect(m).toMatchObject({ format: "1v1", round: 1, totalRounds: 3, teams: { 1: { name: "P1", players: ["P1"] }, 2: { name: "P2" } } });
@@ -299,12 +321,68 @@ describe("big screen", () => {
 
   it("gets the new awards when a match is saved", async () => {
     await startServer({ ...FAST, voteSec: 0 });
-    const screen = await client();
-    ok(await call(screen, "screen:watch", {}));
+    const screen = await staff();
     const awards = next(screen, "screen:awards", () => true);
     const { cs } = await room(2);
     await readyAll(cs);
     expect(await awards).toHaveProperty("unbreakable");
+  });
+});
+
+describe("staff", () => {
+  it("can't watch or control anything without a valid sign-in", async () => {
+    await startServer();
+    const c = await client();
+    expect(await call(c, "screen:watch", { token: "x".repeat(32) })).toEqual({ ok: false, error: "Please sign in again." });
+    expect(await call(c, "admin:resetBoards", { confirm: "RESET" })).toEqual({ ok: false, error: "Sign in as staff first." });
+    expect(await call(c, "admin:rooms", {})).toEqual({ ok: false, error: "Sign in as staff first." });
+  });
+
+  it("lists rooms", async () => {
+    await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 30, rushes: [] })) });
+    const admin = await staff();
+    const one = await room(2);
+    const two = await room(2);
+    await readyAll(one.cs);
+    const rooms = ok(await call(admin, "admin:rooms", {}));
+    expect(rooms.map((r) => [r.code, r.phase]).sort()).toEqual([
+      [one.code, "live"],
+      [two.code, "room"],
+    ].sort());
+  });
+
+  it("ends a stuck room — unrecorded, and the players are told", async () => {
+    await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 30 })) });
+    const admin = await staff();
+    const { cs, code } = await room(2);
+    await readyAll(cs);
+    const ended = nextRoom(cs[0]!, (r) => r.phase === "final");
+    ok(await call(admin, "admin:endRoom", { code }));
+    expect((await ended).final).toMatchObject({ recorded: false, endedEarly: { side: null, reason: "admin" } });
+  });
+
+  it("hides a team, puts it back, and resets the boards", async () => {
+    await startServer({ ...FAST, voteSec: 0 });
+    const admin = await staff();
+    const { cs } = await room(2);
+    const saved = next(admin, "leaderboard:update", (b) => (b as Leaderboards)["1v1"].length === 2) as Promise<Leaderboards>;
+    await readyAll(cs);
+    const entry = (await saved)["1v1"][0]!;
+
+    const hidden = next(admin, "leaderboard:update", (b) => (b as Leaderboards)["1v1"].length === 1) as Promise<Leaderboards>;
+    ok(await call(admin, "admin:hide", { matchId: entry.matchId, side: entry.side, hidden: true }));
+    expect((await hidden)["1v1"][0]!.side).not.toBe(entry.side);
+    const list = ok(await call(admin, "admin:boards", {}))["1v1"];
+    expect(list.find((e) => e.side === entry.side)).toMatchObject({ hidden: true, rank: null });
+
+    const back = next(admin, "leaderboard:update", (b) => (b as Leaderboards)["1v1"].length === 2);
+    ok(await call(admin, "admin:hide", { matchId: entry.matchId, side: entry.side, hidden: false }));
+    await back;
+
+    expect(await call(admin, "admin:resetBoards", { confirm: "yes" })).toMatchObject({ ok: false });
+    const wiped = next(admin, "leaderboard:update", (b) => (b as Leaderboards)["1v1"].length === 0);
+    ok(await call(admin, "admin:resetBoards", { confirm: "RESET" }));
+    await wiped;
   });
 });
 

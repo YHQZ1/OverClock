@@ -4,7 +4,7 @@ import type { ThemeId } from "../config/game.js";
 import type { Db } from "../db/client.js";
 import { matchRounds, matches, matchTeams } from "../db/schema.js";
 import type { ActionLog, RoundResult, Side, SiteScore } from "../sim/index.js";
-import type { Format, LeaderboardEntry, Leaderboards } from "../types/contracts.js";
+import type { AdminBoards, AdminEntry, Format, LeaderboardEntry, Leaderboards } from "../types/contracts.js";
 import type { AwardMatch } from "./awards.js";
 
 /** A completed match, ready to save. */
@@ -37,14 +37,25 @@ export interface ResultStore {
   ranks(matchId: string): Promise<Record<Side, number> | null>;
   /** Every saved match, hidden teams left out — for the big screen's awards. */
   awardMatches(): Promise<AwardMatch[]>;
-  /** Take one team's entry off every board (admin: e.g. a rude team name). */
-  hide(matchId: string, side: Side): Promise<void>;
+  /** Admin: wipe every saved result (after the rehearsal). */
+  reset(): Promise<void>;
+  /** Every entry per format, hidden ones included — for the admin page. */
+  adminBoards(limit: number): Promise<AdminBoards>;
+  /** Take one team's entry off every board, or put it back (admin: e.g. a rude team name). */
+  setHidden(matchId: string, side: Side, hidden: boolean): Promise<void>;
   close(): Promise<void>;
 }
 
 const FORMATS: readonly Format[] = ["1v1", "2v2"];
 
 type Row = Omit<LeaderboardEntry, "rank">;
+
+/** Admin rows: places counted among visible entries only; hidden ones have none. */
+function rankedForAdmin(rows: (Row & { hidden: boolean })[]): AdminEntry[] {
+  const visible = ranked(rows.filter((r) => !r.hidden));
+  const place = new Map(visible.map((r) => [`${r.matchId}:${r.side}`, r.rank]));
+  return rows.map((r) => ({ ...r, rank: place.get(`${r.matchId}:${r.side}`) ?? null }));
+}
 
 /** Competition ranking: equal points share a place (1, 2, 2, 4). */
 function ranked(rows: Row[]): LeaderboardEntry[] {
@@ -65,12 +76,13 @@ export class MemoryResultStore implements ResultStore {
     this.records.push(structuredClone(record));
   }
 
-  private rows(format: Format): Row[] {
-    const rows: (Row & { completedAt: number })[] = [];
+  private rows(format: Format, withHidden = false): (Row & { hidden: boolean })[] {
+    const rows: (Row & { hidden: boolean; completedAt: number })[] = [];
     for (const r of this.records) {
       if (r.format !== format) continue;
       for (const t of r.teams) {
-        if (this.hidden.has(`${r.id}:${t.side}`)) continue;
+        const hidden = this.hidden.has(`${r.id}:${t.side}`);
+        if (hidden && !withHidden) continue;
         const opp = r.teams.find((o) => o.side !== t.side)!;
         rows.push({
           matchId: r.id,
@@ -83,6 +95,7 @@ export class MemoryResultStore implements ResultStore {
           opponent: opp.name,
           theme: r.theme,
           at: r.completedAt.toISOString(),
+          hidden,
           completedAt: r.completedAt.getTime(),
         });
       }
@@ -92,7 +105,12 @@ export class MemoryResultStore implements ResultStore {
   }
 
   async boards(limit: number): Promise<Leaderboards> {
-    return { "1v1": ranked(this.rows("1v1")).slice(0, limit), "2v2": ranked(this.rows("2v2")).slice(0, limit) };
+    const board = (f: Format) => ranked(this.rows(f).map(({ hidden: _, ...row }) => row)).slice(0, limit);
+    return { "1v1": board("1v1"), "2v2": board("2v2") };
+  }
+
+  async adminBoards(limit: number): Promise<AdminBoards> {
+    return { "1v1": rankedForAdmin(this.rows("1v1", true)).slice(0, limit), "2v2": rankedForAdmin(this.rows("2v2", true)).slice(0, limit) };
   }
 
   async ranks(matchId: string): Promise<Record<Side, number> | null> {
@@ -106,8 +124,14 @@ export class MemoryResultStore implements ResultStore {
     return { 1: place(1), 2: place(2) };
   }
 
-  async hide(matchId: string, side: Side): Promise<void> {
-    this.hidden.add(`${matchId}:${side}`);
+  async setHidden(matchId: string, side: Side, hidden: boolean): Promise<void> {
+    if (hidden) this.hidden.add(`${matchId}:${side}`);
+    else this.hidden.delete(`${matchId}:${side}`);
+  }
+
+  async reset(): Promise<void> {
+    this.records.length = 0;
+    this.hidden.clear();
   }
 
   async awardMatches(): Promise<AwardMatch[]> {
@@ -161,10 +185,10 @@ export class PgResultStore implements ResultStore {
     });
   }
 
-  async boards(limit: number): Promise<Leaderboards> {
+  /** One format's rows, best first; `withHidden` for the admin page. */
+  private async rows(format: Format, limit: number, withHidden: boolean) {
     const opp = alias(matchTeams, "opp");
-    const board = async (format: Format) => {
-      const rows = await this.db
+    const rows = await this.db
         .select({
           matchId: matchTeams.matchId,
           side: matchTeams.side,
@@ -176,16 +200,25 @@ export class PgResultStore implements ResultStore {
           opponent: opp.name,
           theme: matches.theme,
           at: matches.completedAt,
+          hidden: matchTeams.hidden,
         })
         .from(matchTeams)
         .innerJoin(matches, eq(matches.id, matchTeams.matchId))
         .innerJoin(opp, and(eq(opp.matchId, matchTeams.matchId), ne(opp.side, matchTeams.side)))
-        .where(and(eq(matchTeams.format, format), eq(matchTeams.hidden, false)))
+        .where(withHidden ? eq(matchTeams.format, format) : and(eq(matchTeams.format, format), eq(matchTeams.hidden, false)))
         .orderBy(desc(matchTeams.matchPoints), asc(matches.completedAt))
         .limit(limit);
-      return ranked(rows.map((row) => ({ ...row, side: row.side as Side, theme: row.theme as ThemeId, at: row.at.toISOString() })));
-    };
+    return rows.map((row) => ({ ...row, side: row.side as Side, theme: row.theme as ThemeId, at: row.at.toISOString() }));
+  }
+
+  async boards(limit: number): Promise<Leaderboards> {
+    const board = async (f: Format) => ranked((await this.rows(f, limit, false)).map(({ hidden: _, ...row }) => row));
     const [one, two] = await Promise.all(FORMATS.map(board));
+    return { "1v1": one!, "2v2": two! };
+  }
+
+  async adminBoards(limit: number): Promise<AdminBoards> {
+    const [one, two] = await Promise.all(FORMATS.map(async (f) => rankedForAdmin(await this.rows(f, limit, true))));
     return { "1v1": one!, "2v2": two! };
   }
 
@@ -206,10 +239,14 @@ export class PgResultStore implements ResultStore {
     return bySide;
   }
 
-  async hide(matchId: string, side: Side): Promise<void> {
+  async reset(): Promise<void> {
+    await this.db.delete(matches); // teams and rounds cascade
+  }
+
+  async setHidden(matchId: string, side: Side, hidden: boolean): Promise<void> {
     await this.db
       .update(matchTeams)
-      .set({ hidden: true })
+      .set({ hidden })
       .where(and(eq(matchTeams.matchId, matchId), eq(matchTeams.side, side)));
   }
 

@@ -1,5 +1,5 @@
 import type { Side } from "../sim/index.js";
-import type { Awards, Leaderboards } from "../types/contracts.js";
+import type { AdminBoards, Awards, Leaderboards } from "../types/contracts.js";
 import { logger } from "../utils/logger.js";
 import { computeAwards } from "./awards.js";
 import type { Broadcaster } from "./broadcaster.js";
@@ -7,6 +7,8 @@ import type { MatchRecord, ResultStore } from "./result.store.js";
 
 /** How many entries each board shows. */
 export const BOARD_SIZE = 10;
+/** The admin list goes deeper, so a hidden or low entry can still be found. */
+const ADMIN_LIMIT = 200;
 
 /**
  * Saves completed matches and keeps the leaderboards fresh: after every save
@@ -48,9 +50,21 @@ export class ResultService {
     return this.awardsCache ?? (this.awardsCache = await this.loadAwards());
   }
 
-  /** Take a team off the boards (admin), then push the corrected boards. */
-  async hide(matchId: string, side: Side): Promise<void> {
-    await this.store.hide(matchId, side);
+  /** Take a team off the boards or put it back (admin), then push the corrected boards. */
+  async setHidden(matchId: string, side: Side, hidden: boolean): Promise<void> {
+    await this.store.setHidden(matchId, side, hidden);
+    await this.refresh();
+  }
+
+  /** Everything saved, hidden entries included — the admin page's list. */
+  adminBoards(): Promise<AdminBoards> {
+    return this.store.adminBoards(ADMIN_LIMIT);
+  }
+
+  /** Wipe every saved result and push the empty boards. */
+  async reset(): Promise<void> {
+    await this.store.reset();
+    logger.warn("leaderboard reset by admin");
     await this.refresh();
   }
 

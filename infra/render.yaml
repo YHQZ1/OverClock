@@ -26,7 +26,7 @@ services:
           name: overclock-db
           property: connectionString
       - key: ADMIN_PASSCODE
-        sync: false # set manually in the dashboard (only needed once /admin exists)
+        sync: false # set manually in the dashboard: 8+ characters, not shared with players
 
 databases:
   - name: overclock-db

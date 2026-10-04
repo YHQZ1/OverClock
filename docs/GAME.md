@@ -231,8 +231,10 @@ they faced.
 | Buy phase     | Shop, both sites (paused), round number, timer                                 |
 | Live          | HUD (health, coins, score, time) · alert bar · our site map · their site · shop · incoming warnings · "who bought what" feed |
 | Round result  | Round winner, served / turned away, best attack, biggest save                  |
-| Final         | Totals, winner, match points, leaderboard, "what you actually built" cards     |
-| Big screen `/screen` | A featured live match (both sites, its theme, rotating), other matches, 1v1 / 2v2 top 10, fun awards |
+| Final         | Totals, winner, match points, **your place** on the leaderboard (not the board itself), "what you actually built" cards |
+| Live `/live` (staff, projector) | Sidebar of every match in progress; the one on screen big (both sites in its theme), switching every 10s unless pinned |
+| Leaderboard `/leaderboard` (staff, projector) | 1v1 / 2v2 top 10 (new entries flash) and the fun awards — display only |
+| Control panel `/admin` (staff) | Rooms (end a stuck one), leaderboard management (hide / unhide, reset), links to the two projector pages |
 
 ### Live screen (sketch)
 

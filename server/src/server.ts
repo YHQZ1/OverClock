@@ -5,6 +5,7 @@ import { loadEnv } from "./config/env.js";
 import { DEFAULT_TIMING } from "./config/game.js";
 import { connectDb } from "./db/client.js";
 import { createRealtime } from "./realtime.js";
+import { AdminService } from "./services/admin.service.js";
 import { Metrics } from "./services/metrics.js";
 import { MemoryResultStore, PgResultStore, type ResultStore } from "./services/result.store.js";
 import { ROUNDS } from "./sim/index.js";
@@ -27,10 +28,11 @@ if (env.DATABASE_URL) {
   logger.warn("DATABASE_URL not set — results are kept in memory until the server restarts");
 }
 
-const http = createServer(createApp(env, metrics, () => realtime.services.results.boards()));
+const admin = new AdminService(env.ADMIN_PASSCODE);
+const http = createServer(createApp(env, metrics, admin));
 const timing = env.FAST_ROUNDS ? { ...DEFAULT_TIMING, buySec: 5, resultSec: 4 } : DEFAULT_TIMING;
 const deps = env.FAST_ROUNDS ? { rounds: ROUNDS.map((r) => ({ ...r, durationSec: env.FAST_ROUND_SEC })) } : {};
-const realtime = createRealtime(http, timing, deps, metrics, store);
+const realtime = createRealtime(http, timing, deps, { metrics, store, admin });
 if (env.FAST_ROUNDS) logger.warn("FAST_ROUNDS is on — short rounds for testing");
 
 http.listen(env.PORT, () => logger.info(`Overclock server listening on :${env.PORT}`, { env: env.NODE_ENV }));

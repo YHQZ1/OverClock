@@ -62,14 +62,15 @@ In order. Each item ends playable and tested.
 12. [x] **Results + leaderboard**: Postgres via Drizzle (Docker, port 5433),
         completed matches saved with replays, match points, 1v1 / 2v2 boards
         pushed live, place shown on the final screen; memory fallback without a DB
-13. [x] **Big screen** `/screen`: featured live match (both maps in its theme,
-        rotating every 20s), "also playing" strip, 1v1 / 2v2 top 10 (new
-        entries flash), awards; Home links to it
+13. [x] **Projector pages** (staff): `/live` — sidebar of every match, the
+        featured one big in its theme, 10s rotation, click to show, pin;
+        `/leaderboard` — 1v1 / 2v2 top 10 (new entries flash) and awards
 13a. [x] **Briefing** before round 1: every item in the theme's words with
         counters; starts when all press Continue, 60s cap
-13b. [ ] **Admin** (tiny, passcode): hide a team from the boards, end a stuck
-        room, reset the boards after the rehearsal, list live rooms; team-name
-        word filter
+13b. [x] **Control panel** `/admin` (passcode, rate-limited; "Staff" link on
+        Home): rooms (end), leaderboard (hide / unhide, reset), links to /live
+        and /leaderboard; players see only their own place; name filter (incl.
+        common Hindi abuse) on player and team names
 14. [x] **Themes**: Nasdaq, FanCode, Miniclip, BookMyShow — vote cards with
         logos, accent colour, words (visitors, alerts, round lines), a music
         style each. Later: ChronoNexia "split timeline" framing

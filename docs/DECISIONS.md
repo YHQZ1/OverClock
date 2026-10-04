@@ -54,9 +54,11 @@ choices are kept at the bottom so we remember why we moved on.
 | **Theme colour is decoration only**; green / yellow / red stay the health signals, always with words; BookMyShow's crowd is white | FanCode orange and BookMyShow red sit close to the warning and broken colours. |
 | **Original music per theme** (ticker, race, chip, trailer), synthesised like the rest; menus keep the arcade tune | Each world feels different; never copy a real tune. |
 | **ChronoNexia (the fest theme) later, as framing**: "the timeline has split — only one survives", both teams in the same voted world | Fits the vote (one world per match); added incrementally. |
-| **Spectating lives on the big screen** — a featured live match (both sites, no coins, no blindfold masking), rotating every 20s — not a separate spectator page | The projector is the advert; passers-by stop for crowds and crashes, not a table. Reuses the existing site views. |
+| **Three staff pages, one passcode**: `/admin` (control panel: rooms, end a room, hide / unhide teams, reset), `/live` (spectator view), `/leaderboard` (display only). Players see just their own place on the final screen | The projector is the event's moment; shared lab PCs stay on `/play`; one place to manage the board, one to show it. A shared "big screen" with layouts and a remote-control admin preview was built first and dropped as cluttered. |
+| **`/live`: a sidebar of every match in progress** (incl. briefing and between rounds), the one on screen highlighted with a 10s progress bar; auto-switches every **10s** (preferring matches in play) unless **pinned** (held until that match ends); click a match to show it. Controlled at the projector itself, not remotely | One projector: whoever's at it switches between `/live` and `/leaderboard` (Alt+Tab). Simple and live; no remote-control state on the server. |
 | **Awards**: comeback of the day (biggest deficit after any round, then won), most destructive (most attacks landed in a match), unbreakable (best total with no crash); hidden teams excluded | Simple, explainable, computed from saved matches. |
-| **Admin: a tiny passcode page** (hide team, end room, reset boards, live rooms) + a team-name word filter | Rude names on the projector are the real risk; everything else is a convenience. |
+| **Staff sign-in: one passcode, no username** (`ADMIN_PASSCODE`; production requires 8+ characters), 5 wrong tries → 1-minute lockout, quiet "Staff" link on Home | admin/admin would be the first guess in a room of CS students. |
+| **Name filter** on player and team names (English + common Hindi abuse; short words only as whole words so Kshitij, Gandhi, Chodankar, Assam pass) | Stops the obvious ones before they reach the projector; Hide handles the rest. |
 
 ## Technical
 

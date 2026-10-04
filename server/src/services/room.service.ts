@@ -1,6 +1,6 @@
 import { MAX_PLAYERS, type ThemeId } from "../config/game.js";
 import type { ActionLog, Side } from "../sim/index.js";
-import type { CanStart, FinalSummary, Format, Phase, RoomView, RoundSummary, Slot } from "../types/contracts.js";
+import type { AdminRoom, CanStart, FinalSummary, Format, Phase, RoomView, RoundSummary, Slot } from "../types/contracts.js";
 import { playerId, rejoinToken, teamCode } from "../utils/codes.js";
 import { UserError } from "../utils/errors.js";
 
@@ -180,6 +180,19 @@ export class RoomService {
 
   all(): Room[] {
     return [...this.rooms.values()];
+  }
+
+  /** Every room, for the admin page. */
+  adminList(): AdminRoom[] {
+    return this.all().map((room) => ({
+      code: room.code,
+      phase: room.phase,
+      format: room.format,
+      theme: room.theme,
+      round: room.round,
+      players: room.players.map((p) => ({ name: p.name, slot: p.slot, connected: p.connected })),
+      teamNames: { 1: this.teamName(room, 1), 2: this.teamName(room, 2) },
+    }));
   }
 
   view(room: Room, totalRounds: number): RoomView {

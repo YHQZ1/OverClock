@@ -193,7 +193,7 @@ yourself. Each tab is its own seat, so you can test a full room on one PC.
 ## Project layout
 
 ```
-web/                   player screens (/play) and the big screen (/screen)
+web/                   player screens (/play); staff pages (/admin, /live, /leaderboard)
   src/game/            live map, alerts, timeline — pictures of server state
   src/pages/play/      one screen per phase: Home, Room, Vote, Game, Results…
   src/styles/index.css Tailwind import + design tokens (the only stylesheet)
@@ -217,9 +217,9 @@ the player screens (home, lobby, live game with an animated map, results).
 between four themes (Nasdaq, FanCode, Miniclip, BookMyShow — each with its own
 colour, words and music), the shop (defences, boosts, attacks), three rounds
 with buy phases, round results and the final — saved to Postgres, with a live
-1v1 / 2v2 leaderboard and the projector **big screen** (`/screen`): the match in
-progress in its theme, both boards and fun awards. **Next:** a small admin page,
-then deploying and testing from a lab PC.
+1v1 / 2v2 leaderboard, and three staff pages: the **control panel**
+(`/admin`), **live matches** for the projector (`/live`) and the projector
+**leaderboard** (`/leaderboard`). **Next:** deploying and testing from a lab PC.
 
 Tip: `FAST_ROUNDS=1 pnpm dev` runs 20-second rounds for quick testing.
 

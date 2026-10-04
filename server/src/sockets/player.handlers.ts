@@ -24,7 +24,7 @@ export const roomChannel = (code: string) => `room:${code}`;
 export const sideChannel = (code: string, side: Side) => `room:${code}:side:${side}`;
 
 /** Validate → run → ack. Unknown errors are logged and hidden from players. */
-function handle<P, T>(schema: ZodType<P>, payload: unknown, ack: unknown, run: (data: P) => T): void {
+export function handle<P, T>(schema: ZodType<P>, payload: unknown, ack: unknown, run: (data: P) => T): void {
   const reply = typeof ack === "function" ? (ack as Ack<T>) : () => {};
   const parsed = schema.safeParse(payload ?? {});
   if (!parsed.success) {
@@ -40,7 +40,7 @@ function handle<P, T>(schema: ZodType<P>, payload: unknown, ack: unknown, run: (
 }
 
 export function registerPlayerHandlers(socket: PlayerSocket, { rooms, sessions, matches }: Services): void {
-  socket.data = { code: null, playerId: null, side: null };
+  socket.data = { code: null, playerId: null, side: null, admin: false };
 
   const seated = (): { code: string; playerId: string } => {
     const { code, playerId } = socket.data;
@@ -75,7 +75,7 @@ export function registerPlayerHandlers(socket: PlayerSocket, { rooms, sessions, 
       void socket.leave(roomChannel(code));
       if (side) void socket.leave(sideChannel(code, side));
     }
-    socket.data = { code: null, playerId: null, side: null };
+    socket.data = { ...socket.data, code: null, playerId: null, side: null };
   };
 
   socket.on("room:create", (payload, ack) =>

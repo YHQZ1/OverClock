@@ -18,7 +18,7 @@ connection and the built web app. One web service + one Postgres.
 ## Repo layout
 
 ```
-web/      React + Vite + TS + Tailwind v4 — /play, /screen
+web/      React + Vite + TS + Tailwind v4 — /play; staff: /admin, /live, /leaderboard
 server/   Node + Express 5 + Socket.IO + Zod + TS
 docs/     these docs
 infra/    docker-compose (Postgres), render.yaml, .env.example
@@ -108,7 +108,7 @@ server/src/
 
 ```
 web/src/
-├── main.tsx, App.tsx       # router: /play, /screen
+├── main.tsx, App.tsx       # router: /play, /admin, /live, /leaderboard
 ├── socket/                 # the one Socket.IO connection, api (acks), seat storage, useGameSocket
 ├── store/                  # Zustand: room, match snapshot, feed, history — mirrors the server
 ├── styles/index.css        # Tailwind v4 import + @theme design tokens (the only CSS file)
@@ -149,7 +149,8 @@ Client → server
 | `game:use`      | `{ item }`                                | Utilities                              |
 | `game:attack`   | `{ attack }`                              | Cooldown + warning                     |
 | `briefing:continue` | `{}`                                 | Read the briefing; round 1 starts when all connected players have (or after 60s) |
-| `screen:watch`  | `{}`                                      | Big screen: joins the `screen` channel; ack = boards + awards + live matches |
+| `screen:watch`  | `{ token }`                               | Staff (big screen / admin): signs the connection in, joins the `screen` channel; ack = boards + awards + matches + control |
+| `admin:rooms` · `admin:boards` · `admin:endRoom` · `admin:hide` · `admin:resetBoards` | see `contracts.ts` | Staff only (signed-in connection): list rooms, list every saved entry (hidden ones too), end a room, hide / unhide a team (`hidden: bool`), wipe results (`confirm: "RESET"`) |
 
 Server → client
 
@@ -158,8 +159,8 @@ Server → client
 | `room:state`         | phase, code, slots, players, ready flags, team names, votes, timers, round results — on every change |
 | `match:state`        | player-safe duel snapshot for this player's side, 10/sec in BUY/LIVE |
 | `match:event`        | engine events: purchases (with who), attacks incoming/landed, crashes, recoveries… |
-| `leaderboard:update` | top 10 per format (1v1 / 2v2) — every PC, after each saved match |
-| `screen:matches`     | big screens: every match in progress (`ScreenMatch`: both sites, no coins), 4×/sec |
+| `leaderboard:update` | staff only: top 10 per format (1v1 / 2v2), after each saved match |
+| `screen:matches`     | staff only, 4×/sec: every match in progress (`ScreenMatch`: both sites, no coins) |
 | `screen:awards`      | big screens: comeback / most destructive / unbreakable, after each saved match |
 
 ## HTTP API
@@ -167,7 +168,7 @@ Server → client
 | Method | Path               | Purpose                         |
 | ------ | ------------------ | ------------------------------- |
 | GET    | `/api/health`      | Health check                    |
-| GET    | `/api/leaderboard` | Top 10 per format (`{ "1v1": [...], "2v2": [...] }`) |
+| POST   | `/api/admin/login` | `{ passcode }` → `{ token }` (staff; 5 wrong tries → 1 min lockout per address) |
 
 ## Data
 
@@ -182,8 +183,16 @@ server on start; `db:generate` makes new ones).
 
 Leaderboards are queries over `match_teams` per format, hidden rows left out,
 best match points first (equal points share a place; the earlier match lists
-first). After each save the top 10 per format are pushed to every connected
-PC (`leaderboard:update`) and each team's place goes into `final.ranks`.
+first). After each save the top 10 per format are pushed to staff screens
+(`leaderboard:update`) and each team's place goes into `final.ranks` — players
+only ever see their own place.
+
+**Staff.** One passcode (`ADMIN_PASSCODE`; "admin" in dev, required in
+production) gives a token kept in that browser's localStorage; `/admin`,
+`/live` and `/leaderboard` all need it. `ScreenService` pushes every match in
+progress to signed-in staff pages; `/live` decides locally which one to show
+(10s rotation preferring matches in play, click to show, pin until it ends —
+`web/src/staff/rotation.ts`).
 
 - **`ResultStore`**: `PgResultStore` (Drizzle + postgres.js) in dev/production;
   `MemoryResultStore` in tests and when `DATABASE_URL` is unset (dev only —

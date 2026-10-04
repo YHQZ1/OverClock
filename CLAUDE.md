@@ -16,7 +16,7 @@ docs/PLAN.md, top first. Read `docs/` before design changes.
 
 ## Layout
 
-- `web/` — React + Vite + TS + Tailwind v4. Routes: `/play`, `/screen` (`/admin` deferred).
+- `web/` — React + Vite + TS + Tailwind v4. Routes: `/play`; staff-only (passcode): `/admin`, `/live`, `/leaderboard`.
 - `server/` — Express 5 + Socket.IO + TS. `server.ts → app.ts → routes → controllers → services`, plus `sockets/`, `sim/`, `db/`, `validators/`, `middlewares/`, `utils/`, `config/`, `types/`.
 - `docs/` — GAME, ARCHITECTURE, DECISIONS, PLAN, BALANCE, TESTING, RUNBOOK.
 - `e2e/` — Playwright tests. Server tests in `server/tests/{unit,integration,balance,load}`, web in `web/tests/unit`.

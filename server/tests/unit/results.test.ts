@@ -46,7 +46,7 @@ describe("MemoryResultStore", () => {
     const fine = record(5000, 1000);
     await store.save(rude);
     await store.save(fine);
-    await store.hide(rude.id, 1);
+    await store.setHidden(rude.id, 1, true);
     const board = (await store.boards(10))["1v1"];
     expect(board.map((e) => e.team)).not.toContain(rude.teams[0]!.name);
     expect(await store.ranks(fine.id)).toEqual({ 1: 1, 2: 3 });
@@ -54,5 +54,19 @@ describe("MemoryResultStore", () => {
 
   it("knows nothing about unsaved matches", async () => {
     expect(await new MemoryResultStore().ranks("00000000-0000-4000-8000-999999999999")).toBeNull();
+  });
+
+  it("lists hidden entries for the admin (without a place), and can put them back", async () => {
+    const store = new MemoryResultStore();
+    const m = record(9000, 2000);
+    await store.save(m);
+    await store.setHidden(m.id, 1, true);
+    const admin = (await store.adminBoards(50))["1v1"];
+    expect(admin.map((e) => [e.side, e.hidden, e.rank])).toEqual([
+      [1, true, null],
+      [2, false, 1],
+    ]);
+    await store.setHidden(m.id, 1, false);
+    expect((await store.boards(10))["1v1"]).toHaveLength(2);
   });
 });

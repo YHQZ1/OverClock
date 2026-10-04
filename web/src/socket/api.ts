@@ -16,7 +16,12 @@ type Acked =
   | "room:teamName"
   | "vote:theme"
   | "briefing:continue"
-  | "screen:watch";
+  | "screen:watch"
+  | "admin:rooms"
+  | "admin:boards"
+  | "admin:endRoom"
+  | "admin:hide"
+  | "admin:resetBoards";
 
 export async function request<T>(event: Acked, payload: object): Promise<AckResponse<T>> {
   try {

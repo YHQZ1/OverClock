@@ -28,8 +28,8 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
         right={
           <span className="flex items-center gap-6">
             1v1 or 2v2 · one PC each
-            <Link to="/screen" className="font-medium text-ink transition-colors hover:text-accent">
-              Leaderboard →
+            <Link to="/admin" className="text-faint transition-colors hover:text-muted">
+              Staff
             </Link>
           </span>
         }

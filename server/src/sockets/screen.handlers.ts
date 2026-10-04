@@ -1,20 +1,80 @@
+import type { ZodType } from "zod";
 import type { Services } from "../services/index.js";
-import type { Ack, ScreenSnapshot } from "../types/contracts.js";
+import type { Ack } from "../types/contracts.js";
+import { UserError, userMessage } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
-import type { PlayerSocket } from "./player.handlers.js";
+import {
+  emptySchema,
+  hideSchema,
+  resetSchema,
+  roomSchema,
+  tokenSchema,
+} from "../validators/socket.schemas.js";
+import { handle, type PlayerSocket } from "./player.handlers.js";
 
-/** Big screens listen here for matches in progress and awards. */
+/** Staff pages listen here for matches in progress, boards and awards. */
 export const SCREEN_CHANNEL = "screen";
 
-export function registerScreenHandlers(socket: PlayerSocket, { screen }: Services): void {
-  socket.on("screen:watch", async (_payload, ack) => {
-    const reply: Ack<ScreenSnapshot> = typeof ack === "function" ? ack : () => {};
-    void socket.join(SCREEN_CHANNEL);
-    try {
-      reply({ ok: true, data: await screen.snapshot() });
-    } catch (err) {
-      logger.error("screen snapshot failed", { err: String(err) });
-      reply({ ok: false, error: "The leaderboard is unavailable right now." });
-    }
-  });
+/** Like `handle`, for async work (database writes). */
+function handleAsync<P, T>(schema: ZodType<P>, payload: unknown, ack: unknown, run: (data: P) => Promise<T>): void {
+  const reply = typeof ack === "function" ? (ack as Ack<T>) : () => {};
+  const parsed = schema.safeParse(payload ?? {});
+  if (!parsed.success) return reply({ ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request." });
+  run(parsed.data).then(
+    (data) => reply({ ok: true, data }),
+    (err: unknown) => {
+      if (!(err instanceof UserError)) logger.error("admin handler failed", { err: String(err) });
+      reply({ ok: false, error: userMessage(err) });
+    },
+  );
+}
+
+/** Staff only: /admin, /live and /leaderboard. */
+export function registerScreenHandlers(socket: PlayerSocket, { admin, screen, sessions, rooms, results }: Services): void {
+  const staff = () => {
+    if (!socket.data.admin) throw new UserError("Sign in as staff first.");
+  };
+
+  socket.on("screen:watch", (payload, ack) =>
+    handleAsync(tokenSchema, payload, ack, async ({ token }) => {
+      if (!admin.isValid(token)) throw new UserError("Please sign in again.");
+      socket.data.admin = true;
+      await socket.join(SCREEN_CHANNEL);
+      return screen.snapshot();
+    }),
+  );
+
+  socket.on("admin:rooms", (payload, ack) =>
+    handle(emptySchema, payload, ack, () => {
+      staff();
+      return rooms.adminList();
+    }),
+  );
+  socket.on("admin:endRoom", (payload, ack) =>
+    handle(roomSchema, payload, ack, ({ code }) => {
+      staff();
+      sessions.endRoom(code);
+      return null;
+    }),
+  );
+  socket.on("admin:boards", (payload, ack) =>
+    handleAsync(emptySchema, payload, ack, async () => {
+      staff();
+      return results.adminBoards();
+    }),
+  );
+  socket.on("admin:hide", (payload, ack) =>
+    handleAsync(hideSchema, payload, ack, async ({ matchId, side, hidden }) => {
+      staff();
+      await results.setHidden(matchId, side, hidden);
+      return null;
+    }),
+  );
+  socket.on("admin:resetBoards", (payload, ack) =>
+    handleAsync(resetSchema, payload, ack, async () => {
+      staff();
+      await results.reset();
+      return null;
+    }),
+  );
 }

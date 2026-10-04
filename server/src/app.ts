@@ -3,20 +3,20 @@ import { join } from "node:path";
 import express from "express";
 import type { Env } from "./config/env.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
-import type { BoardSource } from "./controllers/leaderboard.controller.js";
 import { healthRoutes } from "./routes/health.routes.js";
-import { leaderboardRoutes } from "./routes/leaderboard.routes.js";
+import { adminRoutes } from "./routes/admin.routes.js";
 import { metricsRoutes } from "./routes/metrics.routes.js";
+import type { AdminService } from "./services/admin.service.js";
 import type { Metrics } from "./services/metrics.js";
 
-export function createApp(env: Env, metrics?: Metrics, boards?: BoardSource) {
+export function createApp(env: Env, metrics?: Metrics, admin?: AdminService) {
   const app = express();
   app.disable("x-powered-by");
   app.use(express.json({ limit: "16kb" }));
 
   app.use("/api/health", healthRoutes);
   if (metrics) app.use("/api/metrics", metricsRoutes(metrics));
-  if (boards) app.use("/api/leaderboard", leaderboardRoutes(boards));
+  if (admin) app.use("/api/admin", adminRoutes(admin));
 
   // Production: serve the built web app; any non-API page falls back to index.html.
   if (existsSync(join(env.WEB_DIST, "index.html"))) {

@@ -2,7 +2,6 @@ import type { RoomView, Side } from "@server/types/contracts.js";
 import { useState } from "react";
 import { TopBar } from "../../components/TopBar";
 import { Button, Frame, Label, SPLIT, cx } from "../../components/ui";
-import { Leaderboard } from "../../game/Leaderboard";
 import { useShortcut } from "../../hooks/useShortcut";
 
 type Props = { room: RoomView; mySide: Side | null; onDone: () => Promise<void> };
@@ -21,7 +20,9 @@ export function FinalScreen({ room, mySide, onDone }: Props) {
   if (!final) return null;
 
   const winner = final.winner;
-  const headline = final.endedEarly
+  const headline = final.endedEarly?.reason === "admin"
+    ? "The organisers ended this match"
+    : final.endedEarly
     ? final.endedEarly.side === mySide
       ? "Your team left the match"
       : `${room.teamNames[final.endedEarly.side]} left the match`
@@ -93,17 +94,14 @@ export function FinalScreen({ room, mySide, onDone }: Props) {
         </section>
 
         <aside className="flex min-h-0 flex-col gap-4 border-l border-line px-8 py-7">
-          {room.format && (
-            <Leaderboard
-              className="flex-1"
-              format={room.format}
-              matchId={final.recorded ? final.matchId : undefined}
-              mine={
-                final.recorded && mySide
-                  ? { side: mySide, rank: final.ranks?.[mySide] ?? null, team: room.teamNames[mySide], points: Math.round(final.points[mySide]) }
-                  : null
-              }
-            />
+          {final.recorded && mySide && (
+            <div className="flex flex-1 flex-col justify-center">
+              <Label>Your place on the {room.format} leaderboard</Label>
+              <p className="mt-2 text-[clamp(72px,16vh,140px)] leading-none font-semibold tracking-[-0.05em] text-accent tabular-nums">
+                {final.ranks ? `#${final.ranks[mySide]}` : "…"}
+              </p>
+              <p className="mt-3 text-muted">Check the big screen to see who’s on top.</p>
+            </div>
           )}
           <p className="text-sm text-muted">
             Leaderboard points count your score plus half of your opponent’s — beating a strong team is worth more.

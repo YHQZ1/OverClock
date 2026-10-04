@@ -208,12 +208,23 @@ export class SessionService {
     this.matches.queue(code, { side: sideOf(player.slot), kind: payload.kind, item: payload.item, by: player.name });
   }
 
-  /** End the match. `forfeitedBy` = a side that left early: the match isn't recorded. */
-  private finish(room: Room, forfeitedBy?: Side): void {
+  /** Admin: end a stuck or unwanted room now. Nothing is recorded; players see who ended it. */
+  endRoom(code: string): void {
+    const room = this.rooms.require(code);
+    if (room.phase === "final") return;
+    logger.warn("room ended by admin", { code, phase: room.phase });
+    this.finish(room, undefined, true);
+  }
+
+  /**
+   * End the match. `forfeitedBy` = a side that left early; `byAdmin` = the
+   * organisers ended it. Either way the match isn't recorded.
+   */
+  private finish(room: Room, forfeitedBy?: Side, byAdmin = false): void {
     this.clearTimer(room.code);
     this.matches.stop(room.code);
     const { totals, winner: byScore } = matchTotals(room.rounds);
-    const winner = forfeitedBy ? other(forfeitedBy) : byScore;
+    const winner = byAdmin ? null : forfeitedBy ? other(forfeitedBy) : byScore;
     room.phase = "final";
     room.phaseEndsAt = null;
     room.final = {
@@ -224,8 +235,8 @@ export class SessionService {
         1: matchPoints(totals[1].total, totals[2].total, winner === 1),
         2: matchPoints(totals[2].total, totals[1].total, winner === 2),
       },
-      recorded: !forfeitedBy,
-      endedEarly: forfeitedBy ? { side: forfeitedBy, reason: "left" } : null,
+      recorded: !forfeitedBy && !byAdmin,
+      endedEarly: byAdmin ? { side: null, reason: "admin" } : forfeitedBy ? { side: forfeitedBy, reason: "left" } : null,
       ranks: null,
     };
     logger.info("match finished", { code: room.code, winner, forfeit: forfeitedBy ?? null });

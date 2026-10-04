@@ -67,7 +67,7 @@ describe.skipIf(!URL)("PgResultStore (Postgres)", () => {
     const fine = record(5000, 1000);
     await store.save(rude);
     await store.save(fine);
-    await store.hide(rude.id, 1);
+    await store.setHidden(rude.id, 1, true);
     expect((await store.boards(10))["1v1"].map((e) => e.team)).not.toContain(rude.teams[0]!.name);
     expect(await store.ranks(fine.id)).toEqual({ 1: 1, 2: 3 });
   });
@@ -79,11 +79,23 @@ describe.skipIf(!URL)("PgResultStore (Postgres)", () => {
       { round: 2, seed: 2, winner: 1, scores: { 1: { total: 3 }, 2: { total: 4 } } as never, log: [] },
     ];
     await store.save(m);
-    await store.hide(m.id, 2);
+    await store.setHidden(m.id, 2, true);
     const [got] = await store.awardMatches();
     expect(got).toMatchObject({ matchId: m.id, format: "1v1", winner: 1 });
     expect(got!.teams.map((t) => t.side)).toEqual([1]);
     expect(got!.rounds.map((r) => r.scores[1].total)).toEqual([1, 3]);
+  });
+
+  it("lists hidden entries for the admin, and can put them back", async () => {
+    const m = record(9000, 2000);
+    await store.save(m);
+    await store.setHidden(m.id, 1, true);
+    expect((await store.adminBoards(50))["1v1"].map((e) => [e.side, e.hidden, e.rank])).toEqual([
+      [1, true, null],
+      [2, false, 1],
+    ]);
+    await store.setHidden(m.id, 1, false);
+    expect((await store.boards(10))["1v1"]).toHaveLength(2);
   });
 
   it("saves all of a match or none of it", async () => {

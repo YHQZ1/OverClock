@@ -41,3 +41,9 @@ export type TeamNamePayload = z.infer<typeof teamNameSchema>;
 export type VotePayload = z.infer<typeof voteSchema>;
 export type GameActionPayload = z.infer<typeof gameActionSchema>;
 
+// ---------- staff ----------
+
+export const tokenSchema = z.object({ token: z.string().min(16).max(128) });
+export const roomSchema = z.object({ code: roomCode });
+export const hideSchema = z.object({ matchId: z.uuid(), side: z.union([z.literal(1), z.literal(2)]), hidden: z.boolean() });
+export const resetSchema = z.object({ confirm: z.literal("RESET", { error: "Type RESET to confirm." }) });

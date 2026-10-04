@@ -13,10 +13,17 @@ const envSchema = z.object({
   FAST_ROUND_SEC: z.coerce.number().int().min(5).max(120).default(20),
   /** Postgres for results. Unset in dev: results live in memory until restart. Required in production. */
   DATABASE_URL: z.url().optional(),
-}).refine((env) => env.NODE_ENV !== "production" || env.DATABASE_URL, {
-  message: "DATABASE_URL is required in production",
-  path: ["DATABASE_URL"],
-});
+  /** Staff passcode for /admin, /live and /leaderboard. Dev default "admin"; production must set a real one. */
+  ADMIN_PASSCODE: z.string().min(1).default("admin"),
+})
+  .refine((env) => env.NODE_ENV !== "production" || env.DATABASE_URL, {
+    message: "DATABASE_URL is required in production",
+    path: ["DATABASE_URL"],
+  })
+  .refine((env) => env.NODE_ENV !== "production" || (env.ADMIN_PASSCODE.length >= 8 && env.ADMIN_PASSCODE !== "change-me"), {
+    message: "ADMIN_PASSCODE must be set to a real passcode (8+ characters) in production",
+    path: ["ADMIN_PASSCODE"],
+  });
 
 export type Env = z.infer<typeof envSchema>;
 
