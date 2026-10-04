@@ -108,9 +108,12 @@ function AlertBar({ match }: { match: MatchView }) {
 const EFFECT_NAME: Record<EffectKind, string> = {
   surge: ATTACK_INFO.surge.name,
   bots: ATTACK_INFO.bots.name,
-  cutRoute: "Route cut",
   slowDb: "Database slowed",
-  flush: "Shelf emptied",
+  slowServers: "Servers slowed",
+  breakSplitter: "Splitter knocked out",
+  blindfold: "Blindfolded",
+  wrongTurn: "Visitors diverted",
+  jam: "Controls jammed",
   shield: "Shield",
   overclock: "Overclock",
   protected: "Rebooted — protected",
@@ -206,8 +209,8 @@ function MapArea({ match }: { match: MatchView }) {
 
 type Tab = "defence" | "attack" | "utility";
 const TABS: { id: Tab; label: string; keys: string }[] = [
-  { id: "defence", label: "Defend", keys: "1–6" },
-  { id: "attack", label: "Attack", keys: "A–H" },
+  { id: "defence", label: "Defend", keys: "1–7" },
+  { id: "attack", label: "Attack", keys: "A–L" },
   { id: "utility", label: "Boost", keys: "Q–R" },
 ];
 
@@ -267,7 +270,8 @@ const TONE_MARK: Record<Tone, string> = { neutral: "bg-faint", good: "bg-ok", wa
 function Shop({ match }: { match: MatchView }) {
   const [tab, setTab] = useState<Tab>("defence");
   const feed = useGameStore((s) => s.feed);
-  const locked = match.me.downSecondsLeft !== null;
+  const jam = match.me.effects.find((e) => e.kind === "jam");
+  const locked = match.me.downSecondsLeft !== null || jam !== undefined;
 
   // Every item keeps its shortcut, whichever tab is open.
   const bindings: Record<string, () => void> = {};
@@ -304,10 +308,16 @@ function Shop({ match }: { match: MatchView }) {
         ))}
       </div>
 
-      <div className="min-h-0 overflow-y-auto">
+      <div className="relative min-h-0 overflow-y-auto">
         {items.map((item) => (
           <ShopRow key={item.id} item={item} locked={locked} />
         ))}
+        {jam && (
+          <div className="absolute inset-0 grid place-content-center justify-items-center bg-bg/85" role="alert">
+            <p className="text-2xl font-semibold tracking-[-0.02em] text-bad">Controls jammed</p>
+            <p className="mt-1 text-sm text-muted">Back in {jam.secondsLeft}s</p>
+          </div>
+        )}
       </div>
 
       <div className="mt-auto flex flex-col border-t border-line px-6 py-2.5">

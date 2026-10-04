@@ -34,6 +34,7 @@ export type SimConfig = {
   sellRefund: number; // share of the price returned on sale
   attackRegroupSec: number; // after any attack, all attacks wait this long
   attackPriceStep: number; // each repeat of the same attack in a round costs this much more
+  attackFatigueStep: number; // every attack sent makes all attacks this much pricier for the round
 
   // Health
   healthZeroAt: number; // served share at/below which health heads to 0
@@ -78,6 +79,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   sellRefund: 0.5,
   attackRegroupSec: 5,
   attackPriceStep: 0.25,
+  attackFatigueStep: 0.08,
 
   healthZeroAt: 0.4,
   healthFullAt: 0.95,

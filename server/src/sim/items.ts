@@ -1,9 +1,19 @@
 // The shop: everything a team can buy, use or send. Ids are code names;
 // player-facing names live in the web app (never tech terms on screen).
 
-export const DEFENCES = ["server", "splitter", "bouncer", "shelf", "backupDb", "secondRoute"] as const;
+export const DEFENCES = ["server", "splitter", "bouncer", "shelf", "backupDb", "lockAddress", "backupMonitor"] as const;
 export const UTILITIES = ["repair", "shield", "overclock", "instantBackup"] as const;
-export const ATTACKS = ["surge", "bots", "cutRoute", "slowDb", "meltdown", "flush"] as const;
+export const ATTACKS = [
+  "surge",
+  "bots",
+  "slowDb",
+  "destroy",
+  "slowServers",
+  "breakSplitter",
+  "blindfold",
+  "wrongTurn",
+  "jam",
+] as const;
 
 export type DefenceId = (typeof DEFENCES)[number];
 export type UtilityId = (typeof UTILITIES)[number];
@@ -37,21 +47,25 @@ export const DEFAULT_CATALOGUE: Catalogue = {
     bouncer: { price: 200, upkeepPerSec: 2, max: 1 },
     shelf: { price: 200, upkeepPerSec: 2, max: 1 },
     backupDb: { price: 200, upkeepPerSec: 2, max: 2 },
-    secondRoute: { price: 180, upkeepPerSec: 1.5, max: 1 },
+    lockAddress: { price: 160, upkeepPerSec: 1.5, max: 1 },
+    backupMonitor: { price: 140, upkeepPerSec: 1, max: 1 },
   },
   utilities: {
     repair: { price: 220, cooldownSec: 15, durationSec: 0, amount: 35 }, // +health
     shield: { price: 180, cooldownSec: 10, durationSec: 15, amount: 1 }, // blocks the next attack
     overclock: { price: 160, cooldownSec: 20, durationSec: 10, amount: 1.6 }, // server speed ×
-    instantBackup: { price: 160, cooldownSec: 10, durationSec: 0, amount: 0 }, // restores melted servers
+    instantBackup: { price: 160, cooldownSec: 10, durationSec: 0, amount: 0 }, // repairs wrecked servers
   },
   attacks: {
-    surge: { price: 220, cooldownSec: 12, warningSec: 3, durationSec: 10, strength: 1.7 }, // crowd ×
-    bots: { price: 240, cooldownSec: 15, warningSec: 3, durationSec: 12, strength: 1 }, // bots per normal visitor
-    cutRoute: { price: 260, cooldownSec: 18, warningSec: 3, durationSec: 6, strength: 1 }, // offline (1s with a second route)
+    surge: { price: 220, cooldownSec: 12, warningSec: 3, durationSec: 10, strength: 1.7 }, // real crowd ×
+    bots: { price: 240, cooldownSec: 15, warningSec: 3, durationSec: 12, strength: 0.8 }, // bots per real visitor
     slowDb: { price: 220, cooldownSec: 15, warningSec: 3, durationSec: 12, strength: 0.5 }, // database speed ×
-    meltdown: { price: 280, cooldownSec: 20, warningSec: 3, durationSec: 12, strength: 0.4 }, // share of servers melted
-    flush: { price: 160, cooldownSec: 12, warningSec: 3, durationSec: 6, strength: 1 }, // shelf cold this long, then re-warms
+    destroy: { price: 280, cooldownSec: 18, warningSec: 3, durationSec: 10, strength: 2 }, // servers wrecked
+    slowServers: { price: 220, cooldownSec: 15, warningSec: 3, durationSec: 12, strength: 0.7 }, // server speed ×
+    breakSplitter: { price: 200, cooldownSec: 15, warningSec: 3, durationSec: 10, strength: 0.3 }, // servers past 2 work at ×
+    blindfold: { price: 180, cooldownSec: 15, warningSec: 3, durationSec: 8, strength: 1 }, // map + alerts dark
+    wrongTurn: { price: 240, cooldownSec: 18, warningSec: 3, durationSec: 10, strength: 0.45 }, // share of their visitors sent to you
+    jam: { price: 240, cooldownSec: 20, warningSec: 3, durationSec: 5, strength: 1 }, // their shop frozen
   },
 };
 

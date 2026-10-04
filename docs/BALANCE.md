@@ -57,7 +57,7 @@ each other** in every pairing.
 | Bouncer | stops 85% of bots, wrongly turns away 3% of real people |
 | Traffic splitter | without it, servers beyond 4 work at 60% |
 | Setup | servers 2s, other defences 4s (instant in the buy phase) |
-| Attacks | 3s warning · regroup 5s after any attack · +25% per repeat in a round |
+| Attacks | 3s warning · regroup 5s after any attack · +25% per repeat of the same attack · +8% to all attacks per attack sent (each round) |
 | Sell refund | 50% |
 
 | Item | Price | Upkeep / cooldown | Effect |
@@ -67,21 +67,36 @@ each other** in every pairing.
 | Bouncer | 200 | 2/s | see above |
 | Fast shelf | 200 | 2/s | see above |
 | Backup database (max 2) | 200 | 2/s | +120 visitors/s at the database |
-| Second route | 180 | 1.5/s | a cut route lasts 1s instead of 6s |
+| Lock your address | 160 | 1.5/s | Wrong Turn lasts 1s |
+| Backup monitor | 140 | 1/s | Blindfold lasts 1s |
 | Emergency repair | 220 | 15s | +35 health |
 | Shield | 180 | 10s | blocks the next attack within 15s |
 | Overclock | 160 | 20s | servers ×1.6 for 10s |
-| Instant backup | 160 | 10s | melted servers back |
+| Instant backup | 160 | 10s | wrecked servers back |
 | Crowd surge | 220 | 12s | their crowd ×1.7 for 10s |
-| Bot army | 240 | 15s | bots = 1× their crowd for 12s |
-| Cut a route | 260 | 18s | offline 6s (1s with a second route) |
+| Bot army | 240 | 15s | bots = 0.8× their crowd for 12s |
 | Slow their database | 220 | 15s | database ×0.5 for 12s |
-| Server meltdown | 280 | 20s | 40% of their servers melt for 12s |
-| Flush their shelf | 160 | 12s | shelf cold for 6s, then re-warms |
+| Destroy servers | 280 | 18s | 2 servers wrecked for 10s |
+| Slow their servers | 220 | 15s | servers ×0.7 for 12s |
+| Knock out their splitter | 200 | 15s | servers past 2 work at 30% for 10s (2s if they own a splitter) |
+| Blindfold | 180 | 15s | their map + alerts dark for 8s (1s with a backup monitor) |
+| Wrong Turn | 240 | 18s | 45% of their visitors go to you for 10s (1s if their address is locked) |
+| Jam their controls | 240 | 20s | their shop frozen for 5s |
+
+Damage per coin against an undefended site (`src/scripts/attackvalue.ts`): bots 3.1 · slow
+database 3.2 · destroy 3.2 · slow servers 2.3 · splitter 2.6 · surge 1.3 · Wrong Turn 1.2.
+Blindfold and Jam score 0 there — they only hurt players who press things.
 
 Match points: total + 0.5 × opponent total + 2,000 for a win.
 
 ## Bot results
+
+### 2026-10-04 · New attack roster (9 attacks) · 40 seeds per pairing
+
+Overall win rate vs others: idle 0% · turtle 24% · rusher 68% · balanced 74% ·
+humanFast 54% · humanSlow 82%. Before the fix the rusher won 93% (9 attacks meant
+one was always off cooldown and uncountered) — added the +8% attack fatigue and
+toned down Destroy servers, Bot army and Slow their servers.
 
 ### 2026-10-04 · Duel, 3 rounds · 40 seeds per pairing
 

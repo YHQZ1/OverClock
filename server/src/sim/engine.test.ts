@@ -73,9 +73,9 @@ describe("shop", () => {
   });
 
   it("is instant during the buy phase, and the clock stands still", () => {
-    const s = step(rich(createDuel(setup, 1)), [buy(1, "server"), buy(1, "secondRoute")], setup, { paused: true }).state;
+    const s = step(rich(createDuel(setup, 1)), [buy(1, "server"), buy(1, "lockAddress")], setup, { paused: true }).state;
     expect(s.tick).toBe(0);
-    expect(s.sites[1].owned.secondRoute).toBe(1);
+    expect(s.sites[1].owned.lockAddress).toBe(1);
     expect(s.sites[1].servers.at(-1)!.bootTicksLeft).toBe(0);
   });
 
@@ -131,18 +131,69 @@ describe("attacks", () => {
 
   it("bounce off a shield", () => {
     let s = rich(createDuel(setup, 1));
-    s = step(s, [attack(1, "meltdown"), use(2, "shield")], setup).state;
-    s = run(s, t(config.items.attacks.meltdown.warningSec) + 1);
+    s = step(s, [attack(1, "destroy"), use(2, "shield")], setup).state;
+    s = run(s, t(config.items.attacks.destroy.warningSec) + 1);
     expect(s.sites[2].servers.every((u) => u.meltedTicksLeft === 0)).toBe(true);
     expect(s.sites[2].totals.attacksBlocked).toBe(1);
   });
 
-  it("meltdown melts servers; instant backup brings them back", () => {
+  it("destroy wrecks two servers; instant backup brings them back", () => {
     let s = rich(createDuel(setup, 1));
-    s = run(s, t(config.items.attacks.meltdown.warningSec) + 1, [attack(1, "meltdown")]);
+    s = run(s, t(config.items.attacks.destroy.warningSec) + 1, [attack(1, "destroy")]);
+    expect(s.sites[2].servers.filter((u) => u.meltedTicksLeft > 0)).toHaveLength(2);
     expect(s.sites[2].servers.some((u) => u.meltedTicksLeft > 0)).toBe(true);
     s = step(s, [use(2, "instantBackup")], setup).state;
     expect(s.sites[2].servers.every((u) => u.meltedTicksLeft === 0)).toBe(true);
+  });
+});
+
+describe("new attacks", () => {
+  const land = (item: ItemId, prep: (s: DuelState) => DuelState = (s) => s) => {
+    const s = prep(rich(createDuel(setup, 1)));
+    return run(s, t(config.items.attacks.surge.warningSec) + 1, [attack(1, item)]);
+  };
+
+  it("wrong turn sends their visitors to you", () => {
+    const s = run(land("wrongTurn"), t(3));
+    expect(s.sites[1].flow.peopleRate).toBeGreaterThan(s.sites[2].flow.peopleRate * 1.5);
+  });
+
+  it("a locked address stops wrong turn after a blip", () => {
+    const locked = (s: DuelState) => step(s, [buy(2, "lockAddress")], setup, { paused: true }).state;
+    const s = run(land("wrongTurn", locked), t(2));
+    expect(s.sites[1].flow.peopleRate).toBeCloseTo(s.sites[2].flow.peopleRate, 5);
+  });
+
+  it("jam freezes their shop", () => {
+    const s = land("jam");
+    expect(step(s, [buy(2, "server")], setup).events).toContainEqual(
+      expect.objectContaining({ side: 2, type: "rejected", reason: "jammed" }),
+    );
+  });
+
+  it("slowing their servers lets fewer people in", () => {
+    const busy = (s: DuelState) => ({ ...s, crowdRate: 200 });
+    const slowed = run(land("slowServers", busy), t(3));
+    expect(slowed.sites[2].flow.servedShare).toBeLessThan(slowed.sites[1].flow.servedShare);
+  });
+
+  it("a traffic splitter shrugs off being knocked out", () => {
+    const withSplitter = (s: DuelState) => step(s, [buy(2, "splitter")], setup, { paused: true }).state;
+    const s = land("breakSplitter", withSplitter);
+    expect(s.sites[2].effects.find((e) => e.kind === "breakSplitter")!.ticksLeft).toBeLessThanOrEqual(t(2));
+  });
+
+  it("a backup monitor shortens a blindfold to a blip", () => {
+    const monitored = (s: DuelState) => step(s, [buy(2, "backupMonitor")], setup, { paused: true }).state;
+    expect(land("blindfold").sites[2].effects.find((e) => e.kind === "blindfold")!.ticksLeft).toBeGreaterThan(t(5));
+    expect(land("blindfold", monitored).sites[2].effects.find((e) => e.kind === "blindfold")!.ticksLeft).toBeLessThanOrEqual(t(1));
+  });
+
+  it("every attack makes all attacks pricier for the round", () => {
+    let s = rich(createDuel(setup, 1));
+    const before = priceOf(s.sites[1], "bots", config);
+    s = step(s, [attack(1, "surge")], setup).state;
+    expect(priceOf(s.sites[1], "bots", config)).toBeGreaterThan(before);
   });
 });
 

@@ -7,12 +7,15 @@ import { music, sfx } from "./sfx";
 type SoundName = keyof typeof sfx;
 
 const HIT_BY: Record<AttackId, SoundName> = {
-  bots: "hitBots",
-  cutRoute: "hitCut",
-  slowDb: "hitSlow",
   surge: "hitSurge",
-  meltdown: "hitMelt",
-  flush: "hitFlush",
+  bots: "hitBots",
+  slowDb: "hitSlow",
+  destroy: "hitDestroy",
+  slowServers: "hitSlowServers",
+  breakSplitter: "hitSplitter",
+  blindfold: "hitBlind",
+  wrongTurn: "hitWrongTurn",
+  jam: "hitJam",
 };
 
 /** Plays sounds for game events and phase changes while mounted. Purely a bonus layer. */
@@ -67,9 +70,6 @@ export function useSoundEffects(): void {
             break;
           case "attackBlocked":
             play(mine ? "blocked" : "denied");
-            break;
-          case "serversMelted":
-            if (mine) play("hitMelt");
             break;
           case "rejected":
             if (mine && (!e.by || e.by === myName) && e.reason !== "paused") play("denied");

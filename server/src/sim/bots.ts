@@ -42,20 +42,15 @@ function defend(state: DuelState, side: Side, config: SimConfig, wallet: Wallet,
   const use = (item: ItemId) =>
     !site.cooldowns[item] && spend(wallet, priceOf(site, item, config)) && out.push(act(side, "use", item));
 
+  const shield = () => !findEffect(site, "shield") && use("shield");
   for (const inc of site.incoming) {
     if (inc.ticksUntil !== toTicks(2, config)) continue; // react once, 2s before it lands
     switch (inc.attack) {
       case "bots":
-        if (!site.owned.bouncer) buy("bouncer");
-        break;
-      case "cutRoute":
-        if (!site.owned.secondRoute) buy("secondRoute");
+        if (!site.owned.bouncer) buy("bouncer") || shield();
         break;
       case "slowDb":
         if (site.owned.backupDb < 1) buy("backupDb");
-        break;
-      case "meltdown":
-        if (!findEffect(site, "shield")) use("shield");
         break;
       case "surge":
         if (!use("overclock")) {
@@ -63,7 +58,21 @@ function defend(state: DuelState, side: Side, config: SimConfig, wallet: Wallet,
           buy("server");
         }
         break;
-      case "flush":
+      case "slowServers":
+        use("overclock") || shield();
+        break;
+      case "breakSplitter":
+        if (!site.owned.splitter) shield();
+        break;
+      case "blindfold":
+        if (!site.owned.backupMonitor) shield();
+        break;
+      case "wrongTurn":
+        if (!site.owned.lockAddress) shield();
+        break;
+      case "destroy":
+      case "jam":
+        shield();
         break;
     }
   }
@@ -94,12 +103,15 @@ function chooseAttack(state: DuelState, side: Side, config: SimConfig, fund: num
   const them = state.sites[other(side)];
   if (me.regroupTicks > 0 || me.crashTicksLeft > 0) return null;
   const ranked: AttackId[] = [
-    ...(them.owned.secondRoute ? [] : (["cutRoute"] as const)),
+    ...(them.owned.lockAddress ? [] : (["wrongTurn"] as const)),
     ...(them.owned.bouncer ? [] : (["bots"] as const)),
+    ...(them.owned.backupMonitor ? [] : (["blindfold"] as const)),
     ...(them.owned.backupDb ? [] : (["slowDb"] as const)),
-    "meltdown",
+    ...(them.owned.splitter ? [] : (["breakSplitter"] as const)),
+    "destroy",
+    "slowServers",
     "surge",
-    ...(them.owned.shelf ? (["flush"] as const) : []),
+    "jam",
   ];
   return ranked.find((a) => !me.cooldowns[a] && fund >= priceOf(me, a, config)) ?? null;
 }
@@ -113,7 +125,7 @@ function planned(config: SimConfig, plan: Plan): Policy {
   return (state, side, phase) => {
     const me = state.sites[side];
     if (phase === "buy") {
-      if (state.sites[side].owned.splitter + state.sites[side].owned.bouncer + state.sites[side].owned.secondRoute > 0) return [];
+      if (me.totals.coinsSpent > 0) return [];
       const wallet: Wallet = { coins: me.coins };
       return plan.build.filter((item) => spend(wallet, priceOf(me, item, config))).map((item) => act(side, "buy", item));
     }
@@ -139,7 +151,7 @@ export const idleBot = (): Policy => () => [];
 
 /** Only defends. */
 export const turtleBot = (config: SimConfig) =>
-  planned(config, { build: ["secondRoute", "bouncer"], attackShare: 0, defend: true, reactionSec: 0 });
+  planned(config, { build: ["bouncer", "lockAddress"], attackShare: 0, defend: true, reactionSec: 0 });
 
 /** Spends everything on attacks; never defends. */
 export const rusherBot = (config: SimConfig) =>
@@ -147,11 +159,11 @@ export const rusherBot = (config: SimConfig) =>
 
 /** Defends to stay healthy, saves part of its income for attacks. */
 export const balancedBot = (config: SimConfig) =>
-  planned(config, { build: ["secondRoute"], attackShare: 0.45, defend: true, reactionSec: 0 });
+  planned(config, { build: ["lockAddress"], attackShare: 0.45, defend: true, reactionSec: 0 });
 
 /** Balanced, but reacting like a person (only every `reactionSec`). */
 export const humanBot = (config: SimConfig, reactionSec: number) =>
-  planned(config, { build: ["secondRoute"], attackShare: 0.4, defend: true, reactionSec });
+  planned(config, { build: ["lockAddress"], attackShare: 0.4, defend: true, reactionSec });
 
 export const BOTS = {
   idle: (_config: SimConfig) => idleBot(),

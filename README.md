@@ -6,8 +6,8 @@ Overclock is a live, head-to-head strategy game built for **SymbiTech**, our
 college's tech fest. Two teams sit at neighbouring lab PCs, each running a
 pretend website. Crowds pour in, money flows from every visitor you serve, and
 you decide — second by second — whether to spend it **defending** your own
-site or **attacking** the other team's: send a crowd surge, unleash a bot
-army, cut their connection, slow their database.
+site or **attacking** the other team's: unleash a bot army, blindfold them,
+jam their controls, or steal their visitors with a Wrong Turn.
 
 Three short rounds. One winner. A live leaderboard on the big screen.
 
@@ -70,8 +70,8 @@ coins. Coins are the only currency, and every coin is a choice:
 
 | Spend on…    | Examples (what players see)                                        | Real concept (revealed at the end)         |
 | ------------ | ------------------------------------------------------------------ | ------------------------------------------ |
-| **Defence**  | Servers · Traffic splitter · Bouncer · Fast shelf · Backup database · Second route | Scaling · load balancer · rate limiter · cache · read replica · redundant network |
-| **Attack**   | Crowd surge · Bot army · Cut a route · Slow their database · Server meltdown · Flush their shelf | Traffic spike · DDoS · network partition · DB degradation · instance failure · cache stampede |
+| **Defence**  | Servers · Traffic splitter · Bouncer · Fast shelf · Backup database · Lock your address · Backup monitor | Scaling · load balancer · rate limiter · cache · read replica · DNS lock · redundant monitoring |
+| **Attack**   | Crowd surge · Bot army · Slow their database · Destroy servers · Slow their servers · Knock out their splitter · Blindfold · Wrong Turn · Jam their controls | Traffic spike · DDoS · DB degradation · instance failure · CPU throttling · load balancer failure · monitoring outage · DNS hijacking · control-plane lockout |
 | **Utility**  | Emergency repair · Shield · Overclock · Instant backup              | Recovery · protection · vertical scaling burst · failover |
 
 - **Anyone can do anything, any time.** There are no fixed attacker or

@@ -12,12 +12,12 @@ export type ServerUnit = {
   id: number;
   /** > 0 while starting up. */
   bootTicksLeft: number;
-  /** > 0 while melted (offline, no upkeep). */
+  /** > 0 while wrecked by an attack (offline, no upkeep). */
   meltedTicksLeft: number;
 };
 
 /** Something active on a site: an attack that landed, or a utility in use. */
-export type EffectKind = Exclude<AttackId, "meltdown"> | "shield" | "overclock" | "protected";
+export type EffectKind = Exclude<AttackId, "destroy"> | "shield" | "overclock" | "protected";
 export type Effect = { kind: EffectKind; ticksLeft: number; totalTicks: number };
 
 /** An attack on its way, announced to the target. */
@@ -102,7 +102,7 @@ export type ActionKind = "buy" | "sell" | "use" | "attack";
 /** A player's intent. `by` is a display name carried into events (no logic uses it). */
 export type Action = { side: Side; kind: ActionKind; item: ItemId; by?: string };
 
-export type RejectReason = "coins" | "cooldown" | "max" | "min" | "none" | "down" | "paused" | "ended" | "wrongKind";
+export type RejectReason = "coins" | "cooldown" | "max" | "min" | "none" | "down" | "paused" | "ended" | "wrongKind" | "jammed";
 
 /** Every event names the side it concerns. */
 export type SimEvent =

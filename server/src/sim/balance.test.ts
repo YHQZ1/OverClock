@@ -60,48 +60,46 @@ describe("duel balance", () => {
 });
 
 describe("every attack has a counter that measurably helps", () => {
-  const setup: MatchSetup = { scenario: { ...ROUNDS[1]!, rushes: [] }, config };
-  const at = toTicks(20, config);
-
-  /** A busy site where the database is the limit unless the shelf is warm — where a flush matters. */
+  const normal: MatchSetup = { scenario: { ...ROUNDS[1]!, rushes: [] }, config };
+  /** A busy site (10 servers, a big crowd, a roomy database) — where server attacks really bite. */
   const busy: MatchSetup = {
     scenario: { ...ROUNDS[1]!, startServers: 10, traffic: { ...ROUNDS[1]!.traffic, baseRate: 220, growth: 0 }, rushes: [] },
-    config,
+    config: { ...config, dbCapacity: 400 },
   };
+  const at = toTicks(20, config);
 
-  /** Side 1 sends `attack` at 20s; side 2 optionally prepares or reacts. */
-  function lostTo(attack: AttackId, prepare: ItemId[], react: Action["kind"] | null, counter?: ItemId) {
-    const round = attack === "flush" ? busy : setup;
+  /** Defender's round score when side 1 sends `attack` at 20s (or nothing). */
+  function defenderScore(round: MatchSetup, attack: AttackId | null, prepare: ItemId[], react?: [Action["kind"], ItemId]): number {
     const attacker: Policy = (state, side, phase) =>
-      phase === "live" && state.tick === at ? [{ side, kind: "attack", item: attack }] : [];
+      attack && phase === "live" && state.tick === at ? [{ side, kind: "attack", item: attack }] : [];
+    const landing = attack ? toTicks(config.items.attacks[attack].warningSec, config) : 0;
     const defender: Policy = (state, side, phase) => {
-      if (phase === "buy") return [];
-      const landing = toTicks(config.items.attacks[attack].warningSec, config);
-      if (react && counter && state.tick === at + landing + 1) return [{ side, kind: react, item: counter }];
-      return [];
+      if (phase === "buy") return state.sites[side].totals.coinsSpent === 0 ? prepare.map((item) => ({ side, kind: "buy" as const, item })) : [];
+      return react && state.tick === at + landing + 1 ? [{ side, kind: react[0], item: react[1] }] : [];
     };
-    const prepared: Policy = (state, side, phase) =>
-      phase === "buy" && state.sites[side].totals.coinsSpent === 0
-        ? prepare.map((item) => ({ side, kind: "buy" as const, item }))
-        : defender(state, side, phase);
-    const run = runRound(round, 5, { 1: attacker, 2: prepare.length ? prepared : defender });
-    return run.state.sites[2].totals.lost;
+    return roundResult(runRound(round, 5, { 1: attacker, 2: defender }).state, config).scores[2].total;
   }
 
-  const cases: { attack: AttackId; prepare: ItemId[]; react?: [Action["kind"], ItemId] }[] = [
+  const cases: { attack: AttackId; prepare?: ItemId[]; react?: [Action["kind"], ItemId] }[] = [
     { attack: "bots", prepare: ["bouncer"] },
-    { attack: "cutRoute", prepare: ["secondRoute"] },
     { attack: "slowDb", prepare: ["backupDb"] },
-    { attack: "surge", prepare: [], react: ["use", "overclock"] },
-    { attack: "meltdown", prepare: [], react: ["use", "instantBackup"] },
-    { attack: "flush", prepare: ["shelf", "backupDb"] },
+    { attack: "surge", react: ["use", "overclock"] },
+    { attack: "destroy", react: ["use", "instantBackup"] },
+    { attack: "slowServers", react: ["use", "overclock"] },
+    { attack: "breakSplitter", prepare: ["splitter"] },
+    { attack: "wrongTurn", prepare: ["lockAddress"] },
   ];
+  // Blindfold and Jam only hurt players who press things — covered by the engine tests.
 
   for (const c of cases) {
-    it(`${c.attack} → ${c.prepare.concat(c.react ? [c.react[1]] : []).join(" + ")}`, () => {
-      const without = lostTo(c.attack, c.attack === "flush" ? ["shelf"] : [], null);
-      const withCounter = lostTo(c.attack, c.prepare, c.react?.[0] ?? null, c.react?.[1]);
-      expect(withCounter).toBeLessThan(without * 0.8);
+    const counter = [...(c.prepare ?? []), ...(c.react ? [c.react[1]] : [])].join(" + ");
+    it(`${c.attack} → ${counter}`, () => {
+      const prepare = c.prepare ?? [];
+      const round = c.attack === "slowServers" || c.attack === "breakSplitter" ? busy : normal;
+      const damage = defenderScore(round, null, []) - defenderScore(round, c.attack, []);
+      const damageCountered = defenderScore(round, null, prepare) - defenderScore(round, c.attack, prepare, c.react);
+      expect(damage, "the attack should hurt").toBeGreaterThan(100);
+      expect(damageCountered, "the counter should cut the damage at least in half").toBeLessThan(damage * 0.5);
     });
   }
 });

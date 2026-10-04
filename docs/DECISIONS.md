@@ -22,7 +22,9 @@ choices are kept at the bottom so we remember why we moved on.
 | **Every attack is announced** ("⚠️ incoming in 3…") | Defending is skill, not luck. |
 | **Anti-snowball**: comeback income for the trailing team, brief protection after a reboot | Matches stay tense to the end. |
 | **Defences take ~4s to set up** (servers 2s); instant during the buy phase | With instant counters a 3s warning made every attack useless (bots: defence-only won 96%). "Build ahead, or Shield in a pinch" rewards scouting and keeps surprise attacks worth something. |
-| **After any attack, attackers regroup (5s); repeating the same attack in a round costs +25% each time** | Without it, all-attack spam won 98% of bot matches. Encourages variety and timing. |
+| **After any attack, attackers regroup (5s); repeating the same attack in a round costs +25% each time; every attack makes all attacks +8% pricier for the round** | Without these, all-attack spam won 93–98% of bot matches. Encourages variety and timing. |
+| **Attack roster (9)**: Crowd surge (real visitors), Bot army (fake visitors — the DDoS), Slow their database, Destroy servers, Slow their servers, Knock out their splitter, Blindfold, Wrong Turn, Jam their controls. Dropped: Cut a route, Flush their shelf, Server meltdown (→ Destroy servers) | Chosen with the user: each attack hits something different — traffic, capacity, eyes, hands, or visitors themselves. Cut a route and Flush added little. |
+| **Two new defences — Lock your address, Backup monitor**; Second route removed | Every attack needs a counter you can build ahead; Shield remains the universal panic button. |
 | **Every round starts fresh** (same coins and 4 servers for both teams) | Fair restarts; no snowballing between rounds. Resolves the reset-vs-carry question. |
 | **Vote ends early once everyone has voted** | No waiting out the timer. |
 | **Joining players are auto-seated on the emptier team** | A 1v1 lines up with zero clicks; 4 players land 2v2. Anyone can still move. |

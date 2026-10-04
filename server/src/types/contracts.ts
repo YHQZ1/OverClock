@@ -97,8 +97,9 @@ export type RoomView = {
 
 // ---------- live duel ----------
 
-export type PartStatus = "ok" | "strained" | "failing" | "none";
-export type ServerState = "booting" | "busy" | "idle" | "melted" | "down";
+/** "hidden" = this side is blindfolded and can't see it. */
+export type PartStatus = "ok" | "strained" | "failing" | "none" | "hidden";
+export type ServerState = "booting" | "busy" | "idle" | "wrecked" | "down" | "unknown";
 export type ServerSlotView = { id: number; state: ServerState; progress: number };
 
 export type EffectView = { kind: EffectKind; secondsLeft: number; share: number };
@@ -123,6 +124,8 @@ export type SiteView = {
   /** Bots relative to real visitors (0 = none). */
   botShare: number;
   effects: EffectView[];
+  /** This side is blindfolded: its own map and alerts are dark. */
+  blind: boolean;
 };
 
 export type ShopItemView = {

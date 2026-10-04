@@ -17,6 +17,9 @@ export function currentAlert(m: MatchView): Alert {
     return { id: "down", level: "bad", title: "Your site is down!", hint: `Back in ${me.downSecondsLeft}s — nobody can get in` };
   }
 
+  if (me.blind) return { id: "blind", level: "bad", title: "You’re blindfolded!", hint: "A Backup monitor stops this next time" };
+  if (has("jam")) return { id: "jam", level: "bad", title: "Your controls are jammed!", hint: "Raise a Shield before the next one lands" };
+
   const next = [...m.incoming].sort((a, b) => a.secondsLeft - b.secondsLeft)[0];
   if (next) {
     const info = ATTACK_INFO[next.attack];
@@ -28,18 +31,29 @@ export function currentAlert(m: MatchView): Alert {
     };
   }
 
-  if (me.parts.door === "failing" || me.parts.door === "strained") {
-    if (has("cutRoute")) return { id: "cut", level: "bad", title: "Connection cut!", hint: "A Second route stops this next time" };
-    if (me.botShare > 0.1) return { id: "bots", level: "bad", title: "Bots are flooding in!", hint: "Get a Bouncer, or use a Shield" };
+  if (has("wrongTurn")) {
+    return { id: "wrongturn", level: "bad", title: "Your visitors are going to them!", hint: "Lock your address stops this next time" };
+  }
+  if ((me.parts.door === "failing" || me.parts.door === "strained") && me.botShare > 0.1) {
+    return { id: "bots", level: "bad", title: "Bots are flooding in!", hint: "Get a Bouncer, or use a Shield" };
   }
   if (me.parts.servers === "failing" || me.parts.servers === "strained") {
-    const melted = me.servers.some((s) => s.state === "melted");
+    const wrecked = me.servers.some((s) => s.state === "wrecked");
     const starting = me.servers.some((s) => s.state === "booting");
+    const hint = wrecked
+      ? "Servers wrecked — Instant backup brings them back"
+      : has("breakSplitter")
+        ? "Your splitter is knocked out — own one and it fails over in 2s"
+        : has("slowServers")
+          ? "Your servers are slowed — Overclock cancels it"
+          : starting
+            ? "New servers are starting…"
+            : "Add servers, or Overclock";
     return {
       id: `servers-${me.parts.servers}`,
       level: me.parts.servers === "failing" ? "bad" : "warn",
       title: me.parts.servers === "failing" ? "People can’t get in!" : "Servers are struggling",
-      hint: melted ? "Servers melted — Instant backup brings them back" : starting ? "New servers are starting…" : "Add servers, or Overclock",
+      hint,
     };
   }
   if (me.parts.db === "failing" || me.parts.db === "strained") {
@@ -51,9 +65,6 @@ export function currentAlert(m: MatchView): Alert {
     };
   }
   if (me.critical) return { id: "critical", level: "bad", title: "Health critical!", hint: "Emergency repair, or fix the red part" };
-  if (me.parts.shelf === "failing" && me.owned.shelf > 0) {
-    return { id: "shelf", level: "warn", title: "Your Fast shelf was emptied", hint: "It refills in a few seconds" };
-  }
   if (m.them.downSecondsLeft !== null) return { id: "them-down", level: "notice", title: "Their site is down!", hint: "Push while they’re rebooting" };
 
   const idle = me.servers.filter((s) => s.state === "idle").length;

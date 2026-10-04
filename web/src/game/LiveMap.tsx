@@ -20,7 +20,6 @@ const DB = { x: 706, size: 52 };
 
 const ENTRY_YS = [76, 108, 140, 172, 204];
 const LANE_YS = [84, 140, 196];
-const ROUTE_B_Y = 228;
 
 const half = (n: number) => n / 2;
 const rackRight = RACK.x + RACK.w;
@@ -33,7 +32,9 @@ const entryPath = (y: number) => curve(CROWD_EDGE, y, DOOR.x - half(DOOR.size), 
 const spreadPath = (y: number) => curve(DOOR.x + half(DOOR.size), MID, RACK.x, y);
 const mergePath = (y: number) => curve(rackRight, y, SHELF.x - half(SHELF.size), MID);
 const toDb = `M${SHELF.x + half(SHELF.size)} ${MID} L${DB.x - half(DB.size)} ${MID}`;
-const routeB = `M${CROWD_EDGE} ${ROUTE_B_Y} C${CROWD_EDGE + 50} ${ROUTE_B_Y} ${DOOR.x - 40} ${ROUTE_B_Y} ${DOOR.x} ${MID + half(DOOR.size)}`;
+/** Wrong Turn: visitors veer off before the door and leave the map — towards the other team. */
+const stolenPath = (y: number) =>
+  `M${CROWD_EDGE} ${y} C${CROWD_EDGE + 60} ${y} ${DOOR.x - 70} 34 ${DOOR.x + 30} 14 L${W + 20} 6`;
 
 const through = (entry: number, lane: number) =>
   [entryPath(entry), join(spreadPath(lane)), `L${rackRight} ${lane}`, join(mergePath(lane)), join(toDb)].join(" ");
@@ -75,8 +76,15 @@ const STROKE: Record<PartStatus, string> = {
   strained: "stroke-warn",
   failing: "stroke-bad animate-alarm-stroke",
   none: "stroke-line",
+  hidden: "stroke-line",
 };
-const TEXT: Record<PartStatus, string> = { ok: "fill-muted", strained: "fill-warn", failing: "fill-bad", none: "fill-faint" };
+const TEXT: Record<PartStatus, string> = {
+  ok: "fill-muted",
+  strained: "fill-warn",
+  failing: "fill-bad",
+  none: "fill-faint",
+  hidden: "fill-faint",
+};
 
 type IconName = "door" | "shelf" | "db";
 
@@ -152,7 +160,9 @@ function Rack({ servers, status, overclock }: { servers: ServerSlotView[]; statu
             return <rect key={s.id} className="fill-none stroke-faint" strokeDasharray="3 3" {...box} />;
           case "down":
             return <rect key={s.id} className="fill-bad/25 stroke-bad" {...box} />;
-          case "melted":
+          case "unknown":
+            return <rect key={s.id} className="fill-none stroke-line" {...box} />;
+          case "wrecked":
             return <rect key={s.id} className="fill-warn/20 stroke-warn" strokeDasharray="2 2" {...box} />;
           case "booting": {
             const filled = cell * s.progress;
@@ -174,7 +184,7 @@ const flowCount = (crowd: number) => Math.min(26, Math.max(3, Math.round(crowd *
 export function LiveMap({ site, compact = false }: { site: SiteView; compact?: boolean }) {
   const down = site.downSecondsLeft !== null;
   const crowdShown = Math.min(CROWD_SPOTS.length, Math.max(10, Math.round(14 + site.crowd * 24)));
-  const cut = site.effects.some((e) => e.kind === "cutRoute");
+  const stealing = site.effects.some((e) => e.kind === "wrongTurn");
   const shielded = site.effects.some((e) => e.kind === "shield");
   const overclock = site.effects.some((e) => e.kind === "overclock");
   const hasShelf = site.owned.shelf > 0;
@@ -185,6 +195,7 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
   const bouncing = Math.round(flows * turnedAway);
   const botDots = Math.min(12, Math.round(site.botShare * 6));
   const where: Part = down ? "door" : (site.bottleneck ?? "servers");
+  const stolen = stealing ? Math.round(flows * 0.45) : 0;
 
   const dots = useMemo(
     () =>
@@ -193,17 +204,18 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
         const lane = LANE_YS[i % LANE_YS.length]!;
         const bot = i >= flows;
         const bounced = bot ? site.owned.bouncer > 0 && i % 6 !== 0 : i < bouncing;
+        const diverted = !bot && !bounced && i >= flows - stolen;
         const at = bot && bounced ? "door" : where;
         return {
           key: i,
-          tone: bot ? "fill-faint" : bounced ? "fill-bad" : "fill-accent",
-          d: bounced ? bounce(entry, lane, at) : through(entry, lane),
-          dur: (bounced ? 2.4 : 4.4) + ((i * 7) % 5) * 0.3,
+          tone: bot ? "fill-faint" : bounced ? "fill-bad" : diverted ? "fill-warn" : "fill-accent",
+          d: diverted ? stolenPath(entry) : bounced ? bounce(entry, lane, at) : through(entry, lane),
+          dur: (bounced || diverted ? 2.4 : 4.4) + ((i * 7) % 5) * 0.3,
           begin: -(i * 0.41),
-          bounced,
+          bounced: bounced || diverted,
         };
       }),
-    [flows, botDots, bouncing, where, site.owned.bouncer],
+    [flows, botDots, bouncing, stolen, where, site.owned.bouncer],
   );
 
   return (
@@ -223,7 +235,7 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
 
       <g className="fill-none stroke-line-strong" strokeWidth={1}>
         {ENTRY_YS.map((y) => (
-          <path key={`e${y}`} d={entryPath(y)} className={cut ? "stroke-bad" : undefined} strokeDasharray={cut ? "6 6" : undefined} />
+          <path key={`e${y}`} d={entryPath(y)} />
         ))}
         {LANE_YS.map((y) => (
           <path key={`s${y}`} d={spreadPath(y)} />
@@ -232,7 +244,6 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
           <path key={`m${y}`} d={mergePath(y)} />
         ))}
         <path d={toDb} />
-        {site.owned.secondRoute > 0 && <path d={routeB} className="stroke-accent" strokeDasharray="3 5" />}
       </g>
 
       <g className="fill-muted">
@@ -284,6 +295,17 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
           </text>
           <text className={TEXT[site.parts.db]} x={DB.x} y={LABEL_Y}>
             Database
+          </text>
+        </g>
+      )}
+      {site.blind && (
+        <g>
+          <rect className="fill-bg" opacity={0.94} width={W} height={H} />
+          <text x={W / 2} y={MID - 6} textAnchor="middle" className="fill-bad text-[34px] font-semibold tracking-[-0.03em]">
+            Blindfolded
+          </text>
+          <text x={W / 2} y={MID + 24} textAnchor="middle" className="fill-muted text-[15px]">
+            Your map and alerts are dark for a few seconds
           </text>
         </g>
       )}

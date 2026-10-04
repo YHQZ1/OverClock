@@ -11,6 +11,7 @@ const REJECTED: Partial<Record<string, string>> = {
   min: "You need at least one server",
   none: "Nothing to do that to",
   paused: "Wait for the round to start",
+  jammed: "Your controls are jammed",
   down: "Your site is down",
 };
 
@@ -51,9 +52,9 @@ export function describe(event: SimEvent, mySide: Side, me: string): Omit<FeedIt
     case "serverSwitchedOff":
       return mine ? { text: "Out of coins — something switched off", tone: "bad" } : null;
     case "serversMelted":
-      return mine ? { text: `${event.count} servers melted`, tone: "bad" } : { text: "Their servers melted", tone: "good" };
+      return mine ? { text: `${event.count} servers wrecked`, tone: "bad" } : { text: `Wrecked ${event.count} of their servers`, tone: "good" };
     case "serversRestored":
-      return mine ? { text: "Melted servers are back", tone: "good" } : null;
+      return mine ? { text: "Wrecked servers are back", tone: "good" } : null;
     case "crashed":
       return mine ? { text: "Your site went down", tone: "bad" } : { text: "Their site went down!", tone: "good" };
     case "rebooted":

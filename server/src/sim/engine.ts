@@ -21,15 +21,15 @@ import {
 /** Everything fixed for one round. */
 export type MatchSetup = { scenario: Scenario; config: SimConfig };
 
-const EXTRA_DEFENCES: readonly ExtraDefenceId[] = ["splitter", "bouncer", "shelf", "backupDb", "secondRoute"];
+const EXTRA_DEFENCES: readonly ExtraDefenceId[] = ["splitter", "bouncer", "shelf", "backupDb", "lockAddress", "backupMonitor"];
 /** What switches off first when a team can't pay upkeep (after spare servers). */
-const SWITCH_OFF_ORDER: readonly ExtraDefenceId[] = ["secondRoute", "backupDb", "shelf", "bouncer", "splitter"];
+const SWITCH_OFF_ORDER: readonly ExtraDefenceId[] = ["backupMonitor", "lockAddress", "backupDb", "shelf", "bouncer", "splitter"];
 
 function newSite({ scenario, config }: MatchSetup): SiteState {
   return {
     servers: Array.from({ length: scenario.startServers }, (_, id) => ({ id, bootTicksLeft: 0, meltedTicksLeft: 0 })),
     nextServerId: scenario.startServers,
-    owned: { splitter: 0, bouncer: 0, shelf: 0, backupDb: 0, secondRoute: 0 },
+    owned: { splitter: 0, bouncer: 0, shelf: 0, backupDb: 0, lockAddress: 0, backupMonitor: 0 },
     setups: [],
     shelfWarmth: 0,
     coins: scenario.startCoins,
@@ -160,8 +160,9 @@ export function upkeepPerSec(site: SiteState, config: SimConfig): number {
 /** What an item costs this side right now (repeated attacks cost more). */
 export function priceOf(site: SiteState, item: ItemId, config: SimConfig): number {
   if (isAttack(item)) {
-    const used = site.attacksUsed[item] ?? 0;
-    return Math.round(config.items.attacks[item].price * (1 + config.attackPriceStep * used));
+    const same = site.attacksUsed[item] ?? 0;
+    const total = site.totals.attacksSent;
+    return Math.round(config.items.attacks[item].price * (1 + config.attackPriceStep * same + config.attackFatigueStep * total));
   }
   if (isUtility(item)) return config.items.utilities[item].price;
   return config.items.defences[item].price;
@@ -182,6 +183,7 @@ function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean
   };
 
   if (site.crashTicksLeft > 0) return reject("down");
+  if (findEffect(site, "jam")) return reject("jammed");
 
   switch (a.kind) {
     case "buy": {
@@ -303,25 +305,27 @@ function landAttack(target: SiteState, side: Side, attack: AttackId, { config }:
     case "surge":
     case "bots":
     case "slowDb":
+    case "slowServers":
+    case "jam":
       addEffect(target, attack, ticks);
       break;
-    case "cutRoute":
-      // With a second route, traffic fails over almost immediately.
-      addEffect(target, "cutRoute", target.owned.secondRoute > 0 ? toTicks(1, config) : ticks);
+    // These have a matching defence that cuts them to a blip (it fails over / backs up).
+    case "breakSplitter":
+      addEffect(target, attack, target.owned.splitter > 0 ? toTicks(2, config) : ticks);
       break;
-    case "meltdown": {
+    case "blindfold":
+      addEffect(target, attack, target.owned.backupMonitor > 0 ? toTicks(1, config) : ticks);
+      break;
+    case "wrongTurn":
+      addEffect(target, attack, target.owned.lockAddress > 0 ? toTicks(1, config) : ticks);
+      break;
+    case "destroy": {
       const online = target.servers.filter((u) => u.bootTicksLeft === 0 && u.meltedTicksLeft === 0);
-      const count = Math.max(1, Math.ceil(online.length * spec.strength));
+      const count = Math.min(spec.strength, online.length);
       for (const u of online.slice(-count)) u.meltedTicksLeft = ticks;
-      events.push({ side, type: "serversMelted", count: Math.min(count, online.length) });
+      events.push({ side, type: "serversMelted", count });
       break;
     }
-    case "flush":
-      if (target.owned.shelf > 0) {
-        target.shelfWarmth = 0;
-        addEffect(target, "flush", ticks);
-      }
-      break;
   }
   target.totals.attacksLanded++;
   events.push({ side, type: "attackLanded", attack });
@@ -365,7 +369,7 @@ function tickTimers(site: SiteState, side: Side, setup: MatchSetup, events: SimE
   }
   if (restored) events.push({ side, type: "serversRestored" });
 
-  if (site.owned.shelf > 0 && !findEffect(site, "flush")) {
+  if (site.owned.shelf > 0) {
     site.shelfWarmth = Math.min(1, site.shelfWarmth + 1 / (config.shelfWarmSec * config.tickRate));
   }
   for (const x of site.setups) x.ticksLeft--;
@@ -384,15 +388,34 @@ function tickTimers(site: SiteState, side: Side, setup: MatchSetup, events: SimE
   for (const inc of landing) landAttack(site, side, inc.attack, setup, events);
 }
 
-function flowSite(site: SiteState, side: Side, crowd: number, comeback: boolean, setup: MatchSetup, events: SimEvent[]): void {
+/**
+ * Real visitors heading to each site this tick: the shared crowd, a Crowd
+ * surge on top, and Wrong Turn moving a share from one site to the other.
+ */
+function visitorRates(s: DuelState, { config }: MatchSetup): Record<Side, number> {
+  const { attacks } = config.items;
+  const base = (side: Side) => {
+    const surge = findEffect(s.sites[side], "surge");
+    return s.crowdRate * (surge ? 1 + (attacks.surge.strength - 1) * rampOf(surge, config) : 1);
+  };
+  const stolen = (side: Side) => {
+    const wrong = findEffect(s.sites[side], "wrongTurn");
+    return wrong ? base(side) * attacks.wrongTurn.strength * rampOf(wrong, config) : 0;
+  };
+  return {
+    1: base(1) - stolen(1) + stolen(2),
+    2: base(2) - stolen(2) + stolen(1),
+  };
+}
+
+function flowSite(site: SiteState, side: Side, peopleRate: number, comeback: boolean, setup: MatchSetup, events: SimEvent[]): void {
   const { config } = setup;
   const dt = 1 / config.tickRate;
   const { attacks, utilities } = config.items;
 
-  const surge = findEffect(site, "surge");
   const botsEffect = findEffect(site, "bots");
-  site.flow.peopleRate = crowd * (surge ? 1 + (attacks.surge.strength - 1) * rampOf(surge, config) : 1);
-  site.flow.botRate = botsEffect ? crowd * attacks.bots.strength * rampOf(botsEffect, config) : 0;
+  site.flow.peopleRate = peopleRate;
+  site.flow.botRate = botsEffect ? peopleRate * attacks.bots.strength * rampOf(botsEffect, config) : 0;
   const people = site.flow.peopleRate * dt;
   const bots = site.flow.botRate * dt;
 
@@ -409,16 +432,21 @@ function flowSite(site: SiteState, side: Side, crowd: number, comeback: boolean,
   }
 
   // Front door (+ Bouncer)
-  const doorOpen = !findEffect(site, "cutRoute");
   const bouncer = site.owned.bouncer > 0;
-  const botsIn = doorOpen ? bots * (bouncer ? 1 - config.bouncerBotBlock : 1) : 0;
-  const peopleIn = doorOpen ? people * (bouncer ? 1 - config.bouncerFalsePositive : 1) : 0;
+  const botsIn = bots * (bouncer ? 1 - config.bouncerBotBlock : 1);
+  const peopleIn = people * (bouncer ? 1 - config.bouncerFalsePositive : 1);
 
-  // Servers (+ Traffic splitter, Overclock)
+  // Servers (+ Traffic splitter, Overclock; attacks: splitter knocked out, servers slowed)
   const online = onlineServers(site);
   const free = config.splitterFreeServers;
-  const effective = site.owned.splitter > 0 ? online : Math.min(online, free) + Math.max(0, online - free) * config.unsplitEfficiency;
-  const boost = findEffect(site, "overclock") ? utilities.overclock.amount : 1;
+  const knockedOut = findEffect(site, "breakSplitter");
+  const effective = knockedOut
+    ? Math.min(online, 2) + Math.max(0, online - 2) * attacks.breakSplitter.strength
+    : site.owned.splitter > 0
+      ? online
+      : Math.min(online, free) + Math.max(0, online - free) * config.unsplitEfficiency;
+  const slowed = findEffect(site, "slowServers") ? attacks.slowServers.strength : 1;
+  const boost = (findEffect(site, "overclock") ? utilities.overclock.amount : 1) * slowed;
   const capacity = effective * config.serverCapacity * boost * dt;
   const demand = peopleIn + botsIn;
   const serverPass = demand > 0 ? Math.min(1, capacity / demand) : 1;
@@ -535,11 +563,12 @@ export function step(prev: DuelState, actions: readonly Action[], setup: MatchSe
 
   // Comeback: decided from scores before this tick, so the order of sides never matters.
   const scores = { 1: siteScore(s.sites[1], config), 2: siteScore(s.sites[2], config) };
+  const visitors = visitorRates(s, setup);
   for (const side of SIDES) {
     const mine = scores[side];
     const theirs = scores[other(side)];
     const comeback = theirs > 0 && mine < theirs * (1 - config.comebackGap);
-    flowSite(s.sites[side], side, s.crowdRate, comeback, setup, events);
+    flowSite(s.sites[side], side, visitors[side], comeback, setup, events);
   }
 
   for (const side of SIDES) {

@@ -42,9 +42,10 @@ In order. Each item ends playable and tested.
        bottleneck detection and highlight on the map
 6. [x] **Defences**: server, traffic splitter, bouncer, fast shelf, backup
        database, second route (4s setup, instant in the buy phase)
-7. [x] **Attacks**: crowd surge, bot army, cut a route, slow their database,
-       server meltdown, flush their shelf — warnings, cooldowns, regroup,
-       repeat-price increase
+7. [x] **Attacks** (9): crowd surge, bot army, slow their database, destroy
+       servers, slow their servers, knock out their splitter, blindfold, Wrong
+       Turn, jam their controls — warnings, cooldowns, regroup, repeat price,
+       attack fatigue; map effects + a sound each
 8. [x] **Utilities**: emergency repair, shield, overclock, instant backup
 9. [x] **Rounds**: buy phase → live → round result × 3, totals, final,
        forfeit when a team leaves
@@ -73,7 +74,7 @@ Later, if time: play vs bot · 1v2 with a handicap · spectator view · `/admin`
 ## Cut order if behind
 
 1. Sound
-2. Flush their shelf (keep five attacks)
+2. Slow their servers or Knock out their splitter (keep seven attacks)
 3. Fourth theme
 4. Fun awards
 5. Detailed reveal cards → one static card

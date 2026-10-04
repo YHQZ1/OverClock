@@ -9,23 +9,27 @@ export const DEFENCE_INFO: Record<DefenceId, ItemInfo> = {
   bouncer: { name: "Bouncer", hint: "Keeps bots out — and a few real people.", key: "3", sellKey: "shift+3" },
   shelf: { name: "Fast shelf", hint: "Answers popular requests itself.", key: "4", sellKey: "shift+4" },
   backupDb: { name: "Backup database", hint: "More room in the database.", key: "5", sellKey: "shift+5" },
-  secondRoute: { name: "Second route", hint: "A cut connection won’t take you offline.", key: "6", sellKey: "shift+6" },
+  lockAddress: { name: "Lock your address", hint: "Nobody can send your visitors elsewhere.", key: "6", sellKey: "shift+6" },
+  backupMonitor: { name: "Backup monitor", hint: "You can’t be blindfolded.", key: "7", sellKey: "shift+7" },
 };
 
 export const UTILITY_INFO: Record<UtilityId, ItemInfo> = {
   repair: { name: "Emergency repair", hint: "+35 health right now.", key: "q" },
   shield: { name: "Shield", hint: "Blocks the next attack (15s).", key: "w" },
   overclock: { name: "Overclock", hint: "Servers 60% faster for 10s.", key: "e" },
-  instantBackup: { name: "Instant backup", hint: "Melted servers back now.", key: "r" },
+  instantBackup: { name: "Instant backup", hint: "Wrecked servers back now.", key: "r" },
 };
 
 export const ATTACK_INFO: Record<AttackId, ItemInfo & { counter: string }> = {
-  surge: { name: "Crowd surge", hint: "Floods them with extra people.", key: "a", counter: "Servers or Overclock" },
-  bots: { name: "Bot army", hint: "Fills their site with fake visitors.", key: "s", counter: "Bouncer or Shield" },
-  cutRoute: { name: "Cut a route", hint: "Knocks them offline for a few seconds.", key: "d", counter: "Second route or Shield" },
-  slowDb: { name: "Slow their database", hint: "Their database crawls for a while.", key: "f", counter: "Backup database or Fast shelf" },
-  meltdown: { name: "Server meltdown", hint: "Melts some of their servers.", key: "g", counter: "Instant backup or Shield" },
-  flush: { name: "Flush their shelf", hint: "Empties their Fast shelf.", key: "h", counter: "Backup database" },
+  surge: { name: "Crowd surge", hint: "Floods them with extra real visitors.", key: "a", counter: "Servers or Overclock" },
+  bots: { name: "Bot army", hint: "Floods them with fake visitors.", key: "s", counter: "Bouncer or Shield" },
+  slowDb: { name: "Slow their database", hint: "Their database crawls for a while.", key: "d", counter: "Backup database or Fast shelf" },
+  destroy: { name: "Destroy servers", hint: "Wrecks two of their servers.", key: "f", counter: "Instant backup or Shield" },
+  slowServers: { name: "Slow their servers", hint: "All their servers run slower.", key: "g", counter: "Overclock or Shield" },
+  breakSplitter: { name: "Knock out their splitter", hint: "Traffic piles onto two servers.", key: "h", counter: "Traffic splitter or Shield" },
+  blindfold: { name: "Blindfold", hint: "Their map and alerts go dark.", key: "j", counter: "Backup monitor or Shield" },
+  wrongTurn: { name: "Wrong Turn", hint: "Sends their visitors to you.", key: "k", counter: "Lock your address or Shield" },
+  jam: { name: "Jam their controls", hint: "Their shop freezes for 5s.", key: "l", counter: "Shield — before it lands" },
 };
 
 export const ITEM_INFO: Record<ItemId, ItemInfo> = { ...DEFENCE_INFO, ...UTILITY_INFO, ...ATTACK_INFO };

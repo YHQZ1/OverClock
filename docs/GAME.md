@@ -139,7 +139,8 @@ keyboard shortcut.
 | **Bouncer**          | Turns bots away at the door; set it too strict and real people get turned away too | Rate limiter |
 | **Fast shelf**       | Popular things served without touching the database             | Cache              |
 | **Backup database**  | More database capacity                                          | Read replica       |
-| **Second route**     | A cut route doesn't take you offline                            | Redundant network  |
+| **Lock your address** | Nobody can send your visitors elsewhere (Wrong Turn becomes a blip) | DNSSEC / domain lock |
+| **Backup monitor**   | You can't be blindfolded (it becomes a blip)                    | Redundant monitoring |
 
 ### Utilities — one use
 
@@ -148,18 +149,23 @@ keyboard shortcut.
 | **Emergency repair**| Instantly restores some health (expensive) | Incident recovery       |
 | **Shield**          | Blocks the next attack for a short time    | DDoS protection         |
 | **Overclock**       | Servers run much faster for ~10s           | Vertical scaling burst  |
-| **Instant backup**  | Brings melted servers straight back        | Failover                |
+| **Instant backup**  | Brings wrecked servers straight back       | Failover                |
 
 ### Attacks — one use, cooldown, announced to the target
 
-| You send              | They see                        | Their counter                      | Real concept       |
-| --------------------- | ------------------------------- | ---------------------------------- | ------------------ |
-| **Crowd surge**       | 🚨 Too many people!             | Servers, Traffic splitter, Overclock | Traffic spike    |
-| **Bot army**          | 🤖 Bots are flooding in!        | Bouncer, Shield                    | DDoS               |
-| **Cut a route**       | 🌐 Connection trouble!          | Second route, Shield               | Network partition  |
-| **Slow their database** | 🐌 Database is slow!          | Backup database, Fast shelf        | DB degradation     |
-| **Server meltdown**   | 🔥 Servers are down!            | Instant backup, more Servers       | Instance failure   |
-| **Flush their shelf** | 🧊 Everything feels slow!       | Rebuild shelf, Backup database     | Cache stampede     |
+| You send                     | What it does to them                              | Their counter                     | Real concept          |
+| ---------------------------- | ------------------------------------------------- | --------------------------------- | --------------------- |
+| **Crowd surge**              | Floods them with extra **real** visitors          | Servers, Overclock                | Traffic spike         |
+| **Bot army**                 | Floods them with **fake** visitors (bots)         | Bouncer, Shield                   | DDoS                  |
+| **Slow their database**      | Their database crawls                             | Backup database, Fast shelf       | DB degradation        |
+| **Destroy servers**          | Wrecks two of their servers for a while           | Instant backup, Shield            | Instance failure      |
+| **Slow their servers**       | Every server runs slower                          | Overclock, Shield                 | CPU throttling        |
+| **Knock out their splitter** | Traffic piles onto two servers; the rest barely help | Owning a Traffic splitter, Shield | Load balancer failure |
+| **Blindfold**                | Their map **and alerts** go dark                  | Backup monitor, Shield            | Monitoring outage     |
+| **Wrong Turn**               | A share of their visitors goes **to your site**   | Lock your address, Shield         | DNS hijacking         |
+| **Jam their controls**       | Their shop freezes — they can't press anything    | Shield (raised before it lands)   | Control-plane lockout |
+
+Every attack has its own sound, so you know what hit you without looking.
 
 Prices, durations and strengths: *(tune)*, with the rule that an attack costs
 roughly what its counter costs.
@@ -223,7 +229,7 @@ they faced.
 │  OUR SITE  (Tab ⇄ THEIR SITE)              │  DEFEND · ATTACK · UTIL │
 │   people → door → servers → shelf → db     │  [1] Server        120  │
 │   (live map: crowd, bottleneck in red)     │  [2] Splitter      300  │
-│                                            │  [Q] Crowd surge   250  │
+│                                            │  [A] Crowd surge   220  │
 │                                            │  [W] Bot army      300  │
 │  health this round ▁▂▃▅▇▇▅▃▂▁              │  Rahul: Bot army −300   │
 └───────────────────────────────────────────┴────────────────────────┘
