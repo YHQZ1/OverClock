@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { THEMES } from "../config/game.js";
 import { ATTACKS, DEFENCES, UTILITIES } from "../sim/index.js";
+import { isCleanName } from "../utils/names.js";
 
 // Every socket payload is validated here — a bad message must never break a match.
 
-const name = (max: number) => z.string().trim().min(1, "Tell us your name.").max(max);
+const RUDE = "Please pick a different name.";
+const name = (max: number) => z.string().trim().min(1, "Tell us your name.").max(max).refine(isCleanName, RUDE);
 export const roomCode = z
   .string()
   .trim()
@@ -20,7 +22,7 @@ export const emptySchema = z.object({});
 
 export const slotSchema = z.object({ slot: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]) });
 export const readySchema = z.object({ ready: z.boolean() });
-export const teamNameSchema = z.object({ name: z.string().trim().min(1).max(20) });
+export const teamNameSchema = z.object({ name: z.string().trim().min(1).max(20).refine(isCleanName, RUDE) });
 export const voteSchema = z.object({ theme: z.enum(THEMES) });
 
 export const gameActionSchema = z.discriminatedUnion("kind", [
@@ -38,3 +40,4 @@ export type ReadyPayload = z.infer<typeof readySchema>;
 export type TeamNamePayload = z.infer<typeof teamNameSchema>;
 export type VotePayload = z.infer<typeof voteSchema>;
 export type GameActionPayload = z.infer<typeof gameActionSchema>;
+
