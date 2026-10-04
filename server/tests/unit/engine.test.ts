@@ -14,7 +14,7 @@ import {
   type ItemId,
   type MatchSetup,
   type Side,
-} from "./index.js";
+} from "../../src/sim/index.js";
 
 const config = DEFAULT_CONFIG;
 const setup: MatchSetup = { scenario: ROUNDS[0]!, config };

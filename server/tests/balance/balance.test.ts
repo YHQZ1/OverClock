@@ -16,7 +16,7 @@ import {
   type ItemId,
   type MatchSetup,
   type Policy,
-} from "./index.js";
+} from "../../src/sim/index.js";
 
 const config = DEFAULT_CONFIG;
 const SEEDS = Array.from({ length: 8 }, (_, i) => i + 1);

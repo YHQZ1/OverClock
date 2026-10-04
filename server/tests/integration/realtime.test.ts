@@ -4,10 +4,10 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { io as connect, type Socket } from "socket.io-client";
 import { afterEach, describe, expect, it } from "vitest";
-import type { GameTiming } from "./config/game.js";
-import { createRealtime } from "./realtime.js";
-import { ROUNDS, type SimEvent } from "./sim/index.js";
-import type { SessionDeps } from "./services/session.service.js";
+import type { GameTiming } from "../../src/config/game.js";
+import { createRealtime } from "../../src/realtime.js";
+import { ROUNDS, type SimEvent } from "../../src/sim/index.js";
+import type { SessionDeps } from "../../src/services/session.service.js";
 import type {
   AckResponse,
   ClientToServerEvents,
@@ -15,7 +15,7 @@ import type {
   MatchView,
   RoomView,
   ServerToClientEvents,
-} from "./types/contracts.js";
+} from "../../src/types/contracts.js";
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 
