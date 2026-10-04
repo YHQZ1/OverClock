@@ -64,26 +64,26 @@ describe("SessionService", () => {
   it("ends the vote early once everyone has voted; majority wins", () => {
     const ctx = started({ voteSec: 10 });
     expect(ctx.room.phase).toBe("vote");
-    ctx.sessions.vote(ctx.room.code, ctx.a.id, "sale");
+    ctx.sessions.vote(ctx.room.code, ctx.a.id, "miniclip");
     expect(ctx.room.phase).toBe("vote");
-    ctx.sessions.vote(ctx.room.code, ctx.b.id, "sale");
-    expect(ctx.room.theme).toBe("sale");
+    ctx.sessions.vote(ctx.room.code, ctx.b.id, "miniclip");
+    expect(ctx.room.theme).toBe("miniclip");
     expect(ctx.room.phase).toBe("live");
   });
 
   it("breaks a tie at random — and picks at random with no votes", () => {
     const tie = started({ voteSec: 10 }, () => 0.99);
-    tie.sessions.vote(tie.room.code, tie.a.id, "tickets");
-    tie.sessions.vote(tie.room.code, tie.b.id, "launch");
-    expect(tie.room.theme).toBe("launch");
+    tie.sessions.vote(tie.room.code, tie.a.id, "fancode");
+    tie.sessions.vote(tie.room.code, tie.b.id, "bookmyshow");
+    expect(tie.room.theme).toBe("bookmyshow");
 
     const none = started({}, () => 0); // voteSec 0: nobody votes
-    expect(none.room.theme).toBe("results");
+    expect(none.room.theme).toBe("nasdaq");
   });
 
   it("refuses votes once voting has closed", () => {
     const { sessions, room, a } = started();
-    expect(() => sessions.vote(room.code, a.id, "sale")).toThrow("Voting has closed.");
+    expect(() => sessions.vote(room.code, a.id, "miniclip")).toThrow("Voting has closed.");
   });
 
   it("routes a player's press to their side, with their name", () => {

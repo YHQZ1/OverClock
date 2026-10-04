@@ -6,7 +6,7 @@ test.describe("the duel", () => {
 
     // Buy phase: the shop works and the feed says who bought what.
     await a.keyboard.press("1");
-    await expect(a.getByText("You bought Server")).toBeVisible();
+    await expect(a.getByText("You bought Game server")).toBeVisible(); // Miniclip's words: duel() votes 3
 
     await waitForLive(a);
     await expect(a.getByRole("img", { name: "Live map of the site" }).first()).toBeVisible();
@@ -31,7 +31,7 @@ test.describe("the duel", () => {
 
     // Priya jams Rahul: he gets a warning, then his shop locks.
     await a.keyboard.press("l");
-    await expect(alertBar(b)).toContainText("Jam their controls incoming");
+    await expect(alertBar(b)).toContainText("Freeze their controller incoming");
     await expect(b.getByText("Controls jammed", { exact: true })).toBeVisible();
     await expect(alertBar(b)).toContainText("Your controls are jammed!");
 

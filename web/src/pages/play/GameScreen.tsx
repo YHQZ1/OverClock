@@ -5,13 +5,13 @@ import { Frame, Label, cx } from "../../components/ui";
 import { currentAlert, type AlertLevel } from "../../game/alert";
 import type { Tone } from "../../game/feed";
 import { HealthTimeline } from "../../game/HealthTimeline";
-import { ATTACK_INFO, DEFENCE_INFO, ITEM_INFO } from "../../game/items";
+import { DEFENCE_INFO, ITEM_INFO } from "../../game/items";
 import { LiveMap } from "../../game/LiveMap";
 import { sfx } from "../../audio/sfx";
 import { useShortcut, useShortcuts } from "../../hooks/useShortcut";
 import { sendAction } from "../../socket/api";
 import { useGameStore } from "../../store/game";
-import { THEME_INFO } from "../../themes/themes";
+import { capitalise, itemHint, wordsFor, type ThemeWords } from "../../themes/themes";
 import { MessageScreen } from "./MessageScreen";
 
 const clock = (sec: number) => {
@@ -89,8 +89,8 @@ const ALERT_STYLE: Record<AlertLevel, { bar: string; mark: string; hint: string 
   bad: { bar: "animate-alarm border-bad bg-bad/12 text-bad", mark: "bg-bad", hint: "text-bad/85" },
 };
 
-function AlertBar({ match }: { match: MatchView }) {
-  const alert = currentAlert(match);
+function AlertBar({ match, words }: { match: MatchView; words: ThemeWords }) {
+  const alert = currentAlert(match, words);
   const style = ALERT_STYLE[alert.level];
   return (
     <div className={cx("flex items-center gap-4 border-b px-10 py-2.5", style.bar)} role="status" aria-live="polite">
@@ -105,22 +105,31 @@ function AlertBar({ match }: { match: MatchView }) {
 
 // ---------- map area ----------
 
-const EFFECT_NAME: Record<EffectKind, string> = {
-  surge: ATTACK_INFO.surge.name,
-  bots: ATTACK_INFO.bots.name,
-  slowDb: "Database slowed",
-  slowServers: "Servers slowed",
-  breakSplitter: "Splitter knocked out",
-  blindfold: "Blindfolded",
-  wrongTurn: "Visitors diverted",
-  jam: "Controls jammed",
-  shield: "Shield",
-  overclock: "Overclock",
-  protected: "Rebooted — protected",
-};
+/** What's happening to a site right now, in this world's words. */
+function effectName(w: ThemeWords, kind: EffectKind): string {
+  const n = w.names;
+  switch (kind) {
+    case "slowDb":
+      return `${w.parts.db} slowed`;
+    case "slowServers":
+      return `${w.parts.servers} slowed`;
+    case "breakSplitter":
+      return `${n.splitter} knocked out`;
+    case "blindfold":
+      return "Blacked out";
+    case "wrongTurn":
+      return `${capitalise(w.visitors)} diverted`;
+    case "jam":
+      return "Controls jammed";
+    case "protected":
+      return "Rebooted — protected";
+    default:
+      return n[kind];
+  }
+}
 const HELPFUL: EffectKind[] = ["shield", "overclock", "protected"];
 
-function EffectChips({ site, outgoing }: { site: SiteView; outgoing?: MatchView["outgoing"] }) {
+function EffectChips({ site, outgoing, words }: { site: SiteView; outgoing?: MatchView["outgoing"]; words: ThemeWords }) {
   return (
     <div className="flex min-h-7 flex-wrap items-center gap-2">
       {site.effects.map((e) => (
@@ -131,19 +140,19 @@ function EffectChips({ site, outgoing }: { site: SiteView; outgoing?: MatchView[
             HELPFUL.includes(e.kind) ? "border-accent/60 text-accent" : "border-bad/60 text-bad",
           )}
         >
-          {EFFECT_NAME[e.kind]} <span className="tabular-nums opacity-70">{e.secondsLeft}s</span>
+          {effectName(words, e.kind)} <span className="tabular-nums opacity-70">{e.secondsLeft}s</span>
         </span>
       ))}
       {outgoing?.map((o) => (
         <span key={o.id} className="flex items-center gap-2 border border-ok/60 px-2 py-0.5 text-xs font-medium text-ok">
-          {ATTACK_INFO[o.attack].name} → lands in {Math.ceil(o.secondsLeft)}s
+          {words.names[o.attack]} → lands in {Math.ceil(o.secondsLeft)}s
         </span>
       ))}
     </div>
   );
 }
 
-function MapArea({ match }: { match: MatchView }) {
+function MapArea({ match, words }: { match: MatchView; words: ThemeWords }) {
   const [focus, setFocus] = useState<"me" | "them">("me");
   const history = useGameStore((s) => s.history);
   const flip = (to?: "me" | "them") => {
@@ -174,12 +183,12 @@ function MapArea({ match }: { match: MatchView }) {
           <kbd>Tab</kbd> to switch
         </span>
         <div className="ml-auto">
-          <EffectChips site={shown} outgoing={focus === "them" ? match.outgoing : undefined} />
+          <EffectChips site={shown} outgoing={focus === "them" ? match.outgoing : undefined} words={words} />
         </div>
       </div>
 
       <div className="grid min-h-0 flex-1 place-items-center px-10 py-2">
-        <LiveMap site={shown} />
+        <LiveMap site={shown} labels={{ crowd: capitalise(words.visitors), ...words.parts }} />
       </div>
 
       <div className="grid grid-cols-[1fr_auto] items-end gap-6 border-t border-line px-10 py-2.5">
@@ -198,7 +207,9 @@ function MapArea({ match }: { match: MatchView }) {
       {down && (
         <div className="absolute inset-0 grid place-content-center justify-items-center bg-bg/70" role="alert">
           <p className="text-[clamp(44px,9vh,80px)] font-semibold tracking-[-0.04em] text-bad">Your site is down</p>
-          <p className="mt-1 text-lg text-muted">Back in {match.me.downSecondsLeft}s — nobody can get in</p>
+          <p className="mt-1 text-lg text-muted">
+            Back in {match.me.downSecondsLeft}s — {words.downLine}
+          </p>
         </div>
       )}
     </section>
@@ -219,7 +230,7 @@ function press(item: ShopItemView) {
   sendAction({ kind, item: item.id } as Parameters<typeof sendAction>[0]);
 }
 
-function ShopRow({ item, locked }: { item: ShopItemView; locked: boolean }) {
+function ShopRow({ item, locked, words }: { item: ShopItemView; locked: boolean; words: ThemeWords }) {
   const info = ITEM_INFO[item.id];
   const maxed = item.kind === "defence" && item.owned >= item.max;
   const coolingDown = item.cooldown > 0;
@@ -240,10 +251,10 @@ function ShopRow({ item, locked }: { item: ShopItemView; locked: boolean }) {
         <kbd className="relative">{info.key.toUpperCase()}</kbd>
         <span className={cx("relative min-w-0 flex-1", disabled && "opacity-45")}>
           <span className="block truncate text-sm font-medium">
-            {info.name}
+            {words.names[item.id]}
             {item.kind === "defence" && item.owned > 0 && <span className="ml-2 text-xs font-normal text-accent">×{item.owned}</span>}
           </span>
-          <span className="block truncate text-[11px] leading-tight text-faint">{info.hint}</span>
+          <span className="block truncate text-[11px] leading-tight text-faint">{itemHint(words, item.id)}</span>
         </span>
         <span className={cx("relative text-sm font-semibold tabular-nums", item.affordable ? "text-ink" : "text-bad/80")}>
           {maxed ? "max" : item.price}
@@ -267,7 +278,7 @@ function ShopRow({ item, locked }: { item: ShopItemView; locked: boolean }) {
 const TONE_TEXT: Record<Tone, string> = { neutral: "text-muted", good: "text-ok", warn: "text-warn", bad: "text-bad" };
 const TONE_MARK: Record<Tone, string> = { neutral: "bg-faint", good: "bg-ok", warn: "bg-warn", bad: "bg-bad" };
 
-function Shop({ match }: { match: MatchView }) {
+function Shop({ match, words }: { match: MatchView; words: ThemeWords }) {
   const [tab, setTab] = useState<Tab>("defence");
   const feed = useGameStore((s) => s.feed);
   const jam = match.me.effects.find((e) => e.kind === "jam");
@@ -310,7 +321,7 @@ function Shop({ match }: { match: MatchView }) {
 
       <div className="relative min-h-0 overflow-y-auto">
         {items.map((item) => (
-          <ShopRow key={item.id} item={item} locked={locked} />
+          <ShopRow key={item.id} item={item} locked={locked} words={words} />
         ))}
         {jam && (
           <div className="absolute inset-0 grid place-content-center justify-items-center bg-bg/85" role="alert">
@@ -340,17 +351,17 @@ function Shop({ match }: { match: MatchView }) {
 
 export function GameScreen({ room, match }: { room: RoomView; match: MatchView | null }) {
   if (!match) return <MessageScreen right={`Round ${room.round}`} message="Setting up the round…" />;
-  const theme = room.theme ? THEME_INFO[room.theme].name : "";
+  const words = wordsFor(room.theme);
 
   return (
     <Frame>
-      <TopBar right={`Round ${match.round} of ${room.totalRounds} · ${theme}`} />
+      <TopBar theme={room.theme} right={`Round ${match.round} of ${room.totalRounds}`} />
       <main className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)]">
         <Hud match={match} room={room} />
-        <AlertBar match={match} />
+        <AlertBar match={match} words={words} />
         <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(360px,30%)]">
-          <MapArea match={match} />
-          <Shop match={match} />
+          <MapArea match={match} words={words} />
+          <Shop match={match} words={words} />
         </div>
       </main>
     </Frame>

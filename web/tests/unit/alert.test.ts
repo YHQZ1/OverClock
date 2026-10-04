@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { currentAlert } from "../../src/game/alert";
+import { THEME_INFO } from "../../src/themes/themes";
 import { match, site } from "./fixtures";
 
 const effect = (kind: string) => [{ kind, secondsLeft: 5, share: 0.5 }] as never;
@@ -10,7 +11,7 @@ describe("alert bar", () => {
   });
 
   it("explains the buy phase", () => {
-    expect(currentAlert(match({ phase: "buy" })).title).toBe("Buy phase");
+    expect(currentAlert(match({ phase: "buy" })).title).toBe("Buy phase · Round 1");
   });
 
   it("puts a crash above everything", () => {
@@ -57,7 +58,7 @@ describe("alert bar", () => {
     );
     expect(currentAlert(match({ me: { parts: { door: "ok", servers: "ok", shelf: "none", db: "strained" } } }))).toMatchObject({
       level: "warn",
-      title: "Database is slow!",
+      title: "Database can’t keep up!",
     });
   });
 
@@ -68,5 +69,23 @@ describe("alert bar", () => {
 
   it("tells you when they're down", () => {
     expect(currentAlert(match({ them: site({ downSecondsLeft: 4 }) })).title).toBe("Their site is down!");
+  });
+
+  it("speaks the theme's words", () => {
+    const words = THEME_INFO.fancode.words;
+    const failing = { parts: { door: "ok", servers: "failing", shelf: "none", db: "ok" } } as const;
+    expect(currentAlert(match({ phase: "buy", round: 3 }), words).title).toBe("Buy phase · Final laps");
+    expect(currentAlert(match({ me: failing }), words).title).toBe("Fans can’t load the stream!");
+    expect(currentAlert(match({ me: { effects: effect("wrongTurn") } }), words).title).toBe("Your fans are going to them!");
+    expect(currentAlert(match({ me: { downSecondsLeft: 3 } }), words).hint).toBe("Back in 3s — the race is going dark");
+  });
+
+  it("names items the theme's way", () => {
+    const words = THEME_INFO.bookmyshow.words;
+    const a = currentAlert(match({ incoming: [{ id: 1, attack: "bots", secondsLeft: 2 }] }), words);
+    expect(a.title).toBe("Scalper bots incoming in 2s");
+    expect(a.hint).toBe("Counter: Robot check or Security");
+    const db = { parts: { door: "ok", servers: "ok", shelf: "none", db: "strained" } } as const;
+    expect(currentAlert(match({ me: db }), THEME_INFO.nasdaq.words).title).toBe("Ledger can’t keep up!");
   });
 });

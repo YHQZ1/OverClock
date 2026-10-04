@@ -45,7 +45,7 @@ export async function duel(browser: Browser, errors: string[]) {
   await joinRoom(b, code, "Rahul");
   await a.keyboard.press("r");
   await b.keyboard.press("r");
-  await expect(a.getByRole("heading", { name: "Pick the world" })).toBeVisible();
+  await expect(a.getByRole("heading", { name: "Pick the site" })).toBeVisible();
   await a.keyboard.press("3");
   await b.keyboard.press("3");
   await expect(a.getByRole("status")).toContainText("Buy phase");

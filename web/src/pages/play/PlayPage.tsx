@@ -10,6 +10,7 @@ import { MessageScreen } from "./MessageScreen";
 import { RoomScreen } from "./RoomScreen";
 import { RoundResultScreen } from "./RoundResultScreen";
 import { VoteScreen } from "./VoteScreen";
+import { accentVars } from "../../themes/themes";
 
 /** Renders the screen for the room's current phase — the server decides which. */
 export function PlayPage() {
@@ -50,9 +51,14 @@ export function PlayPage() {
     }
   }
 
+  // Once the vote has picked a world, its colour replaces the lavender accent.
+  const themed = room?.theme && room.phase !== "room" && room.phase !== "vote" ? accentVars(room.theme) : undefined;
+
   return (
     <>
-      {screen}
+      <div className="contents" style={themed}>
+        {screen}
+      </div>
       {!connected && !restoring && room && (
         <div className="fixed inset-x-0 top-0 z-10 border-b border-bad bg-bg px-10 py-2.5 text-sm font-medium text-bad">
           Connection lost — reconnecting…

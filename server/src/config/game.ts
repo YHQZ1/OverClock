@@ -24,6 +24,6 @@ export const DEFAULT_TIMING: GameTiming = {
 
 export const MAX_PLAYERS = 4;
 
-/** Placeholder theme ids until the real themes are chosen (docs/GAME.md → Themes). Cosmetic only. */
-export const THEMES = ["results", "tickets", "sale", "launch"] as const;
+/** The worlds a room votes between (docs/GAME.md → Themes). Cosmetic only: words, colours, logo, music. */
+export const THEMES = ["nasdaq", "fancode", "miniclip", "bookmyshow"] as const;
 export type ThemeId = (typeof THEMES)[number];

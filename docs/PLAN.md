@@ -62,7 +62,9 @@ In order. Each item ends playable and tested.
 12. [ ] **Results + leaderboard**: Postgres via Drizzle, save completed
         matches, match points, 1v1 / 2v2 boards, live updates
 13. [ ] **Big screen** `/screen`: leaderboards, matches in progress, awards
-14. [ ] **Themes**: pick the 3–4 themes; words, icons, crowd colours
+14. [x] **Themes**: Nasdaq, FanCode, Miniclip, BookMyShow — vote cards with
+        logos, accent colour, words (visitors, alerts, round lines), a music
+        style each. Later: ChronoNexia "split timeline" framing
 15. [ ] **The reveal**: "what you actually built" cards
 16. [ ] **Deploy** to Render; test from a lab PC (firewall)
 17. [~] **Juice**: sound done — effects for every action and event, a

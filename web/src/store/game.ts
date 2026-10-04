@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
 import { describe, type FeedItem } from "../game/feed";
+import { wordsFor } from "../themes/themes";
 
 const FEED_SIZE = 3;
 
@@ -64,7 +65,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const side: Side | undefined = match?.side;
     if (!side) return;
     const me = room?.players.find((p) => p.id === playerId)?.name ?? "";
-    const lines = events.map((e) => describe(e, side, me)).filter((x): x is Omit<FeedItem, "id"> => x !== null);
+    const words = wordsFor(room?.theme);
+    const lines = events.map((e) => describe(e, side, me, words)).filter((x): x is Omit<FeedItem, "id"> => x !== null);
     if (lines.length === 0) return;
     const items = lines.map((l) => ({ ...l, id: nextFeedId++ })).reverse();
     set((s) => ({ feed: [...items, ...s.feed].slice(0, FEED_SIZE) }));

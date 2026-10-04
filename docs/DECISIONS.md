@@ -48,7 +48,11 @@ choices are kept at the bottom so we remember why we moved on.
 | **No C/J shortcuts on Home**; forms keep Enter / Esc | Home is clicked once; shortcuts matter in the game. |
 | **Look: sharp, minimal, dark, full-width** — Inter only, square corners, hairline dividers, no gradients or pills; split layout | Feels deliberate rather than templated. Tried and dropped: warm paper + clay (too close to Claude), Google four-colour palette, rounded "hero + two cards". |
 | **One accent: lavender `#A594F9`**; green / yellow / red only for game signals | Quiet and distinct; colour on the game screen always means something. |
-| **Themes: relatable worlds** (crash moments, inspired by games/shows — never real names or art) | Recognisable without copyright trouble at a public event. |
+| **Themes: four real websites — Nasdaq, FanCode, Miniclip, BookMyShow** — real names and logos (text + logo only), each with its own accent colour, words and music style; dark background unchanged | Students recognise them instantly and know the crowd-rush moment (market open, final lap, a game drop, a ticket sale). None are fest sponsors. Made-up names and "inspired by" shows/games felt childish for 18–20 year olds. |
+| **Every term is themed** — map parts and all 20 shop items get a name per world (Bouncer → Fraud check / Ticket check / Anti-cheat / Robot check…); keys stay the same | Each match is a one-off for walk-ins, so nothing to re-learn; themed names make each world feel real. Hints are templates filled with the world's words. The reveal will map themed names to real concepts. |
+| **Theme colour is decoration only**; green / yellow / red stay the health signals, always with words; BookMyShow's crowd is white | FanCode orange and BookMyShow red sit close to the warning and broken colours. |
+| **Original music per theme** (ticker, race, chip, trailer), synthesised like the rest; menus keep the arcade tune | Each world feels different; never copy a real tune. |
+| **ChronoNexia (the fest theme) later, as framing**: "the timeline has split — only one survives", both teams in the same voted world | Fits the vote (one world per match); added incrementally. |
 | **Admin page deferred** | Core flow first. |
 
 ## Technical
@@ -85,7 +89,6 @@ choices are kept at the bottom so we remember why we moved on.
 
 | Question | Notes |
 | --- | --- |
-| The themes | 3–4, not decided. Direction above. |
 | All numbers | Prices, upkeep, attack strength/duration/cooldowns, warning time, income, comeback bonus, round lengths, match-point weights — bots + playtests. |
 | Team names | Default "Priya & Rahul"; editable in the room. Duplicates allowed. |
 | Mid-match disconnects | Whole team gone > ~1 min → match ends unrecorded (proposal). |

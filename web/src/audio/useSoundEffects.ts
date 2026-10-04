@@ -2,6 +2,7 @@ import type { AttackId, Side, SimEvent } from "@server/types/contracts.js";
 import { useEffect } from "react";
 import { socket } from "../socket/socket";
 import { useGameStore } from "../store/game";
+import { THEME_INFO } from "../themes/themes";
 import { music, sfx } from "./sfx";
 
 type SoundName = keyof typeof sfx;
@@ -96,7 +97,10 @@ export function useSoundEffects(): void {
       const room = s.room;
       const live = room?.phase === "live" && m?.phase === "live";
 
-      // Background music: gentle in menus, fuller in buy/live, faster in the final 20 seconds.
+      // Background music: the menu tune until the vote picks a theme, then that theme's style —
+      // gentle between rounds, fuller in buy/live, faster in the final 20 seconds.
+      const themed = room?.theme && room.phase !== "room" && room.phase !== "vote";
+      music.setStyle(themed ? THEME_INFO[room.theme!].music : "arcade");
       const playing = room?.phase === "buy" || room?.phase === "live";
       music.setMode(playing ? "live" : "menu");
       music.setIntensity(live && m && m.timeLeftSec <= 20 ? 1 - m.timeLeftSec / 20 : 0);

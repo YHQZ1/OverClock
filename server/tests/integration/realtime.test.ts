@@ -161,11 +161,11 @@ describe("theme vote", () => {
     expect((await voting).format).toBe("2v2");
 
     const chosen = nextRoom(cs[0]!, (r) => r.theme !== null);
-    ok(await call(cs[0]!, "vote:theme", { theme: "sale" }));
-    ok(await call(cs[1]!, "vote:theme", { theme: "sale" }));
-    ok(await call(cs[2]!, "vote:theme", { theme: "results" }));
-    ok(await call(cs[3]!, "vote:theme", { theme: "launch" }));
-    expect((await chosen).theme).toBe("sale");
+    ok(await call(cs[0]!, "vote:theme", { theme: "miniclip" }));
+    ok(await call(cs[1]!, "vote:theme", { theme: "miniclip" }));
+    ok(await call(cs[2]!, "vote:theme", { theme: "nasdaq" }));
+    ok(await call(cs[3]!, "vote:theme", { theme: "bookmyshow" }));
+    expect((await chosen).theme).toBe("miniclip");
   });
 
   it("breaks a tie at random", async () => {
@@ -173,9 +173,9 @@ describe("theme vote", () => {
     const { cs } = await room(2);
     await readyAll(cs);
     const chosen = nextRoom(cs[0]!, (r) => r.theme !== null);
-    ok(await call(cs[0]!, "vote:theme", { theme: "tickets" }));
-    ok(await call(cs[1]!, "vote:theme", { theme: "results" }));
-    expect((await chosen).theme).toBe("results"); // the last of the tied themes, picked by random() = 0.99
+    ok(await call(cs[0]!, "vote:theme", { theme: "fancode" }));
+    ok(await call(cs[1]!, "vote:theme", { theme: "nasdaq" }));
+    expect((await chosen).theme).toBe("nasdaq"); // the last of the tied themes, picked by random() = 0.99
   });
 });
 

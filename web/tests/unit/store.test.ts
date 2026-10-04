@@ -11,7 +11,7 @@ const room = (code: string, overrides: Partial<RoomView> = {}): RoomView => ({
   teamNames: { 1: "Priya", 2: "Rahul" },
   canStart: { ok: true, format: "1v1" },
   votes: {},
-  theme: "results",
+  theme: "nasdaq",
   round: 1,
   totalRounds: 3,
   secondsLeft: null,

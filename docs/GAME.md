@@ -74,10 +74,10 @@ no opponent is around; spectator view.
 ### Theme vote
 
 - 10 seconds (ends early once everyone has voted); every player votes for
-  one of the 3–4 themes.
+  one of the 4 themes (Nasdaq, FanCode, Miniclip, BookMyShow).
 - Most votes wins. **Any tie at the top is broken at random** (1-1-1-1, 2-2,
   …). Nobody votes → random.
-- Themes are cosmetic (words, icons, colours of the crowd) — the rules and
+- Themes are cosmetic (words, logo, accent colour, music) — the rules and
   numbers are identical, so scores stay comparable.
 
 ## The core loop: serve → earn → spend
@@ -255,8 +255,34 @@ before this.
 
 ## Themes
 
-3–4 themes, voted per match. **Not decided yet.** Direction: relatable worlds
-students know — real-life crash moments (results day, a ticket drop, a mega
-sale) or worlds inspired by games and shows — *inspired by, never using real
-names or art*. Until then, shared screens use neutral words ("people", "your
-site").
+Four real websites students know, each famous for a crowd rush. Voted per
+match. Both teams run the same site; only the look and words change.
+
+| Theme | The moment | Visitors | Accent | Round lines | Music |
+| --- | --- | --- | --- | --- | --- |
+| **Nasdaq** | Market open — every second is money | traders | Nasdaq blue | Opening bell · Midday rally · Closing hour | *ticker*: cool D minor, ticking clock, price-blip melody |
+| **FanCode** | Race day, final lap | fans | FanCode orange | Lights out · Safety car in · Final laps | *race*: fast E minor, engine-like running bass, four-on-the-floor |
+| **Miniclip** | A new game just dropped | players | Miniclip orange | Level 1 · Level 2 · Boss level | *chip*: bright, bouncy C-major chiptune |
+| **BookMyShow** | Concert tickets go live at 12:00 | fans | BookMyShow red | Presale · General sale · Last tickets | *trailer*: slow C minor, held strings, booming drums |
+
+- **Vote card:** logo, name, one line on what the site is (not everyone
+  knows them all), and the rush moment.
+- **What changes:** the logo and name in the top bar, the accent colour
+  (buttons, highlights, coins, crowd), what visitors are called, **every map
+  label and shop item name** (and so the hints, counters, alerts, feed and
+  effect labels), the "site is down" line, the rush line in the feed, the
+  buy-phase line per round, and the music style. Full name table:
+  `web/src/themes/themes.ts`; e.g. Bot army = Bot traders / Bot fans / Bot
+  swarm / Scalper bots, Shield = Circuit breaker / Safety car / Bubble shield /
+  Security.
+- **What doesn't:** the dark background, the rules and numbers, the layout
+  and keyboard shortcuts (the same key always does the same thing). Green / yellow / red stay the health signals and
+  always come with words. BookMyShow's crowd is drawn in white so it can't be
+  mistaken for red "turned away" dots.
+- Home and the room use the lavender accent and menu music; the theme takes
+  over once the vote picks it.
+- Logos live in `web/public/themes/<id>.png` (transparent, light version). A
+  missing logo just shows the name.
+- Original music only — each style borrows a genre's feel, never a real tune.
+- Real names and logos, text and logo only, no claim of partnership (agreed
+  with the user; none are fest sponsors).

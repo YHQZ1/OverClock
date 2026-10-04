@@ -32,7 +32,7 @@ export function FinalScreen({ room, mySide, onDone }: Props) {
 
   return (
     <Frame>
-      <TopBar right={`${room.format ?? ""} · final`} />
+      <TopBar theme={room.theme} right={`${room.format ?? ""} · final`} />
       <main className={SPLIT}>
         <section className="flex min-w-0 flex-col">
           <div className="px-10 pt-[clamp(24px,5vh,56px)] pb-6">

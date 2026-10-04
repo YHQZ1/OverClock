@@ -15,7 +15,7 @@ No technical knowledge needed. Everyone has cursed at a website that crashed
 on results day or during a ticket sale — here you're the one keeping it alive,
 and the one knocking the other side over. The real computer-science ideas
 (load balancing, rate limiting, caching, failover, DDoS…) are hidden in the
-mechanics and revealed only at the end: *"you just built a load balancer."*
+mechanics and revealed only at the end: _"you just built a load balancer."_
 
 > Complexity underneath. Simplicity on top.
 
@@ -68,19 +68,19 @@ minutes.
 **Serve → earn → spend.** Every visitor your site serves earns your team
 coins. Coins are the only currency, and every coin is a choice:
 
-| Spend on…    | Examples (what players see)                                        | Real concept (revealed at the end)         |
-| ------------ | ------------------------------------------------------------------ | ------------------------------------------ |
-| **Defence**  | Servers · Traffic splitter · Bouncer · Fast shelf · Backup database · Lock your address · Backup monitor | Scaling · load balancer · rate limiter · cache · read replica · DNS lock · redundant monitoring |
-| **Attack**   | Crowd surge · Bot army · Slow their database · Destroy servers · Slow their servers · Knock out their splitter · Blindfold · Wrong Turn · Jam their controls | Traffic spike · DDoS · DB degradation · instance failure · CPU throttling · load balancer failure · monitoring outage · DNS hijacking · control-plane lockout |
-| **Utility**  | Emergency repair · Shield · Overclock · Instant backup              | Recovery · protection · vertical scaling burst · failover |
+| Spend on…   | Examples (what players see)                                                                                                                                  | Real concept (revealed at the end)                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Defence** | Servers · Traffic splitter · Bouncer · Fast shelf · Backup database · Lock your address · Backup monitor                                                     | Scaling · load balancer · rate limiter · cache · read replica · DNS lock · redundant monitoring                                                               |
+| **Attack**  | Crowd surge · Bot army · Slow their database · Destroy servers · Slow their servers · Knock out their splitter · Blindfold · Wrong Turn · Jam their controls | Traffic spike · DDoS · DB degradation · instance failure · CPU throttling · load balancer failure · monitoring outage · DNS hijacking · control-plane lockout |
+| **Utility** | Emergency repair · Shield · Overclock · Instant backup                                                                                                       | Recovery · protection · vertical scaling burst · failover                                                                                                     |
 
 - **Anyone can do anything, any time.** There are no fixed attacker or
   defender roles. Teams find their own rhythm: attack while you're rich,
   defend while you rebuild.
 - **Hurting their site cuts their income.** A good attack is also an
   investment; a neglected site goes broke and can't attack back.
-- **Every attack is announced** to the target — *"⚠️ Bot army incoming in
-  3…"* — so defending is skill, not luck. Attacks have cooldowns, so money
+- **Every attack is announced** to the target — _"⚠️ Bot army incoming in
+  3…"_ — so defending is skill, not luck. Attacks have cooldowns, so money
   alone can't spam.
 - **Defences you keep cost coins every second.** Over-building is waste.
 - **If your health hits zero, your site goes down** for a few seconds — no
@@ -100,7 +100,7 @@ Walk-in students at SymbiTech — from any branch, any year. The design target:
 
 - understand the goal in **under 30 seconds**,
 - be playing within **2 minutes** of sitting down,
-- see what went wrong *and* what fixed it,
+- see what went wrong _and_ what fixed it,
 - and say **"again!"** when it ends.
 
 It runs on the college **lab PCs** (desktop, mouse and keyboard), on the
@@ -137,8 +137,8 @@ are saved to PostgreSQL.
   once) — in GitHub Actions. See [docs/TESTING.md](docs/TESTING.md).
 - **Bots keep it balanced.** Bot players (idle, all-attack, all-defence,
   balanced, human-speed…) play thousands of matches in seconds; tests enforce
-  rules like *"every attack has a counter that measurably helps"* and *"a
-  balanced team beats a one-trick team."*
+  rules like _"every attack has a counter that measurably helps"_ and _"a
+  balanced team beats a one-trick team."_
 - **No tech terms on player screens.** The map is drawn from relative values
   only (how big the crowd is, how many get in) — never "requests per second".
 
@@ -146,13 +146,13 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Tech stack
 
-| Area     | Choice                                                         |
-| -------- | -------------------------------------------------------------- |
-| Web      | React 19, Vite, TypeScript, Tailwind CSS v4, React Router, Zustand |
-| Server   | Node.js, Express 5, Socket.IO, Zod, TypeScript                 |
-| Data     | PostgreSQL + Drizzle (Docker locally, Render in production)    |
-| Tooling  | pnpm workspaces, Vitest, tsx                                   |
-| Hosting  | One Render web service + Render Postgres                       |
+| Area    | Choice                                                             |
+| ------- | ------------------------------------------------------------------ |
+| Web     | React 19, Vite, TypeScript, Tailwind CSS v4, React Router, Zustand |
+| Server  | Node.js, Express 5, Socket.IO, Zod, TypeScript                     |
+| Data    | PostgreSQL + Drizzle (Docker locally, Render in production)        |
+| Tooling | pnpm workspaces, Vitest, tsx                                       |
+| Hosting | One Render web service + Render Postgres                           |
 
 ## Getting started
 
@@ -170,18 +170,18 @@ yourself. Each tab is its own seat, so you can test a full room on one PC.
 
 ## Commands
 
-| Command                                     | What it does                                   |
-| ------------------------------------------- | ---------------------------------------------- |
-| `pnpm dev`                                  | Server and web in watch mode                   |
-| `pnpm build`                                | Production build of both                       |
-| `pnpm start`                                | Run the built server (it serves the web app too) |
-| `pnpm test`                                 | Quick tests: unit + integration                |
-| `pnpm test:unit` / `test:integration` / `test:balance` | One kind at a time                   |
-| `pnpm test:e2e`                             | Two players in real browsers (Playwright)      |
-| `pnpm test:load`                            | ~75 bot players at once; checks the server stays fast |
-| `pnpm typecheck`                            | Type-check everything                          |
-| `pnpm --filter @overclock/server balance`   | Bot balance report (thousands of matches, ~1s) |
-| `pnpm db:up` / `pnpm db:down`               | Start / stop local Postgres                    |
+| Command                                                | What it does                                          |
+| ------------------------------------------------------ | ----------------------------------------------------- |
+| `pnpm dev`                                             | Server and web in watch mode                          |
+| `pnpm build`                                           | Production build of both                              |
+| `pnpm start`                                           | Run the built server (it serves the web app too)      |
+| `pnpm test`                                            | Quick tests: unit + integration                       |
+| `pnpm test:unit` / `test:integration` / `test:balance` | One kind at a time                                    |
+| `pnpm test:e2e`                                        | Two players in real browsers (Playwright)             |
+| `pnpm test:load`                                       | ~75 bot players at once; checks the server stays fast |
+| `pnpm typecheck`                                       | Type-check everything                                 |
+| `pnpm --filter @overclock/server balance`              | Bot balance report (thousands of matches, ~1s)        |
+| `pnpm db:up` / `pnpm db:down`                          | Start / stop local Postgres                           |
 
 ## Project layout
 
@@ -206,10 +206,11 @@ Built so far: the deterministic engine with bots and a balance report; the
 real-time server with rooms, live shared matches and refresh-safe rejoin; and
 the player screens (home, lobby, live game with an animated map, results).
 
-**The duel is playable end to end:** rooms with slots and ready, theme
-voting, the shop (defences, boosts, attacks), three rounds with buy phases,
-round results and the final. **Next:** saving results, the live leaderboard and
-the big screen, then the real themes.
+**The duel is playable end to end:** rooms with slots and ready, a vote
+between four themes (Nasdaq, FanCode, Miniclip, BookMyShow — each with its own
+colour, words and music), the shop (defences, boosts, attacks), three rounds
+with buy phases, round results and the final. **Next:** saving results, the
+live leaderboard and the big screen.
 
 Tip: `FAST_ROUNDS=1 pnpm dev` runs 20-second rounds for quick testing.
 
@@ -217,21 +218,21 @@ What's built and what's next: [docs/PLAN.md](docs/PLAN.md).
 
 ## Documentation
 
-| Doc                                    | What's in it                                             |
-| -------------------------------------- | -------------------------------------------------------- |
-| [GAME.md](docs/GAME.md)                | The full game: flow, economy, shop, attacks, scoring, screens |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md)| Structure, rules, phases, real-time contract, data model |
-| [DECISIONS.md](docs/DECISIONS.md)      | What we chose and why; what's still open                 |
-| [PLAN.md](docs/PLAN.md)                | What's built and the build queue                         |
-| [BALANCE.md](docs/BALANCE.md)          | Tuning values, bot results, playtest log                 |
-| [TESTING.md](docs/TESTING.md)          | Unit, integration, balance, e2e and load tests; CI        |
-| [RUNBOOK.md](docs/RUNBOOK.md)          | Running the game at SymbiTech, and what to do when things break |
+| Doc                                     | What's in it                                                    |
+| --------------------------------------- | --------------------------------------------------------------- |
+| [GAME.md](docs/GAME.md)                 | The full game: flow, economy, shop, attacks, scoring, screens   |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Structure, rules, phases, real-time contract, data model        |
+| [DECISIONS.md](docs/DECISIONS.md)       | What we chose and why; what's still open                        |
+| [PLAN.md](docs/PLAN.md)                 | What's built and the build queue                                |
+| [BALANCE.md](docs/BALANCE.md)           | Tuning values, bot results, playtest log                        |
+| [TESTING.md](docs/TESTING.md)           | Unit, integration, balance, e2e and load tests; CI              |
+| [RUNBOOK.md](docs/RUNBOOK.md)           | Running the game at SymbiTech, and what to do when things break |
 
 ## Design principles
 
 - **Complexity underneath, simplicity on top.** Real systems behaviour in the
   engine; plain words and pictures on screen.
-- **Every alert says what's wrong *and* what to do.**
+- **Every alert says what's wrong _and_ what to do.**
 - **Visual first.** Lab PCs may have no speakers; sound is a bonus.
 - **Desktop first** (1366×768 and up), keyboard shortcuts on every in-game
   action, light animations for slow PCs.

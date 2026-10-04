@@ -1,6 +1,7 @@
 import type { RoomView, Side, SiteScore } from "@server/types/contracts.js";
 import { TopBar } from "../../components/TopBar";
 import { Frame, Label, cx } from "../../components/ui";
+import { capitalise, wordsFor } from "../../themes/themes";
 
 const n = (x: number) => x.toLocaleString();
 
@@ -13,7 +14,7 @@ export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Si
 
   return (
     <Frame>
-      <TopBar right={`Round ${last.round} of ${room.totalRounds}`} />
+      <TopBar theme={room.theme} right={`Round ${last.round} of ${room.totalRounds}`} />
       <main className="flex min-h-0 flex-col">
         <div className="flex items-end justify-between border-b border-line px-10 pt-[clamp(20px,5vh,48px)] pb-6">
           <div>
@@ -40,6 +41,7 @@ export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Si
               score={last.scores[side]}
               won={last.winner === side}
               you={side === mySide}
+              visitors={capitalise(wordsFor(room.theme).visitors)}
             />
           ))}
         </div>
@@ -55,9 +57,9 @@ export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Si
   );
 }
 
-function TeamResult({ name, score, won, you }: { name: string; score: SiteScore; won: boolean; you: boolean }) {
+function TeamResult({ name, score, won, you, visitors }: { name: string; score: SiteScore; won: boolean; you: boolean; visitors: string }) {
   const rows: [string, string][] = [
-    ["Visitors served", `+${n(score.served)}`],
+    [`${visitors} served`, `+${n(score.served)}`],
     ["Turned away", `−${n(score.lostPenalty)}`],
     ["Attacks sent", String(score.attacksSent)],
     ["Attacks blocked", String(score.attacksBlocked)],

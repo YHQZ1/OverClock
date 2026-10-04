@@ -1,4 +1,7 @@
 import type { Part, PartStatus, ServerSlotView, SiteView } from "@server/types/contracts.js";
+
+export type MapLabels = Record<Part | "crowd", string>;
+const DEFAULT_LABELS: MapLabels = { crowd: "People", door: "Front door", servers: "Servers", shelf: "Fast shelf", db: "Database" };
 import { useMemo } from "react";
 import { cx } from "../components/ui";
 
@@ -181,7 +184,7 @@ function Rack({ servers, status, overclock }: { servers: ServerSlotView[]; statu
 
 const flowCount = (crowd: number) => Math.min(26, Math.max(3, Math.round(crowd * 7)));
 
-export function LiveMap({ site, compact = false }: { site: SiteView; compact?: boolean }) {
+export function LiveMap({ site, compact = false, labels = DEFAULT_LABELS }: { site: SiteView; compact?: boolean; labels?: MapLabels }) {
   const down = site.downSecondsLeft !== null;
   const crowdShown = Math.min(CROWD_SPOTS.length, Math.max(10, Math.round(14 + site.crowd * 24)));
   const stealing = site.effects.some((e) => e.kind === "wrongTurn");
@@ -208,7 +211,7 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
         const at = bot && bounced ? "door" : where;
         return {
           key: i,
-          tone: bot ? "fill-faint" : bounced ? "fill-bad" : diverted ? "fill-warn" : "fill-accent",
+          tone: bot ? "fill-faint" : bounced ? "fill-bad" : diverted ? "fill-warn" : "fill-crowd",
           d: diverted ? stolenPath(entry) : bounced ? bounce(entry, lane, at) : through(entry, lane),
           dur: (bounced || diverted ? 2.4 : 4.4) + ((i * 7) % 5) * 0.3,
           begin: -(i * 0.41),
@@ -282,19 +285,19 @@ export function LiveMap({ site, compact = false }: { site: SiteView; compact?: b
       {!compact && (
         <g className="text-[13px] font-medium" textAnchor="middle">
           <text className="fill-muted" x={70} y={LABEL_Y}>
-            People
+            {labels.crowd}
           </text>
           <text className={TEXT[site.parts.door]} x={DOOR.x} y={LABEL_Y}>
-            Front door
+            {labels.door}
           </text>
           <text className={TEXT[site.parts.servers]} x={RACK.x + half(RACK.w)} y={LABEL_Y}>
-            Servers
+            {labels.servers}
           </text>
           <text className={TEXT[site.parts.shelf]} x={SHELF.x} y={LABEL_Y}>
-            Fast shelf
+            {labels.shelf}
           </text>
           <text className={TEXT[site.parts.db]} x={DB.x} y={LABEL_Y}>
-            Database
+            {labels.db}
           </text>
         </g>
       )}
