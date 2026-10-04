@@ -9,6 +9,8 @@ const envSchema = z.object({
   WEB_DIST: z.string().default(defaultWebDist),
   /** Dev only: short buy phases and rounds, for quick testing. */
   FAST_ROUNDS: z.stringbool().default(false),
+  /** Round length when FAST_ROUNDS is on. */
+  FAST_ROUND_SEC: z.coerce.number().int().min(5).max(120).default(20),
 });
 
 export type Env = z.infer<typeof envSchema>;

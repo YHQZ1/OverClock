@@ -13,6 +13,7 @@
     "test:balance": "vitest run --project balance",
     "test:all": "vitest run",
     "test:coverage": "vitest run --project unit --project integration --coverage",
+    "test:load": "tsx tests/load/load.ts",
     "typecheck": "tsc -p . --noEmit && tsc -p tests",
     "balance": "tsx src/scripts/balance.ts"
   },

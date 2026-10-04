@@ -8,5 +8,6 @@
     "../src",
     ".",
     "../vitest.config.ts"
-  ]
+  ],
+  "exclude": []
 }

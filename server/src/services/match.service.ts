@@ -16,6 +16,7 @@ import {
 import type { MatchView } from "../types/contracts.js";
 import { matchSeed } from "../utils/codes.js";
 import type { Broadcaster } from "./broadcaster.js";
+import type { Metrics } from "./metrics.js";
 import { toMatchView } from "./match.view.js";
 
 /** Presses beyond this per tick are dropped — nobody clicks that fast. */
@@ -42,6 +43,7 @@ export class MatchService {
   constructor(
     private readonly notify: Broadcaster,
     private readonly timing: GameTiming,
+    private readonly metrics?: Metrics,
   ) {}
 
   /** Set up a round in its buy phase: purchases apply, the clock waits. */
@@ -71,6 +73,10 @@ export class MatchService {
     return this.rounds.has(code);
   }
 
+  count(): number {
+    return this.rounds.size;
+  }
+
   view(code: string, side: Side): MatchView | null {
     const live = this.rounds.get(code);
     return live ? toMatchView(live.state, side, live.setup, { round: live.round, phase: live.phase }) : null;
@@ -78,6 +84,12 @@ export class MatchService {
 
   /** Advance every round by one tick (buy phase: purchases only) and broadcast. */
   tickAll(): void {
+    const started = performance.now();
+    this.tickRounds();
+    this.metrics?.recordTick(performance.now() - started);
+  }
+
+  private tickRounds(): void {
     for (const [code, live] of this.rounds) {
       const actions = live.queue;
       live.queue = [];
