@@ -129,6 +129,14 @@ export function registerPlayerHandlers(socket: PlayerSocket, { rooms, sessions, 
     }),
   );
 
+  socket.on("briefing:continue", (payload, ack) =>
+    handle(emptySchema, payload, ack, () => {
+      const { code, playerId } = seated();
+      sessions.continueBriefing(code, playerId);
+      return null;
+    }),
+  );
+
   socket.on("vote:theme", (payload, ack) =>
     handle(voteSchema, payload, ack, (p) => {
       const { code, playerId } = seated();

@@ -13,6 +13,7 @@ import type { Leaderboards, MatchView, RoomView } from "../../src/types/contract
 
 const TIMING: GameTiming = {
   voteSec: 0,
+  briefingSec: 0,
   buySec: 0,
   resultSec: 0,
   tickMs: 100,
@@ -91,6 +92,31 @@ describe("SessionService", () => {
 
     const none = started({}, () => 0); // voteSec 0: nobody votes
     expect(none.room.theme).toBe("nasdaq");
+  });
+
+  it("briefs everyone before round 1; the round starts once all have continued", () => {
+    const { sessions, room, a, b } = started({ briefingSec: 60 });
+    expect(room.phase).toBe("briefing");
+    expect(room.theme).not.toBeNull(); // the briefing speaks the chosen theme's words
+    sessions.continueBriefing(room.code, a.id);
+    expect(room.phase).toBe("briefing");
+    expect([...room.briefed]).toEqual([a.id]);
+    sessions.continueBriefing(room.code, b.id);
+    expect(room.phase).toBe("live"); // buySec 0 here
+  });
+
+  it("doesn't let a disconnected player hold up the briefing", () => {
+    const { sessions, room, a, b } = started({ briefingSec: 60 });
+    sessions.setConnected(room.code, b.id, false);
+    sessions.continueBriefing(room.code, a.id);
+    expect(room.phase).toBe("live");
+  });
+
+  it("ignores a late Continue once round 1 has started", () => {
+    const { sessions, room, a } = started();
+    expect(room.phase).toBe("live");
+    expect(() => sessions.continueBriefing(room.code, a.id)).not.toThrow();
+    expect(room.phase).toBe("live");
   });
 
   it("refuses votes once voting has closed", () => {

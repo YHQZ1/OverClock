@@ -53,6 +53,8 @@ minutes.
    ▼
  THEME VOTE   Everyone votes · 10 seconds · most votes wins (ties: random)
    ▼
+ BRIEFING     How to play, in the theme's words · starts when all press Continue (max 60s)
+   ▼
  ┌─ ROUND 1, 2, 3 ─────────────────────────────────────────────────┐
  │  BUY PHASE   ~20s to plan and build — the shop never closes       │
  │  LIVE        1:30 / 2:00 / 2:00 of defending and attacking        │

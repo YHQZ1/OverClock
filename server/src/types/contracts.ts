@@ -50,7 +50,7 @@ export type {
 
 export type Slot = 1 | 2 | 3 | 4;
 export type Format = "1v1" | "2v2";
-export type Phase = "room" | "vote" | "buy" | "live" | "roundResult" | "final";
+export type Phase = "room" | "vote" | "briefing" | "buy" | "live" | "roundResult" | "final";
 
 // ---------- room ----------
 
@@ -119,7 +119,7 @@ export type ScreenMatch = {
   code: string;
   format: Format;
   theme: ThemeId | null;
-  phase: "vote" | "buy" | "live" | "roundResult";
+  phase: "vote" | "briefing" | "buy" | "live" | "roundResult";
   round: number;
   totalRounds: number;
   /** Clock: the live round's time left, else the phase timer. */
@@ -142,6 +142,8 @@ export type RoomView = {
   /** playerId → theme, during and after the vote. */
   votes: Record<string, ThemeId>;
   theme: ThemeId | null;
+  /** Players who've read the briefing and pressed Continue. */
+  briefed: string[];
   round: number;
   totalRounds: number;
   /** Countdown for timed phases (vote, buy, round result). */
@@ -228,6 +230,7 @@ export interface ClientToServerEvents {
   "room:ready": (payload: ReadyPayload, ack: Ack<null>) => void;
   "room:teamName": (payload: TeamNamePayload, ack: Ack<null>) => void;
   "vote:theme": (payload: VotePayload, ack: Ack<null>) => void;
+  "briefing:continue": (payload: Record<string, never>, ack: Ack<null>) => void;
   "game:action": (payload: GameActionPayload) => void;
   /** The big screen: subscribe to boards, awards and matches in progress. */
   "screen:watch": (payload: Record<string, never>, ack: Ack<ScreenSnapshot>) => void;

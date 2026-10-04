@@ -48,6 +48,11 @@ export async function duel(browser: Browser, errors: string[]) {
   await expect(a.getByRole("heading", { name: "Pick the site" })).toBeVisible();
   await a.keyboard.press("3");
   await b.keyboard.press("3");
+  // The briefing: round 1 starts once both have pressed Continue.
+  await expect(a.getByRole("button", { name: /Got it — continue/ })).toBeVisible();
+  await a.keyboard.press("Enter");
+  await expect(a.getByRole("button", { name: /Waiting for the others/ })).toBeVisible();
+  await b.keyboard.press("Enter");
   await expect(a.getByRole("status")).toContainText("Buy phase");
   return { a, b, code };
 }

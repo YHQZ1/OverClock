@@ -5,7 +5,7 @@ import type { MatchService } from "./match.service.js";
 import type { ResultService } from "./result.service.js";
 import { sideOf, type RoomService } from "./room.service.js";
 
-const SHOWN_PHASES = ["vote", "buy", "live", "roundResult"] as const;
+const SHOWN_PHASES = ["vote", "briefing", "buy", "live", "roundResult"] as const;
 type ShownPhase = (typeof SHOWN_PHASES)[number];
 const shown = (phase: string): phase is ShownPhase => (SHOWN_PHASES as readonly string[]).includes(phase);
 

@@ -48,6 +48,8 @@ no opponent is around; spectator view.
    ▼  (everyone ready, valid format)
  THEME VOTE  10s · everyone votes · most votes wins
    ▼
+ BRIEFING    how to play, in the theme's words · up to 60s · starts when all press Continue
+   ▼
  ┌─ for each round (1, 2, 3) ───────────────────────────────────────┐
  │ BUY PHASE     ~20s (tune): plan and build; sites are paused      │
  │ LIVE          Round 1 1:30 · Round 2 2:00 · Round 3 2:00 (tune)   │
@@ -79,6 +81,18 @@ no opponent is around; spectator view.
   …). Nobody votes → random.
 - Themes are cosmetic (words, logo, accent colour, music) — the rules and
   numbers are identical, so scores stay comparable.
+
+### Briefing (before round 1 only)
+
+- One screen, in the chosen theme's words and colour: the goal in one line,
+  then **Defend (1–7) · Attack (A–L) · Boost (Q–R)** — every item with its key,
+  name and one-line description; each attack also says what beats it
+  ("Scalper bots — beaten by Robot check or Security").
+- Round 1's buy phase starts when **everyone presses Continue** (Enter) — or
+  after **60s**, so one slow or absent player can't hold the room. Disconnected
+  players don't count. Each player's tick shows who's still reading.
+- Rounds 2 and 3 go straight to their buy phase; the shop keeps every item's
+  one-line hint.
 
 ## The core loop: serve → earn → spend
 
@@ -213,6 +227,7 @@ they faced.
 | Home          | Pitch, live map preview, Create a room / Join a room                           |
 | Room          | Code, team names, 4 slots, ready toggles, how to play                          |
 | Theme vote    | 4 theme cards (logo, what the site is, the rush moment), live vote counts, 10s |
+| Briefing      | Goal, then every Defend / Attack / Boost item with key, hint and counter; who's ready; 60s cap |
 | Buy phase     | Shop, both sites (paused), round number, timer                                 |
 | Live          | HUD (health, coins, score, time) · alert bar · our site map · their site · shop · incoming warnings · "who bought what" feed |
 | Round result  | Round winner, served / turned away, best attack, biggest save                  |

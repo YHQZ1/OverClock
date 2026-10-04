@@ -50,9 +50,9 @@ Each **room** has one phase. Every PC in the room renders the screen for that
 phase, so all PCs stay in sync and refresh/reconnect is trivial.
 
 ```
- ROOM ──(everyone ready, 1v1 or 2v2)──► THEME_VOTE (10s)
-                                            │
-            ┌───────────────────────────────┘
+ ROOM ──(everyone ready, 1v1 or 2v2)──► THEME_VOTE (10s) ──► BRIEFING (all Continue, ≤ 60s)
+                                                                  │
+            ┌─────────────────────────────────────────────────────┘
             ▼
           BUY ──► LIVE ──► ROUND_RESULT ──┐   × 3 rounds
             ▲                              │
@@ -76,7 +76,7 @@ server/src/
 ├── services/
 │   ├── broadcaster.ts       # interface services use to push updates
 │   ├── room.service.ts      # codes, slots, ready, team names, rejoin tokens
-│   ├── session.service.ts   # phase machine: vote, buy, live, results, abandon
+│   ├── session.service.ts   # phase machine: vote, briefing, buy, live, results, abandon
 │   ├── match.service.ts     # live duel: 10 Hz loop, sim.step(), player-safe views
 │   └── result.service.ts    # save completed matches, match points, leaderboards
 ├── sim/               # PURE engine: two sites, crowd, pipeline, shop, attacks, scoring, rng, bots
@@ -148,6 +148,7 @@ Client → server
 | `game:sell`     | `{ item }`                                | Partial refund                         |
 | `game:use`      | `{ item }`                                | Utilities                              |
 | `game:attack`   | `{ attack }`                              | Cooldown + warning                     |
+| `briefing:continue` | `{}`                                 | Read the briefing; round 1 starts when all connected players have (or after 60s) |
 | `screen:watch`  | `{}`                                      | Big screen: joins the `screen` channel; ack = boards + awards + live matches |
 
 Server → client

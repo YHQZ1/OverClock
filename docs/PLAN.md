@@ -65,6 +65,8 @@ In order. Each item ends playable and tested.
 13. [x] **Big screen** `/screen`: featured live match (both maps in its theme,
         rotating every 20s), "also playing" strip, 1v1 / 2v2 top 10 (new
         entries flash), awards; Home links to it
+13a. [x] **Briefing** before round 1: every item in the theme's words with
+        counters; starts when all press Continue, 60s cap
 13b. [ ] **Admin** (tiny, passcode): hide a team from the boards, end a stuck
         room, reset the boards after the rehearsal, list live rooms; team-name
         word filter

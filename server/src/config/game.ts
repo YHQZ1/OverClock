@@ -2,6 +2,8 @@
 
 export type GameTiming = {
   voteSec: number;
+  /** Before round 1: how-to-play for the chosen theme; ends early once everyone continues. 0 = skip. */
+  briefingSec: number;
   buySec: number;
   resultSec: number;
   tickMs: number;
@@ -14,6 +16,7 @@ export type GameTiming = {
 
 export const DEFAULT_TIMING: GameTiming = {
   voteSec: 10,
+  briefingSec: 60,
   buySec: 20,
   resultSec: 8,
   tickMs: 100,

@@ -24,6 +24,7 @@ type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 const FAST: GameTiming = {
   voteSec: 5,
+  briefingSec: 0,
   buySec: 0,
   resultSec: 0,
   tickMs: 5,
@@ -66,6 +67,7 @@ type AckData = {
   "room:ready": null;
   "room:teamName": null;
   "vote:theme": null;
+  "briefing:continue": null;
   "screen:watch": ScreenSnapshot;
 };
 
@@ -258,6 +260,21 @@ describe("the duel", () => {
     expect(f.recorded).toBe(false);
     expect(f.winner).toBe(1);
     expect(f.endedEarly).toEqual({ side: 2, reason: "left" });
+  });
+});
+
+describe("briefing", () => {
+  it("waits for everyone to continue, then round 1's buy phase starts", async () => {
+    await startServer({ ...FAST, voteSec: 0, briefingSec: 30, buySec: 20 });
+    const { cs } = await room(2);
+    const briefing = nextRoom(cs[0]!, (r) => r.phase === "briefing");
+    await readyAll(cs);
+    expect((await briefing).secondsLeft).toBeGreaterThan(0);
+
+    ok(await call(cs[0]!, "briefing:continue", {}));
+    const buy = nextRoom(cs[0]!, (r) => r.phase === "buy" && r.round === 1);
+    ok(await call(cs[1]!, "briefing:continue", {}));
+    await buy;
   });
 });
 

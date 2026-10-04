@@ -19,11 +19,11 @@ export type SessionDeps = {
   results?: ResultService;
 };
 
-const MATCH_PHASES: readonly Phase[] = ["vote", "buy", "live", "roundResult"];
+const MATCH_PHASES: readonly Phase[] = ["vote", "briefing", "buy", "live", "roundResult"];
 
 /**
  * The room phase machine — the server decides which screen every PC shows:
- * room → vote → (buy → live → roundResult) × 3 → final.
+ * room → vote → briefing → (buy → live → roundResult) × 3 → final.
  */
 export class SessionService {
   private readonly timers = new Map<string, NodeJS.Timeout>();
@@ -134,6 +134,32 @@ export class SessionService {
   private finishVote(room: Room): void {
     if (room.phase !== "vote") return;
     room.theme = this.pickTheme(room);
+    this.startBriefing(room);
+  }
+
+  // ---------- briefing ----------
+
+  /** How to play, in the chosen theme's words. Round 1 waits until everyone's read it (or time's up). */
+  private startBriefing(room: Room): void {
+    room.phase = "briefing";
+    room.briefed.clear();
+    this.schedule(room, this.timing.briefingSec, () => this.finishBriefing(room));
+  }
+
+  continueBriefing(code: string, playerId: string): void {
+    const room = this.rooms.require(code);
+    if (room.phase !== "briefing") return; // late click after it started: nothing to do
+    this.rooms.requirePlayer(room, playerId);
+    room.briefed.add(playerId);
+    // Disconnected players don't hold the room up; the timer covers anyone who wanders off.
+    if (room.players.every((p) => room.briefed.has(p.id) || !p.connected)) return this.finishBriefing(room);
+    this.publish(room);
+  }
+
+  private finishBriefing(room: Room): void {
+    if (room.phase !== "briefing") return;
+    this.clearTimer(room.code);
+    room.phaseEndsAt = null;
     this.startRound(room, 1);
   }
 

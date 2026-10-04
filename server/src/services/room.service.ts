@@ -22,6 +22,8 @@ export type Room = {
   format: Format | null;
   votes: Map<string, ThemeId>;
   theme: ThemeId | null;
+  /** Players who pressed Continue on the briefing. */
+  briefed: Set<string>;
   round: number;
   /** When the current timed phase ends (ms since epoch), or null. */
   phaseEndsAt: number | null;
@@ -58,6 +60,7 @@ export class RoomService {
       format: null,
       votes: new Map(),
       theme: null,
+      briefed: new Set(),
       round: 0,
       phaseEndsAt: null,
       rounds: [],
@@ -190,6 +193,7 @@ export class RoomService {
       canStart: this.canStart(room),
       votes: Object.fromEntries(room.votes),
       theme: room.theme,
+      briefed: [...room.briefed],
       round: room.round,
       totalRounds,
       secondsLeft,

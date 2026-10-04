@@ -27,6 +27,7 @@ choices are kept at the bottom so we remember why we moved on.
 | **Two new defences — Lock your address, Backup monitor**; Second route removed | Every attack needs a counter you can build ahead; Shield remains the universal panic button. |
 | **Every round starts fresh** (same coins and 4 servers for both teams) | Fair restarts; no snowballing between rounds. Resolves the reset-vs-carry question. |
 | **Vote ends early once everyone has voted** | No waiting out the timer. |
+| **A briefing before round 1** (one screen: every item in the theme's words, with counters), ends when everyone presses Continue, **60s cap**; not before rounds 2–3 | 20 items can't be read in a 20s buy phase. A longer buy phase would rush readers with a ticking clock and bore fast players; a capped Continue suits both, and nobody can stall the room. |
 | **Joining players are auto-seated on the emptier team** | A 1v1 lines up with zero clicks; 4 players land 2v2. Anyone can still move. |
 | **Upkeep on kept defences**; can't pay → newest server switches off | Over-building is waste; no debt spiral. |
 | **2v2: shared wallet, full controls on both PCs, "Our site / Their site" views, purchases attributed** | Players split work naturally without enforced roles; arguing about spending is part of the fun. |

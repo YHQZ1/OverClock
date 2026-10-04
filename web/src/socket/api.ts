@@ -15,6 +15,7 @@ type Acked =
   | "room:ready"
   | "room:teamName"
   | "vote:theme"
+  | "briefing:continue"
   | "screen:watch";
 
 export async function request<T>(event: Acked, payload: object): Promise<AckResponse<T>> {
@@ -64,6 +65,7 @@ export const pickSlot = async (slot: Slot) => errorOf(await request<null>("room:
 export const setReady = async (ready: boolean) => errorOf(await request<null>("room:ready", { ready }));
 export const setTeamName = async (name: string) => errorOf(await request<null>("room:teamName", { name }));
 export const voteTheme = async (theme: ThemeId) => errorOf(await request<null>("vote:theme", { theme }));
+export const continueBriefing = async () => errorOf(await request<null>("briefing:continue", {}));
 
 export function sendAction(action: GameActionPayload): void {
   socket.emit("game:action", action);

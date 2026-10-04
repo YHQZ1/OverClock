@@ -70,6 +70,7 @@ function useFeatured(matches: ScreenMatch[]): ScreenMatch | null {
 
 const PHASE_LINE: Record<ScreenMatch["phase"], string> = {
   vote: "Picking the site",
+  briefing: "Reading the briefing",
   buy: "Buy phase",
   live: "Live",
   roundResult: "Round over",

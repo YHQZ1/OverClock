@@ -123,6 +123,7 @@ export function runBot(opts: BotOptions): Promise<BotResult> {
   let lastActAt = 0;
   let readied = false;
   let voted = false;
+  let briefed = false;
 
   return new Promise((resolve) => {
     const finish = () => {
@@ -178,6 +179,10 @@ export function runBot(opts: BotOptions): Promise<BotResult> {
         for (const t of Object.values(r.votes)) counts.set(t, (counts.get(t) ?? 0) + 1);
         const pick = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? THEMES[0];
         await ack("vote:theme", { theme: pick });
+      }
+      if (r.phase === "briefing" && !briefed) {
+        briefed = true; // a quick read, then Continue
+        setTimeout(() => void ack("briefing:continue", {}), 1500);
       }
       if (r.phase !== prev) log(`${opts.name}: ${r.phase}${r.round ? ` (round ${r.round})` : ""}`);
       if (r.phase === "final" && r.final) {

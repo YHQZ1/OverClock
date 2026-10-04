@@ -3,6 +3,7 @@ import { useSoundEffects } from "../../audio/useSoundEffects";
 import { createRoom, joinRoom, leaveRoom } from "../../socket/api";
 import { useGameSocket } from "../../socket/useGameSocket";
 import { useGameStore } from "../../store/game";
+import { BriefingScreen } from "./BriefingScreen";
 import { FinalScreen } from "./FinalScreen";
 import { GameScreen } from "./GameScreen";
 import { HomeScreen } from "./HomeScreen";
@@ -37,6 +38,9 @@ export function PlayPage() {
         break;
       case "vote":
         screen = <VoteScreen room={room} playerId={playerId} />;
+        break;
+      case "briefing":
+        screen = <BriefingScreen room={room} playerId={playerId} />;
         break;
       case "buy":
       case "live":
