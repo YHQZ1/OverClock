@@ -16,7 +16,7 @@ services:
     # region: singapore  # pick the region closest to the venue
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
     startCommand: pnpm start
-    healthCheckPath: /health
+    healthCheckPath: /api/health
     autoDeploy: false # never redeploy mid-event by accident
     envVars:
       - key: NODE_ENV

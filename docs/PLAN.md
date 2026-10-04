@@ -1,34 +1,76 @@
 # Plan
 
-Solo build, continuous: finish a milestone → verify → next. No day labels.
-Deploy early, playtest early, freeze features before the event.
+No milestones. One build queue: take the top item, build it, verify it
+(tests + a real run in the browser), tick it off, move on. Keep building until
+we run out of time; the cut list says what goes first if we must.
 
-| # | Milestone | Done when | Status |
-|---|---|---|---|
-| 0 | **Skeleton + design**: folders, configs, docs | Design agreed and written down | ✅ |
-| 1 | **Game engine core** (`server/src/sim`): servers, Rush Hour, ± servers, budget, health, score, timer, crash/reboot, seeded RNG; tests, bots, balance script | Tests pass; idle bot crashes; spam and stingy bots lose to sensible play; same seed + actions ⇒ same result | ✅ Rush Hour + servers only; other disasters in M5 |
-| 2 | **Server + team flow**: Express, Socket.IO, create/join/rejoin/leave, lobby, host START, session phases, 10 Hz match loop | Several browser tabs form a team and play the same match; refresh rejoins | ✅ Phases so far: lobby → countdown → playing → final (one round) |
-| 3 | **Player UI (basic)**: Home, Lobby, Game screen (health, budget, alert, app map, server rack, buttons + shortcuts), Final | A real person plays a full round on a PC without explanation | 🟨 Built: live map, alert + hint, feed, health timeline, down state. Needs a real-person test |
-| 4 | **First deploy** to a hosted URL; try from a lab PC | Reachable and playable outside localhost | ⬜ |
-| 5 | **Full app**: database + network stages, all disasters, all buttons, bottleneck highlight | Every disaster has a button that measurably fixes it | ⬜ |
-| 6 | **Roles + reconnect polish**: role split, buttons move on disconnect, host handover, shared-PC reset | Pull a PC's network mid-round — the team keeps playing | ⬜ |
-| 7 | **Rounds + scenarios**: tutorial (skippable), 3 rounds, breaks, cascades, variant pool, themes | One full session plays end to end in every theme | ⬜ |
-| 8 | **Results + leaderboard**: Postgres via Drizzle, save completed sessions, leaderboard API | Completed sessions appear on the leaderboard; abandoned ones don't | ⬜ |
-| 9 | **Big screen** `/screen`: leaderboard, now-playing tiles, announcements | Readable from the back of a lab | ⬜ |
-| 10 | **Juice**: animations, sound, "what you actually did" cards | Feels like a game, not a dashboard | ⬜ |
-| 11 | **Balance + real playtest** with first-years | Success criteria in GAME.md hold | ⬜ |
-| 12 | **Rehearsal + freeze**: full mock event, fallback check, bug fixes only | Runs start to finish without dev intervention | ⬜ |
+## Built
 
-## Later (if time)
+Foundation from the first (co-op) version — kept and reused by the duel:
 
-- `/admin`: live sessions, abort a broken one, export results
+- [x] Monorepo: pnpm workspaces, TypeScript, Vitest, docs, infra
+- [x] **Pure deterministic engine** (`server/src/sim`): seeded RNG, traffic
+      (base + waves + rushes + noise), servers with boot/cooldown, health,
+      crash/reboot, scoring, run/replay from an action log
+- [x] **Bots + balance report** (`pnpm --filter @overclock/server balance`) and
+      balance invariants as tests
+- [x] **Real-time server**: Express 5 + Socket.IO, Zod-validated thin
+      handlers, services behind a `Broadcaster`, 10 Hz match loop, player-safe
+      views, abandon sweep
+- [x] **Join flow**: 4-letter codes, rejoin tokens, refresh drops you back in,
+      shared-PC seat clearing
+- [x] **Web**: Home (statement, animated map, create/join tiles), lobby,
+      countdown, live game screen (HUD, alert + hint, live map with real
+      servers and turned-away visitors, health timeline, feed), results
+- [x] Tailwind v4 styling with design tokens
+- [x] Tests: engine rules, determinism, balance, end-to-end socket flows (34)
+
+## Build queue (duel)
+
+In order. Each item ends playable and tested.
+
+1. [ ] **Rooms**: rename team → room; 4 slots, slot picking, ready toggles
+       (slot change clears ready), auto-start when all ready and 1v1/2v2 is
+       valid, team names, room screen
+2. [ ] **Theme vote** phase: 10s, live counts, majority / random tie-break
+       (placeholder themes until real ones are chosen)
+3. [ ] **Duel engine**: match state with two sites sharing one seeded
+       background crowd; per-side actions; both sites step together
+4. [ ] **Economy**: coins from visitors served, upkeep, buy/sell (partial
+       refund), can't-pay → newest server switches off
+5. [ ] **Pipeline**: front door (2 routes) → servers → fast shelf → database;
+       bottleneck detection and highlight
+6. [ ] **Defences**: server, traffic splitter, bouncer, fast shelf, backup
+       database, second route
+7. [ ] **Attacks**: crowd surge, bot army, cut a route, slow their database,
+       server meltdown, flush their shelf — cooldowns + "incoming" warnings
+8. [ ] **Utilities**: emergency repair, shield, overclock, instant backup
+9. [ ] **Rounds**: buy phase → live → round result × 3, totals, final
+10. [ ] **Duel bots + balance**: idle, all-attack, all-defence, balanced,
+        human-speed; invariants (every attack has a counter that measurably
+        helps; balanced beats one-trick; attack ≈ counter cost; comeback works)
+11. [ ] **Game screen for the duel**: our site / their site (Tab), shop panel
+        with shortcuts, incoming warnings, who-bought-what feed, coins HUD
+12. [ ] **Results + leaderboard**: Postgres via Drizzle, save completed
+        matches, match points, 1v1 / 2v2 boards, live updates
+13. [ ] **Big screen** `/screen`: leaderboards, matches in progress, awards
+14. [ ] **Themes**: pick the 3–4 themes; words, icons, crowd colours
+15. [ ] **The reveal**: "what you actually built" cards
+16. [ ] **Deploy** to Render; test from a lab PC (firewall)
+17. [ ] **Juice**: animations on attacks/crashes, optional sound
+18. [ ] **Playtest with non-technical students**; tune; fix
+19. [ ] **Rehearsal + freeze**: full mock event, laptop fallback, bug fixes only
+
+Later, if time: play vs bot · 1v2 with a handicap · spectator view · `/admin`.
 
 ## Cut order if behind
 
 1. Sound
-2. Animated fan dots (keep coloured icons)
-3. Third theme
-4. Interactive tutorial → short scripted demo
+2. Flush their shelf (keep five attacks)
+3. Fourth theme
+4. Fun awards
 5. Detailed reveal cards → one static card
 
-**Never cut:** role split, leaderboard, saving results, big screen, crash/reboot.
+**Never cut:** rooms + ready, at least four attacks with counters, the shop
+during live rounds, 3 rounds, saving results, the leaderboard, the big screen,
+crash/reboot.

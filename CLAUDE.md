@@ -1,19 +1,21 @@
 # CLAUDE.md
 
-Overclock: live team survival game for 1st/2nd-year CS students at a fest,
-played on college lab PCs (desktop, mouse + keyboard). Solo developer, tight
-timeline, continuous milestones (docs/PLAN.md). Read `docs/` before design changes.
+Overclock: live head-to-head strategy game (1v1 / 2v2 — "flood their site, keep
+yours alive") for SymbiTech, our college tech fest. Walk-in players are mostly
+non-technical; played on college lab PCs (desktop, mouse + keyboard). Solo
+developer, tight timeline. No milestones — build from the queue in
+docs/PLAN.md, top first. Read `docs/` before design changes.
 
 ## Commands
 
 - `pnpm dev` — server + web in watch mode
 - `pnpm test` / `pnpm typecheck` — run before calling anything done
 - `pnpm db:up` — local Postgres (infra/docker-compose.yml)
-- `pnpm --filter @overclock/server balance` — bot balance report (once it exists)
+- `pnpm --filter @overclock/server balance` — bot balance report
 
 ## Layout
 
-- `web/` — React + Vite + TS. Routes: `/play`, `/screen` (`/admin` deferred — core team flow first).
+- `web/` — React + Vite + TS + Tailwind v4. Routes: `/play`, `/screen` (`/admin` deferred).
 - `server/` — Express 5 + Socket.IO + TS. `server.ts → app.ts → routes → controllers → services`, plus `sockets/`, `sim/`, `db/`, `validators/`, `middlewares/`, `utils/`, `config/`, `types/`.
 - `docs/` — GAME, ARCHITECTURE, DECISIONS, PLAN, BALANCE, RUNBOOK.
 - `infra/` — docker-compose, render.yaml, .env.example.
@@ -27,7 +29,7 @@ timeline, continuous milestones (docs/PLAN.md). Read `docs/` before design chang
 - **Server ESM uses `NodeNext`**: relative imports need `.js` extensions.
 - **Desktop-first** (≥1366×768), keyboard shortcuts on every button, lightweight animations, visual-first alerts (no guaranteed audio).
 - **Shared PCs**: clear saved team/session data when a session ends or is abandoned.
-- **Never expose technical terms in player-facing UI** (no CPU %, RPS, latency, "cache", "load balancer"). Those belong in the post-round reveal or the hidden Tech View.
+- **Never expose technical terms in player-facing UI** (no CPU %, RPS, latency, "cache", "load balancer"). Use the player names from docs/GAME.md (Traffic splitter, Bouncer, Fast shelf…); real names only in the end-of-match reveal.
 - One root `.gitignore` only — no per-folder ignore files.
 - Keep `docs/PLAN.md` status and `docs/DECISIONS.md` up to date as work lands.
 - Don't commit unless asked.
