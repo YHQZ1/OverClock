@@ -21,6 +21,11 @@ choices are kept at the bottom so we remember why we moved on.
 | **Attacks cost about what their counter costs** | Neither pure attack nor pure defence wins; timing and choice do. Enforced by bot tests. |
 | **Every attack is announced** ("⚠️ incoming in 3…") | Defending is skill, not luck. |
 | **Anti-snowball**: comeback income for the trailing team, brief protection after a reboot | Matches stay tense to the end. |
+| **Defences take ~4s to set up** (servers 2s); instant during the buy phase | With instant counters a 3s warning made every attack useless (bots: defence-only won 96%). "Build ahead, or Shield in a pinch" rewards scouting and keeps surprise attacks worth something. |
+| **After any attack, attackers regroup (5s); repeating the same attack in a round costs +25% each time** | Without it, all-attack spam won 98% of bot matches. Encourages variety and timing. |
+| **Every round starts fresh** (same coins and 4 servers for both teams) | Fair restarts; no snowballing between rounds. Resolves the reset-vs-carry question. |
+| **Vote ends early once everyone has voted** | No waiting out the timer. |
+| **Joining players are auto-seated on the emptier team** | A 1v1 lines up with zero clicks; 4 players land 2v2. Anyone can still move. |
 | **Upkeep on kept defences**; can't pay → newest server switches off | Over-building is waste; no debt spiral. |
 | **2v2: shared wallet, full controls on both PCs, "Our site / Their site" views, purchases attributed** | Players split work naturally without enforced roles; arguing about spending is part of the fun. |
 | **Both sites get the same background crowd (same seed)** | The match starts perfectly fair; only attacks and choices make the sites differ. |
@@ -35,6 +40,7 @@ choices are kept at the bottom so we remember why we moved on.
 | **Opponent's coins are hidden; their health and defences are visible** | Scouting matters, bluffing stays possible. |
 | **Played on college lab PCs**, desktop-first, mouse + keyboard shortcuts on every in-game action | That's the venue. |
 | **Visual-first alerts**; sound optional | Lab PCs may have no speakers. |
+| **Sound effects + light chiptune background music (Am–F–C–G; gentle in menus, drums in rounds, faster in the last 20s), synthesised in the browser** (Web Audio, no files; layered voices, reverb, compressor; one musical key); **M** mutes all, **N** toggles music, remembered per browser | Nothing to download past the firewall; tiny; every sound has a visual twin. Each attack has its own sound so you know what hit you without looking. |
 | **Shared-PC safety**: seat cleared on Leave and on "Done — next players" | The next players must never land in someone else's match. |
 | **Room codes: 4 letters, no I or O** | Easy to read off a screen and type. |
 | **No C/J shortcuts on Home**; forms keep Enter / Esc | Home is clicked once; shortcuts matter in the game. |
@@ -65,6 +71,7 @@ choices are kept at the bottom so we remember why we moved on.
 | **Seat (code + token) in `sessionStorage`**, per tab | Refresh rejoins; several tabs can test a room on one PC; cleared on Leave / Done. |
 | **One web service** serves API + socket + web build | One deploy, no CORS, local fallback is one command. Single instance. |
 | **Dev `tsx watch`; prod `tsc` → `node dist`** | Fast reload locally, plain Node in production. |
+| **`FAST_ROUNDS=1` dev switch** (5s buy, 20s rounds) | Test a full match in ~90s instead of ~7 minutes. Never set at the event. |
 | **pnpm 11 with `allowBuilds: esbuild`** | pnpm blocks dependency build scripts by default; `tsx` needs esbuild's. |
 | **No milestones — one build queue** (docs/PLAN.md) | Keep building, top of the queue first, verify as we go. |
 
@@ -74,7 +81,6 @@ choices are kept at the bottom so we remember why we moved on.
 | --- | --- |
 | The themes | 3–4, not decided. Direction above. |
 | All numbers | Prices, upkeep, attack strength/duration/cooldowns, warning time, income, comeback bonus, round lengths, match-point weights — bots + playtests. |
-| Coins between rounds | Reset each round (fair restarts) vs carry over (banking strategy). Leaning reset. |
 | Team names | Default "Priya & Rahul"; editable in the room. Duplicates allowed. |
 | Mid-match disconnects | Whole team gone > ~1 min → match ends unrecorded (proposal). |
 | Play vs bot | Fallback when no opponent is around — likely, later. |

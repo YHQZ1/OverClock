@@ -1,15 +1,17 @@
 import type { GameTiming } from "../config/game.js";
 import {
   DEFAULT_CONFIG,
-  ROUND_1,
-  createMatch,
-  scoreOf,
+  SIDES,
+  createDuel,
+  roundResult,
   step,
   type Action,
   type ActionLog,
+  type DuelState,
   type MatchSetup,
-  type MatchState,
-  type ScoreBreakdown,
+  type RoundResult,
+  type Scenario,
+  type Side,
 } from "../sim/index.js";
 import type { MatchView } from "../types/contracts.js";
 import { matchSeed } from "../utils/codes.js";
@@ -17,69 +19,79 @@ import type { Broadcaster } from "./broadcaster.js";
 import { toMatchView } from "./match.view.js";
 
 /** Presses beyond this per tick are dropped — nobody clicks that fast. */
-const MAX_QUEUED_ACTIONS = 10;
+const MAX_QUEUED_ACTIONS = 16;
 
-export type MatchResult = { seed: number; log: ActionLog; score: ScoreBreakdown; state: MatchState };
+export type RoundEnd = { seed: number; log: ActionLog; result: RoundResult; state: DuelState };
 
-type LiveMatch = {
+type LiveRound = {
+  setup: MatchSetup;
   seed: number;
-  state: MatchState;
+  round: number;
+  phase: "buy" | "live";
+  state: DuelState;
   queue: Action[];
   log: ActionLog;
-  onEnd: (result: MatchResult) => void;
+  onEnd: (end: RoundEnd) => void;
 };
 
-/** Live rounds: owns match state in memory and drives the 10 Hz loop. */
+/** Live rounds: owns duel state in memory and drives the 10 Hz loop. */
 export class MatchService {
-  private readonly matches = new Map<string, LiveMatch>();
+  private readonly rounds = new Map<string, LiveRound>();
   private loop: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly notify: Broadcaster,
     private readonly timing: GameTiming,
-    private readonly setup: MatchSetup = { scenario: ROUND_1, config: DEFAULT_CONFIG },
   ) {}
 
-  start(code: string, onEnd: LiveMatch["onEnd"], seed = matchSeed()): void {
-    const state = createMatch(this.setup, seed);
-    this.matches.set(code, { seed, state, queue: [], log: [], onEnd });
-    this.notify.match(code, toMatchView(state, this.setup));
+  /** Set up a round in its buy phase: purchases apply, the clock waits. */
+  start(code: string, round: number, scenario: Scenario, onEnd: LiveRound["onEnd"], seed = matchSeed()): void {
+    const setup: MatchSetup = { scenario, config: DEFAULT_CONFIG };
+    const live: LiveRound = { setup, seed, round, phase: "buy", state: createDuel(setup, seed), queue: [], log: [], onEnd };
+    this.rounds.set(code, live);
+    this.broadcast(code, live);
+  }
+
+  /** Buy phase over — the crowd arrives. */
+  goLive(code: string): void {
+    const live = this.rounds.get(code);
+    if (live) live.phase = "live";
   }
 
   queue(code: string, action: Action): void {
-    const match = this.matches.get(code);
-    if (match && match.queue.length < MAX_QUEUED_ACTIONS) match.queue.push(action);
+    const live = this.rounds.get(code);
+    if (live && live.queue.length < MAX_QUEUED_ACTIONS) live.queue.push(action);
   }
 
   stop(code: string): void {
-    this.matches.delete(code);
+    this.rounds.delete(code);
   }
 
   isRunning(code: string): boolean {
-    return this.matches.has(code);
+    return this.rounds.has(code);
   }
 
-  view(code: string): MatchView | null {
-    const match = this.matches.get(code);
-    return match ? toMatchView(match.state, this.setup) : null;
+  view(code: string, side: Side): MatchView | null {
+    const live = this.rounds.get(code);
+    return live ? toMatchView(live.state, side, live.setup, { round: live.round, phase: live.phase }) : null;
   }
 
-  /** Advance every live match by one tick and broadcast. */
+  /** Advance every round by one tick (buy phase: purchases only) and broadcast. */
   tickAll(): void {
-    for (const [code, match] of this.matches) {
-      const actions = match.queue;
-      match.queue = [];
-      for (const action of actions) match.log.push({ tick: match.state.tick, action });
+    for (const [code, live] of this.rounds) {
+      const actions = live.queue;
+      live.queue = [];
+      const paused = live.phase === "buy";
+      for (const action of actions) live.log.push({ tick: paused ? -1 : live.state.tick, action });
 
-      const { state, events } = step(match.state, actions, this.setup);
-      match.state = state;
-
-      this.notify.match(code, toMatchView(state, this.setup));
+      const { state, events } = step(live.state, actions, live.setup, { paused });
+      live.state = state;
+      this.broadcast(code, live);
       if (events.length > 0) this.notify.matchEvents(code, events);
 
       if (state.phase === "ended") {
-        this.matches.delete(code);
-        match.onEnd({ seed: match.seed, log: match.log, score: scoreOf(state, this.setup.config), state });
+        this.rounds.delete(code);
+        live.onEnd({ seed: live.seed, log: live.log, result: roundResult(state, live.setup.config), state });
       }
     }
   }
@@ -91,5 +103,11 @@ export class MatchService {
   stopLoop(): void {
     if (this.loop) clearInterval(this.loop);
     this.loop = null;
+  }
+
+  private broadcast(code: string, live: LiveRound): void {
+    for (const side of SIDES) {
+      this.notify.match(code, side, toMatchView(live.state, side, live.setup, { round: live.round, phase: live.phase }));
+    }
   }
 }

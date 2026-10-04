@@ -1,10 +1,12 @@
-// Public surface of the pure game engine. Nothing in sim/ may touch
+// Public surface of the pure duel engine. Nothing in sim/ may touch
 // Express, Socket.IO, the database, the clock or Math.random.
 
 export { DEFAULT_CONFIG, toTicks, type SimConfig } from "./config.js";
-export { ROUND_1, type Scenario, type EventSpec, type RushSpec } from "./scenario.js";
-export { createMatch, step, type MatchSetup } from "./engine.js";
-export { scoreOf, type ScoreBreakdown } from "./score.js";
-export { runMatch, replay, type ActionLog, type MatchRun, type Policy } from "./run.js";
+export * from "./items.js";
+export { ROUNDS, type Scenario, type RushSpec } from "./scenario.js";
+export { createDuel, step, findEffect, onlineServers, upkeepPerSec, siteScore, priceOf, type MatchSetup, type StepOptions } from "./engine.js";
+export * from "./score.js";
+export { runRound, replay, type ActionLog, type RoundRun, type Policy } from "./run.js";
 export { BOTS, type BotName } from "./bots.js";
+export { SIDES, other } from "./types.js";
 export type * from "./types.js";

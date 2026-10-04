@@ -104,6 +104,20 @@
     font-feature-settings: "cv11", "ss01";
   }
 
+  /* Everything clickable shows the pointer (Tailwind's reset gives buttons the default arrow). */
+  button:not(:disabled),
+  [role="button"],
+  [role="radio"],
+  a[href],
+  summary,
+  label[for],
+  select {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
   :focus-visible {
     @apply outline outline-offset-2 outline-accent;
   }

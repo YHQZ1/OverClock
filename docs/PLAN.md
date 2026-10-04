@@ -23,41 +23,48 @@ Foundation from the first (co-op) version — kept and reused by the duel:
       countdown, live game screen (HUD, alert + hint, live map with real
       servers and turned-away visitors, health timeline, feed), results
 - [x] Tailwind v4 styling with design tokens
-- [x] Tests: engine rules, determinism, balance, end-to-end socket flows (34)
+- [x] Tests: engine rules, determinism, balance invariants, end-to-end socket flows (37 for the duel)
 
 ## Build queue (duel)
 
 In order. Each item ends playable and tested.
 
-1. [ ] **Rooms**: rename team → room; 4 slots, slot picking, ready toggles
-       (slot change clears ready), auto-start when all ready and 1v1/2v2 is
-       valid, team names, room screen
-2. [ ] **Theme vote** phase: 10s, live counts, majority / random tie-break
-       (placeholder themes until real ones are chosen)
-3. [ ] **Duel engine**: match state with two sites sharing one seeded
-       background crowd; per-side actions; both sites step together
-4. [ ] **Economy**: coins from visitors served, upkeep, buy/sell (partial
-       refund), can't-pay → newest server switches off
-5. [ ] **Pipeline**: front door (2 routes) → servers → fast shelf → database;
-       bottleneck detection and highlight
-6. [ ] **Defences**: server, traffic splitter, bouncer, fast shelf, backup
-       database, second route
-7. [ ] **Attacks**: crowd surge, bot army, cut a route, slow their database,
-       server meltdown, flush their shelf — cooldowns + "incoming" warnings
-8. [ ] **Utilities**: emergency repair, shield, overclock, instant backup
-9. [ ] **Rounds**: buy phase → live → round result × 3, totals, final
-10. [ ] **Duel bots + balance**: idle, all-attack, all-defence, balanced,
-        human-speed; invariants (every attack has a counter that measurably
-        helps; balanced beats one-trick; attack ≈ counter cost; comeback works)
-11. [ ] **Game screen for the duel**: our site / their site (Tab), shop panel
-        with shortcuts, incoming warnings, who-bought-what feed, coins HUD
+1. [x] **Rooms**: 4 slots (auto-balanced on join), slot picking, ready
+       toggles (slot change clears ready), auto-start when all ready and
+       1v1/2v2 is valid, team names, room screen
+2. [x] **Theme vote**: 10s, live counts, majority / random tie-break, ends
+       early once everyone has voted (placeholder themes)
+3. [x] **Duel engine**: two sites sharing one seeded background crowd;
+       per-side actions; both sites step together; exact replays
+4. [x] **Economy**: coins from visitors served, upkeep, buy/sell (50%
+       refund), can't-pay → newest server switches off, comeback income
+5. [x] **Pipeline**: front door → servers → fast shelf → database;
+       bottleneck detection and highlight on the map
+6. [x] **Defences**: server, traffic splitter, bouncer, fast shelf, backup
+       database, second route (4s setup, instant in the buy phase)
+7. [x] **Attacks**: crowd surge, bot army, cut a route, slow their database,
+       server meltdown, flush their shelf — warnings, cooldowns, regroup,
+       repeat-price increase
+8. [x] **Utilities**: emergency repair, shield, overclock, instant backup
+9. [x] **Rounds**: buy phase → live → round result × 3, totals, final,
+       forfeit when a team leaves
+10. [~] **Duel bots + balance**: idle, turtle, rusher, balanced, human
+        fast/slow with buy-phase plans; invariants as tests (idle loses,
+        mirror = draw, no strategy > 90%, every attack has a counter that
+        measurably helps). Keep tuning with real playtests.
+11. [x] **Game screen for the duel**: HUD (us vs them), alert with counter
+        hints, live map per site (Tab), mini map, both health timelines,
+        shop (Defend / Attack / Boost, shortcuts, Shift+N sells), feed
 12. [ ] **Results + leaderboard**: Postgres via Drizzle, save completed
         matches, match points, 1v1 / 2v2 boards, live updates
 13. [ ] **Big screen** `/screen`: leaderboards, matches in progress, awards
 14. [ ] **Themes**: pick the 3–4 themes; words, icons, crowd colours
 15. [ ] **The reveal**: "what you actually built" cards
 16. [ ] **Deploy** to Render; test from a lab PC (firewall)
-17. [ ] **Juice**: animations on attacks/crashes, optional sound
+17. [~] **Juice**: sound done — effects for every action and event, a
+        signature sound per attack, attack-ready ping, heartbeat when
+        critical, last-10s clock, live-round music bed that speeds up at the
+        end (M mutes, N music). Attack and crash animations still to do
 18. [ ] **Playtest with non-technical students**; tune; fix
 19. [ ] **Rehearsal + freeze**: full mock event, laptop fallback, bug fixes only
 

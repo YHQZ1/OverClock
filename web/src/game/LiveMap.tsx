@@ -1,50 +1,56 @@
-import type { MatchView, PartStatus, ServerSlotView } from "@server/types/contracts.js";
+import type { Part, PartStatus, ServerSlotView, SiteView } from "@server/types/contracts.js";
 import { useMemo } from "react";
 import { cx } from "../components/ui";
 
-/* The live app map: the crowd grows with traffic, streams through the
-   internet into the real server rack and on to the database. People who
-   can't get in bounce off the rack in red. Purely a picture of MatchView —
-   no game logic here. SVG <animateMotion> keeps it cheap on lab PCs. */
+/* The live map of one site: a crowd streams in through the front door, across
+   the server rack, past the fast shelf to the database. The part that can't
+   keep up turns red and people bounce off it. Purely a picture of SiteView.
+   SVG <animateMotion> keeps it cheap on lab PCs. */
 
-const W = 760;
+const W = 800;
 const H = 300;
 const MID = 140;
 const LABEL_Y = H - 6;
 
-const CROWD_EDGE = 142;
-const NET = { x: 290, size: 56 };
-const RACK = { x: 404, y: 34, w: 176, h: 212 };
-const DB = { x: 684, size: 56 };
+const CROWD_EDGE = 132;
+const DOOR = { x: 228, size: 52 };
+const RACK = { x: 318, y: 34, w: 172, h: 212 };
+const SHELF = { x: 590, size: 46 };
+const DB = { x: 706, size: 52 };
 
 const ENTRY_YS = [76, 108, 140, 172, 204];
 const LANE_YS = [84, 140, 196];
+const ROUTE_B_Y = 228;
 
 const half = (n: number) => n / 2;
-const rackLeft = RACK.x;
 const rackRight = RACK.x + RACK.w;
-
-const entryPath = (y: number) => {
-  const end = NET.x - half(NET.size);
-  return `M${CROWD_EDGE} ${y} C${CROWD_EDGE + 70} ${y} ${end - 70} ${MID} ${end} ${MID}`;
-};
-const spreadPath = (y: number) => {
-  const start = NET.x + half(NET.size);
-  return `M${start} ${MID} C${start + 50} ${MID} ${rackLeft - 50} ${y} ${rackLeft} ${y}`;
-};
-const mergePath = (y: number) => {
-  const end = DB.x - half(DB.size);
-  return `M${rackRight} ${y} C${rackRight + 50} ${y} ${end - 50} ${MID} ${end} ${MID}`;
-};
 const join = (d: string) => d.replace(/^M/, "L");
 
-/** Crowd → internet → rack → (through the rack) → database. */
-const throughPath = (entry: number, lane: number) =>
-  [entryPath(entry), join(spreadPath(lane)), `L${rackRight} ${lane}`, join(mergePath(lane))].join(" ");
+const curve = (x1: number, y1: number, x2: number, y2: number) =>
+  `M${x1} ${y1} C${x1 + (x2 - x1) * 0.45} ${y1} ${x2 - (x2 - x1) * 0.45} ${y2} ${x2} ${y2}`;
 
-/** Crowd → internet → hits the rack → falls away. */
-const bouncePath = (entry: number, lane: number) =>
-  [entryPath(entry), join(spreadPath(lane)), `C${rackLeft - 14} ${lane} ${rackLeft - 26} ${lane + 30} ${rackLeft - 40} ${lane + 64}`].join(" ");
+const entryPath = (y: number) => curve(CROWD_EDGE, y, DOOR.x - half(DOOR.size), MID);
+const spreadPath = (y: number) => curve(DOOR.x + half(DOOR.size), MID, RACK.x, y);
+const mergePath = (y: number) => curve(rackRight, y, SHELF.x - half(SHELF.size), MID);
+const toDb = `M${SHELF.x + half(SHELF.size)} ${MID} L${DB.x - half(DB.size)} ${MID}`;
+const routeB = `M${CROWD_EDGE} ${ROUTE_B_Y} C${CROWD_EDGE + 50} ${ROUTE_B_Y} ${DOOR.x - 40} ${ROUTE_B_Y} ${DOOR.x} ${MID + half(DOOR.size)}`;
+
+const through = (entry: number, lane: number) =>
+  [entryPath(entry), join(spreadPath(lane)), `L${rackRight} ${lane}`, join(mergePath(lane)), join(toDb)].join(" ");
+
+/** Path for someone turned away at `part`: they get that far, then fall away. */
+function bounce(entry: number, lane: number, part: Part): string {
+  const fall = (x: number, y: number) => `C${x - 12} ${y} ${x - 24} ${y + 30} ${x - 38} ${y + 62}`;
+  switch (part) {
+    case "door":
+      return [entryPath(entry), fall(DOOR.x - half(DOOR.size), MID)].join(" ");
+    case "servers":
+      return [entryPath(entry), join(spreadPath(lane)), fall(RACK.x, lane)].join(" ");
+    case "shelf":
+    case "db":
+      return [entryPath(entry), join(spreadPath(lane)), `L${rackRight} ${lane}`, join(mergePath(lane)), join(toDb), fall(DB.x - half(DB.size), MID)].join(" ");
+  }
+}
 
 // Deterministic crowd positions, nearest to the entrance first, so the crowd grows outward.
 const CROWD_SPOTS = (() => {
@@ -53,7 +59,7 @@ const CROWD_SPOTS = (() => {
     for (let row = 0; row < 13; row++) {
       const seed = (col * 37 + row * 91) % 17;
       spots.push({
-        x: 22 + col * 15 + (seed % 5) - 2,
+        x: 22 + col * 14 + (seed % 5) - 2,
         y: 50 + row * 15 + ((seed * 3) % 7) - 3,
         o: 0.3 + ((seed % 6) / 6) * 0.55,
         twinkle: seed % 5 === 0,
@@ -64,42 +70,50 @@ const CROWD_SPOTS = (() => {
   return spots.sort((a, b) => d(a) - d(b));
 })();
 
-const STATUS_STROKE: Record<PartStatus, string> = {
+const STROKE: Record<PartStatus, string> = {
   ok: "stroke-line-strong",
   strained: "stroke-warn",
   failing: "stroke-bad animate-alarm-stroke",
+  none: "stroke-line",
 };
-const STATUS_TEXT: Record<PartStatus, string> = { ok: "fill-muted", strained: "fill-warn", failing: "fill-bad" };
+const TEXT: Record<PartStatus, string> = { ok: "fill-muted", strained: "fill-warn", failing: "fill-bad", none: "fill-faint" };
 
-type IconName = "globe" | "db";
+type IconName = "door" | "shelf" | "db";
 
 function Icon({ name }: { name: IconName }) {
-  return name === "globe" ? (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <ellipse cx="12" cy="12" rx="4" ry="9" />
-      <path d="M3 12h18" />
-    </>
-  ) : (
-    <>
-      <ellipse cx="12" cy="5.5" rx="8" ry="2.8" />
-      <path d="M4 5.5v13c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8v-13" />
-      <path d="M4 12c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8" />
-    </>
-  );
+  switch (name) {
+    case "door":
+      return (
+        <>
+          <rect x="5" y="3" width="14" height="18" />
+          <path d="M15 12h.01" strokeWidth="2.6" />
+        </>
+      );
+    case "shelf":
+      return <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />;
+    case "db":
+      return (
+        <>
+          <ellipse cx="12" cy="5.5" rx="8" ry="2.8" />
+          <path d="M4 5.5v13c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8v-13" />
+          <path d="M4 12c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8" />
+        </>
+      );
+  }
 }
 
-function Node({ x, size, icon }: { x: number; size: number; icon: IconName }) {
+function Node({ x, size, icon, status, ghost = false }: { x: number; size: number; icon: IconName; status: PartStatus; ghost?: boolean }) {
   return (
-    <g transform={`translate(${x} ${MID})`}>
-      <rect className="fill-bg stroke-line-strong" x={-half(size)} y={-half(size)} width={size} height={size} />
-      <g
-        className="fill-none stroke-ink"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        transform="translate(-12 -12)"
-      >
+    <g transform={`translate(${x} ${MID})`} opacity={ghost ? 0.35 : 1}>
+      <rect
+        className={cx("fill-bg", STROKE[status])}
+        strokeDasharray={ghost ? "4 4" : undefined}
+        x={-half(size)}
+        y={-half(size)}
+        width={size}
+        height={size}
+      />
+      <g className="fill-none stroke-ink" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" transform="translate(-12 -12)">
         <Icon name={icon} />
       </g>
     </g>
@@ -107,7 +121,7 @@ function Node({ x, size, icon }: { x: number; size: number; icon: IconName }) {
 }
 
 /** The real servers, laid out in a grid inside the rack. */
-function Rack({ servers, status }: { servers: ServerSlotView[]; status: PartStatus }) {
+function Rack({ servers, status, overclock }: { servers: ServerSlotView[]; status: PartStatus; overclock: boolean }) {
   const n = Math.max(servers.length, 1);
   const cell = n <= 20 ? 26 : n <= 35 ? 20 : 16;
   const gap = 6;
@@ -120,68 +134,84 @@ function Rack({ servers, status }: { servers: ServerSlotView[]; status: PartStat
 
   return (
     <g>
-      <rect className={cx("fill-bg", STATUS_STROKE[status])} x={RACK.x} y={RACK.y} width={RACK.w} height={RACK.h} />
+      <rect
+        className={cx(overclock ? "fill-accent-dim" : "fill-bg", STROKE[status])}
+        x={RACK.x}
+        y={RACK.y}
+        width={RACK.w}
+        height={RACK.h}
+      />
       {servers.map((s, i) => {
         const x = x0 + (i % cols) * (cell + gap);
         const y = y0 + Math.floor(i / cols) * (cell + gap);
-        if (s.state === "busy") return <rect key={s.id} className="fill-ink" x={x} y={y} width={cell} height={cell} />;
-        if (s.state === "down") {
-          return <rect key={s.id} className="fill-bad/25 stroke-bad" x={x + 0.5} y={y + 0.5} width={cell - 1} height={cell - 1} />;
+        const box = { x: x + 0.5, y: y + 0.5, width: cell - 1, height: cell - 1 };
+        switch (s.state) {
+          case "busy":
+            return <rect key={s.id} className="fill-ink" x={x} y={y} width={cell} height={cell} />;
+          case "idle":
+            return <rect key={s.id} className="fill-none stroke-faint" strokeDasharray="3 3" {...box} />;
+          case "down":
+            return <rect key={s.id} className="fill-bad/25 stroke-bad" {...box} />;
+          case "melted":
+            return <rect key={s.id} className="fill-warn/20 stroke-warn" strokeDasharray="2 2" {...box} />;
+          case "booting": {
+            const filled = cell * s.progress;
+            return (
+              <g key={s.id}>
+                <rect className="fill-none stroke-accent" {...box} />
+                <rect className="fill-accent" x={x} y={y + cell - filled} width={cell} height={filled} />
+              </g>
+            );
+          }
         }
-        if (s.state === "idle") {
-          return (
-            <rect key={s.id} className="fill-none stroke-faint" strokeDasharray="3 3" x={x + 0.5} y={y + 0.5} width={cell - 1} height={cell - 1} />
-          );
-        }
-        const filled = cell * s.bootProgress;
-        return (
-          <g key={s.id}>
-            <rect className="fill-none stroke-accent" x={x + 0.5} y={y + 0.5} width={cell - 1} height={cell - 1} />
-            <rect className="fill-accent transition-all duration-100" x={x} y={y + cell - filled} width={cell} height={filled} />
-          </g>
-        );
       })}
     </g>
   );
 }
 
-const flowCount = (crowd: number) => Math.min(28, Math.max(3, Math.round(crowd * 7)));
+const flowCount = (crowd: number) => Math.min(26, Math.max(3, Math.round(crowd * 7)));
 
-export function LiveMap({ match }: { match: MatchView }) {
-  const down = match.downSecondsLeft !== null;
-  const crowdShown = Math.min(CROWD_SPOTS.length, Math.max(10, Math.round(14 + match.crowd * 24)));
+export function LiveMap({ site, compact = false }: { site: SiteView; compact?: boolean }) {
+  const down = site.downSecondsLeft !== null;
+  const crowdShown = Math.min(CROWD_SPOTS.length, Math.max(10, Math.round(14 + site.crowd * 24)));
+  const cut = site.effects.some((e) => e.kind === "cutRoute");
+  const shielded = site.effects.some((e) => e.kind === "shield");
+  const overclock = site.effects.some((e) => e.kind === "overclock");
+  const hasShelf = site.owned.shelf > 0;
 
   // Quantised so the dots don't reshuffle on every tiny wobble.
-  const flows = flowCount(match.crowd);
-  const turnedAway = down ? 1 : Math.round((1 - match.servedShare) * 8) / 8;
+  const flows = flowCount(site.crowd);
+  const turnedAway = down ? 1 : Math.round((1 - site.servedShare) * 8) / 8;
   const bouncing = Math.round(flows * turnedAway);
+  const botDots = Math.min(12, Math.round(site.botShare * 6));
+  const where: Part = down ? "door" : (site.bottleneck ?? "servers");
 
   const dots = useMemo(
     () =>
-      Array.from({ length: flows }, (_, i) => {
+      Array.from({ length: flows + botDots }, (_, i) => {
         const entry = ENTRY_YS[(i * 3) % ENTRY_YS.length]!;
         const lane = LANE_YS[i % LANE_YS.length]!;
-        const bounce = i < bouncing;
+        const bot = i >= flows;
+        const bounced = bot ? site.owned.bouncer > 0 && i % 6 !== 0 : i < bouncing;
+        const at = bot && bounced ? "door" : where;
         return {
           key: i,
-          bounce,
-          d: bounce ? bouncePath(entry, lane) : throughPath(entry, lane),
-          dur: (bounce ? 2.6 : 4.2) + ((i * 7) % 5) * 0.3,
+          tone: bot ? "fill-faint" : bounced ? "fill-bad" : "fill-accent",
+          d: bounced ? bounce(entry, lane, at) : through(entry, lane),
+          dur: (bounced ? 2.4 : 4.4) + ((i * 7) % 5) * 0.3,
           begin: -(i * 0.41),
+          bounced,
         };
       }),
-    [flows, bouncing],
+    [flows, botDots, bouncing, where, site.owned.bouncer],
   );
-
-  const busy = match.servers.filter((s) => s.state === "busy").length;
-  const idle = match.servers.filter((s) => s.state === "idle").length;
 
   return (
     <svg
-      className={cx("block h-auto max-h-full w-full max-w-[860px] transition-opacity duration-300", down && "opacity-40")}
+      className={cx("block h-auto max-h-full w-full transition-opacity duration-300", compact ? "max-w-[420px]" : "max-w-[900px]", down && "opacity-40")}
       viewBox={`0 0 ${W} ${H}`}
       role="img"
-      aria-label={`${busy} busy and ${idle} idle servers`}
+      aria-label="Live map of the site"
     >
       <defs>
         <pattern id="livemap-grid" width="16" height="16" patternUnits="userSpaceOnUse">
@@ -189,10 +219,11 @@ export function LiveMap({ match }: { match: MatchView }) {
         </pattern>
       </defs>
       <rect width={W} height={H - 28} fill="url(#livemap-grid)" />
+      {shielded && <rect className="fill-none stroke-accent" strokeWidth={2} x={4} y={4} width={W - 8} height={H - 34} />}
 
       <g className="fill-none stroke-line-strong" strokeWidth={1}>
         {ENTRY_YS.map((y) => (
-          <path key={`e${y}`} d={entryPath(y)} />
+          <path key={`e${y}`} d={entryPath(y)} className={cut ? "stroke-bad" : undefined} strokeDasharray={cut ? "6 6" : undefined} />
         ))}
         {LANE_YS.map((y) => (
           <path key={`s${y}`} d={spreadPath(y)} />
@@ -200,6 +231,8 @@ export function LiveMap({ match }: { match: MatchView }) {
         {LANE_YS.map((y) => (
           <path key={`m${y}`} d={mergePath(y)} />
         ))}
+        <path d={toDb} />
+        {site.owned.secondRoute > 0 && <path d={routeB} className="stroke-accent" strokeDasharray="3 5" />}
       </g>
 
       <g className="fill-muted">
@@ -217,12 +250,12 @@ export function LiveMap({ match }: { match: MatchView }) {
       </g>
 
       {dots.map((dot) => (
-        <circle key={dot.key} r={2.8} opacity={0} className={dot.bounce ? "fill-bad" : "fill-accent"}>
+        <circle key={dot.key} r={2.8} opacity={0} className={dot.tone}>
           <animateMotion path={dot.d} dur={`${dot.dur}s`} begin={`${dot.begin}s`} repeatCount="indefinite" />
           <animate
             attributeName="opacity"
             values="0;1;1;0"
-            keyTimes={dot.bounce ? "0;0.08;0.75;1" : "0;0.06;0.94;1"}
+            keyTimes={dot.bounced ? "0;0.08;0.75;1" : "0;0.05;0.95;1"}
             dur={`${dot.dur}s`}
             begin={`${dot.begin}s`}
             repeatCount="indefinite"
@@ -230,24 +263,30 @@ export function LiveMap({ match }: { match: MatchView }) {
         </circle>
       ))}
 
-      <Node x={NET.x} size={NET.size} icon="globe" />
-      <Rack servers={match.servers} status={match.serversStatus} />
-      <Node x={DB.x} size={DB.size} icon="db" />
+      <Node x={DOOR.x} size={DOOR.size} icon="door" status={site.parts.door} />
+      <Rack servers={site.servers} status={site.parts.servers} overclock={overclock} />
+      <Node x={SHELF.x} size={SHELF.size} icon="shelf" status={site.parts.shelf} ghost={!hasShelf} />
+      <Node x={DB.x} size={DB.size} icon="db" status={site.parts.db} />
 
-      <g className="text-[13px] font-medium" textAnchor="middle">
-        <text className="fill-muted" x={78} y={LABEL_Y}>
-          People
-        </text>
-        <text className="fill-muted" x={NET.x} y={LABEL_Y}>
-          Internet
-        </text>
-        <text className={STATUS_TEXT[match.serversStatus]} x={RACK.x + half(RACK.w)} y={LABEL_Y}>
-          Servers
-        </text>
-        <text className="fill-muted" x={DB.x} y={LABEL_Y}>
-          Database
-        </text>
-      </g>
+      {!compact && (
+        <g className="text-[13px] font-medium" textAnchor="middle">
+          <text className="fill-muted" x={70} y={LABEL_Y}>
+            People
+          </text>
+          <text className={TEXT[site.parts.door]} x={DOOR.x} y={LABEL_Y}>
+            Front door
+          </text>
+          <text className={TEXT[site.parts.servers]} x={RACK.x + half(RACK.w)} y={LABEL_Y}>
+            Servers
+          </text>
+          <text className={TEXT[site.parts.shelf]} x={SHELF.x} y={LABEL_Y}>
+            Fast shelf
+          </text>
+          <text className={TEXT[site.parts.db]} x={DB.x} y={LABEL_Y}>
+            Database
+          </text>
+        </g>
+      )}
     </svg>
   );
 }

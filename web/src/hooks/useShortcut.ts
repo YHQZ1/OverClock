@@ -21,7 +21,9 @@ export function useShortcuts(bindings: Record<string, () => void>, { enabled = t
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
       if (!inInputs && isTyping(e.target)) return;
-      const key = e.key.toLowerCase();
+      // "shift+1" style bindings use the physical key, since Shift changes e.key ("1" → "!").
+      const physical = e.code.replace(/^(Digit|Key)/, "").toLowerCase();
+      const key = e.shiftKey && e.code !== "ShiftLeft" && e.code !== "ShiftRight" ? `shift+${physical}` : e.key.toLowerCase();
       const handler = Object.entries(bindingsRef.current).find(([k]) => k.toLowerCase() === key)?.[1];
       if (!handler) return;
       e.preventDefault();

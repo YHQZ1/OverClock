@@ -1,0 +1,33 @@
+import { useSyncExternalStore } from "react";
+import { useShortcut } from "../hooks/useShortcut";
+import { isAudioRunning, isMusicOn, isMuted, onSoundSettingsChange, setMusicOn, setMuted, sfx } from "./sfx";
+
+/** Sound (M) and music (N) toggles, remembered in this browser. */
+export function SoundToggle() {
+  const muted = useSyncExternalStore(onSoundSettingsChange, isMuted);
+  const musicOn = useSyncExternalStore(onSoundSettingsChange, isMusicOn);
+  const running = useSyncExternalStore(onSoundSettingsChange, isAudioRunning);
+
+  const toggleSound = () => {
+    setMuted(!muted);
+    if (muted) sfx.click(); // just turned on: confirm
+  };
+  const toggleMusic = () => setMusicOn(!musicOn);
+  useShortcut("m", toggleSound);
+  useShortcut("n", toggleMusic);
+
+  const button = "flex cursor-pointer items-center gap-2 text-[13px] text-muted transition-colors hover:text-ink";
+  return (
+    <div className="flex items-center gap-5">
+      {!muted && !running && <span className="animate-fade-pulse text-[13px] text-accent">Click to start sound</span>}
+      <button type="button" onClick={toggleSound} className={button} title="Sound on/off (M)">
+        <span className={muted ? "text-faint" : "text-ink"}>{muted ? "Sound off" : "Sound on"}</span>
+        <kbd>M</kbd>
+      </button>
+      <button type="button" onClick={toggleMusic} disabled={muted} className={`${button} disabled:opacity-40`} title="Music on/off (N)">
+        <span className={musicOn && !muted ? "text-ink" : "text-faint"}>{musicOn ? "Music on" : "Music off"}</span>
+        <kbd>N</kbd>
+      </button>
+    </div>
+  );
+}

@@ -198,9 +198,12 @@ Built so far: the deterministic engine with bots and a balance report; the
 real-time server with rooms, live shared matches and refresh-safe rejoin; and
 the player screens (home, lobby, live game with an animated map, results).
 
-**In progress:** turning the single-team survival prototype into the
-**duel** described above — rooms with slots and ready, theme voting, the
-shop, attacks, three rounds and the live leaderboard.
+**The duel is playable end to end:** rooms with slots and ready, theme
+voting, the shop (defences, boosts, attacks), three rounds with buy phases,
+round results and the final. **Next:** saving results, the live leaderboard and
+the big screen, then the real themes.
+
+Tip: `FAST_ROUNDS=1 pnpm dev` runs 20-second rounds for quick testing.
 
 What's built and what's next: [docs/PLAN.md](docs/PLAN.md).
 

@@ -1,12 +1,13 @@
-import type { SimEvent } from "../sim/index.js";
-import type { MatchView, SessionView } from "../types/contracts.js";
+import type { Side, SimEvent } from "../sim/index.js";
+import type { MatchView, RoomView } from "../types/contracts.js";
 
 /**
- * How services push updates to a team's PCs. Implemented by the socket
+ * How services push updates to a room's PCs. Implemented by the socket
  * layer, so services never import Socket.IO and stay easy to test.
  */
 export interface Broadcaster {
-  session(view: SessionView): void;
-  match(code: string, view: MatchView): void;
+  room(view: RoomView): void;
+  /** Each side gets its own view (the opponent's coins stay hidden). */
+  match(code: string, side: Side, view: MatchView): void;
   matchEvents(code: string, events: SimEvent[]): void;
 }

@@ -1,4 +1,4 @@
-import type { AckResponse, GameActionPayload, JoinResult } from "@server/types/contracts.js";
+import type { AckResponse, GameActionPayload, JoinResult, Slot, ThemeId } from "@server/types/contracts.js";
 import { useGameStore } from "../store/game";
 import { clearSeat, saveSeat } from "./seat";
 import { socket } from "./socket";
@@ -6,7 +6,15 @@ import { socket } from "./socket";
 const TIMEOUT_MS = 6000;
 const UNREACHABLE = "Can’t reach the game right now. Check the connection and try again.";
 
-type Acked = "team:create" | "team:join" | "team:rejoin" | "team:leave" | "session:start";
+type Acked =
+  | "room:create"
+  | "room:join"
+  | "room:rejoin"
+  | "room:leave"
+  | "room:slot"
+  | "room:ready"
+  | "room:teamName"
+  | "vote:theme";
 
 async function request<T>(event: Acked, payload: object): Promise<AckResponse<T>> {
   try {
@@ -18,45 +26,44 @@ async function request<T>(event: Acked, payload: object): Promise<AckResponse<T>
   }
 }
 
-function takeSeat({ playerId, token, session }: JoinResult): void {
-  saveSeat({ code: session.code, token, playerId });
-  useGameStore.getState().seat(playerId, session);
+/** Resolve to an error message to show, or null on success. */
+const errorOf = (res: AckResponse<unknown>) => (res.ok ? null : res.error);
+
+function takeSeat({ playerId, token, room }: JoinResult): void {
+  saveSeat({ code: room.code, token, playerId });
+  useGameStore.getState().seat(playerId, room);
 }
 
-/** Each returns an error message to show, or null on success. */
-
-export async function createTeam(teamName: string, playerName: string): Promise<string | null> {
-  const res = await request<JoinResult>("team:create", { teamName, playerName });
-  if (!res.ok) return res.error;
-  takeSeat(res.data);
-  return null;
+export async function createRoom(playerName: string): Promise<string | null> {
+  const res = await request<JoinResult>("room:create", { playerName });
+  if (res.ok) takeSeat(res.data);
+  return errorOf(res);
 }
 
-export async function joinTeam(code: string, playerName: string): Promise<string | null> {
-  const res = await request<JoinResult>("team:join", { code, playerName });
-  if (!res.ok) return res.error;
-  takeSeat(res.data);
-  return null;
+export async function joinRoom(code: string, playerName: string): Promise<string | null> {
+  const res = await request<JoinResult>("room:join", { code, playerName });
+  if (res.ok) takeSeat(res.data);
+  return errorOf(res);
 }
 
-export async function rejoinTeam(code: string, token: string): Promise<boolean> {
-  const res = await request<JoinResult>("team:rejoin", { code, token });
+export async function rejoinRoom(code: string, token: string): Promise<boolean> {
+  const res = await request<JoinResult>("room:rejoin", { code, token });
   if (res.ok) takeSeat(res.data);
   return res.ok;
 }
 
-/** Leave the team and forget this PC's seat (also used by "Done — next team"). */
-export async function leaveTeam(): Promise<void> {
-  await request<null>("team:leave", {});
+/** Leave and forget this PC's seat (also "Done — next players"). */
+export async function leaveRoom(): Promise<void> {
+  await request<null>("room:leave", {});
   clearSeat();
   useGameStore.getState().clear();
 }
 
-export async function startGame(): Promise<string | null> {
-  const res = await request<null>("session:start", {});
-  return res.ok ? null : res.error;
-}
+export const pickSlot = async (slot: Slot) => errorOf(await request<null>("room:slot", { slot }));
+export const setReady = async (ready: boolean) => errorOf(await request<null>("room:ready", { ready }));
+export const setTeamName = async (name: string) => errorOf(await request<null>("room:teamName", { name }));
+export const voteTheme = async (theme: ThemeId) => errorOf(await request<null>("vote:theme", { theme }));
 
-export function sendAction(action: GameActionPayload["action"]): void {
-  socket.emit("game:action", { action });
+export function sendAction(action: GameActionPayload): void {
+  socket.emit("game:action", action);
 }

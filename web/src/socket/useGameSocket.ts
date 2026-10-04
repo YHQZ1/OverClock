@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useGameStore } from "../store/game";
-import { rejoinTeam } from "./api";
+import { rejoinRoom } from "./api";
 import { clearSeat, loadSeat } from "./seat";
 import { socket } from "./socket";
 
@@ -14,8 +14,7 @@ export function useGameSocket(): void {
       store.setConnected(true);
       const seat = loadSeat();
       if (!seat) return store.setRestoring(false);
-      const ok = await rejoinTeam(seat.code, seat.token);
-      if (!ok) {
+      if (!(await rejoinRoom(seat.code, seat.token))) {
         clearSeat();
         store.clear();
       }
@@ -25,7 +24,7 @@ export function useGameSocket(): void {
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
-    socket.on("session:state", store.setSession);
+    socket.on("room:state", store.setRoom);
     socket.on("match:state", store.setMatch);
     socket.on("match:event", store.pushEvents);
     socket.connect();
@@ -33,7 +32,7 @@ export function useGameSocket(): void {
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
-      socket.off("session:state", store.setSession);
+      socket.off("room:state", store.setRoom);
       socket.off("match:state", store.setMatch);
       socket.off("match:event", store.pushEvents);
       socket.disconnect();

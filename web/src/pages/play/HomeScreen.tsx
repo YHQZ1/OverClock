@@ -9,13 +9,12 @@ type Mode = "create" | "join" | null;
 
 /** Each resolves to an error message to show, or null once seated. */
 type Props = {
-  onCreate: (teamName: string, playerName: string) => Promise<string | null>;
+  onCreate: (playerName: string) => Promise<string | null>;
   onJoin: (code: string, playerName: string) => Promise<string | null>;
 };
 
-const TEAM_NAME_MAX = 20;
 const PLAYER_NAME_MAX = 16;
-const HOW_IT_WORKS = ["Make a team", "Survive three rounds", "Climb the leaderboard"];
+const HOW_IT_WORKS = ["Make a room and share the code", "Pick sides and ready up", "Win three rounds"];
 
 export function HomeScreen({ onCreate, onJoin }: Props) {
   const [mode, setMode] = useState<Mode>(null);
@@ -24,19 +23,19 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
 
   return (
     <Frame>
-      <TopBar right="Teams of 1–3 · one PC each" />
+      <TopBar right="1v1 or 2v2 · one PC each" />
 
       <main className={SPLIT}>
         <section className="flex min-w-0 flex-col justify-between">
           <div className="px-10 pt-[clamp(28px,6vh,64px)] pb-8">
-            <h1 className="text-[clamp(56px,11vh,104px)] leading-[0.98] font-semibold tracking-[-0.05em]">
-              Keep the site
+            <h1 className="text-[clamp(52px,10vh,96px)] leading-[0.98] font-semibold tracking-[-0.05em]">
+              Flood theirs.
               <br />
-              <span className="text-accent">alive.</span>
+              Keep yours <span className="text-accent">alive.</span>
             </h1>
-            <p className="mt-6 max-w-[48ch] text-base text-muted">
-              Your team runs a busy online service. Crowds pour in, things break, and it’s on you to keep it running —
-              without wasting money doing it.
+            <p className="mt-6 max-w-[52ch] text-base text-muted">
+              Two teams, two websites, one crowd. Every visitor you serve earns coins — spend them defending your site or
+              knocking theirs over. Three rounds. One winner.
             </p>
           </div>
           <div className="grid place-items-center border-t border-line px-10 py-[clamp(12px,3vh,28px)]">
@@ -46,9 +45,9 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
 
         <section className="flex flex-col border-l border-line">
           <MenuItem
-            title="Create a team"
-            blurb="Start a new team and bring up to two friends along."
-            facts={["You get a 4-letter team code", "You’re the host — you start the game", "Play solo or with friends"]}
+            title="Create a room"
+            blurb="Start a room and share the code with the other players."
+            facts={["You get a 4-letter room code", "1v1 or 2v2 — pick sides inside", "Starts when everyone’s ready"]}
             art={<CodeArt />}
             open={mode === "create"}
             collapsed={mode === "join"}
@@ -57,9 +56,9 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
             <CreateForm onSubmit={onCreate} onBack={() => setMode(null)} />
           </MenuItem>
           <MenuItem
-            title="Join a team"
-            blurb="Got a code from a friend? Jump straight into their team."
-            facts={["Ask your host for the code", "Up to 3 players per team", "Each player gets their own controls"]}
+            title="Join a room"
+            blurb="Got a code? Jump into the room and choose your side."
+            facts={["Ask for the 4-letter code", "Up to 4 players per room", "Teammates share one wallet"]}
             art={<SeatsArt />}
             open={mode === "join"}
             collapsed={mode === "create"}
@@ -186,12 +185,14 @@ function CodeArt() {
   );
 }
 
-/** Three team seats: taken, you, open. */
+/** Two seats a side: you and a teammate vs two opponents. */
 function SeatsArt() {
   return (
-    <div className="flex gap-1.5">
-      <span className={cx(ART_BOX, "bg-line-strong")} />
+    <div className="flex items-center gap-1.5">
       <span className={cx(ART_BOX, "border-accent bg-accent-dim")} />
+      <span className={cx(ART_BOX, "bg-line-strong")} />
+      <span className="px-1 text-[11px] font-semibold text-faint">vs</span>
+      <span className={cx(ART_BOX, "bg-line-strong")} />
       <span className={cx(ART_BOX, "border-dashed")} />
     </div>
   );
@@ -244,31 +245,20 @@ function FormShell({ onSubmit, onBack, error, pending, submitLabel, children }: 
 }
 
 function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack: () => void }) {
-  const [teamName, setTeamName] = useState("");
   const [playerName, setPlayerName] = useState("");
   const { error, setError, pending, run } = useSubmit();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const team = teamName.trim();
     const player = playerName.trim();
-    const localError =
-      team.length < 2 ? "Give your team a name (at least 2 letters)." : !player ? "Tell us your name." : null;
-    void run(localError, () => onSubmit(team, player));
+    void run(player ? null : "Tell us your name.", () => onSubmit(player));
   };
 
   return (
-    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Create team">
-      <Field
-        label="Team name"
-        autoFocus
-        value={teamName}
-        maxLength={TEAM_NAME_MAX}
-        placeholder="e.g. The Night Owls"
-        onChange={(e) => (setTeamName(e.target.value), setError(null))}
-      />
+    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Create room">
       <Field
         label="Your name"
+        autoFocus
         value={playerName}
         maxLength={PLAYER_NAME_MAX}
         placeholder="e.g. Priya"
@@ -287,14 +277,14 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
     e.preventDefault();
     const player = playerName.trim();
     const localError =
-      code.length !== CODE_LENGTH ? `The team code has ${CODE_LENGTH} letters.` : !player ? "Tell us your name." : null;
+      code.length !== CODE_LENGTH ? `The room code has ${CODE_LENGTH} letters.` : !player ? "Tell us your name." : null;
     void run(localError, () => onSubmit(code, player));
   };
 
   return (
-    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Join team">
+    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Join room">
       <Field
-        label="Team code"
+        label="Room code"
         autoFocus
         className="text-lg font-semibold tracking-[0.35em] uppercase"
         value={code}

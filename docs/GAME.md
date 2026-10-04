@@ -73,7 +73,8 @@ no opponent is around; spectator view.
 
 ### Theme vote
 
-- 10 seconds; every player votes for one of the 3–4 themes.
+- 10 seconds (ends early once everyone has voted); every player votes for
+  one of the 3–4 themes.
 - Most votes wins. **Any tie at the top is broken at random** (1-1-1-1, 2-2,
   …). Nobody votes → random.
 - Themes are cosmetic (words, icons, colours of the crowd) — the rules and
@@ -92,8 +93,8 @@ Each team has its own site — the same pipeline the visitors travel through:
   match starts perfectly fair. Attacks are what make the sites differ.
 - **Every visitor served earns coins.** Visitors turned away earn nothing.
 - **One currency, coins,** for everything. Every coin is a choice.
-- Each round starts with the same coins for both teams *(tune: reset each
-  round vs carry over)*.
+- **Every round starts fresh**: the same coins and starting servers for
+  both teams.
 - The part of the pipeline that's over its limit is the **bottleneck** — it
   turns yellow/red on the map. That's where you look.
 
@@ -115,7 +116,11 @@ rhythm:
 
 - **Every attack is announced** to the target: *"⚠️ Bot army incoming in
   3…"* (tune).
-- **Attacks have cooldowns**, so a rich team can't spam.
+- **Attacks have cooldowns**; after any attack your attackers **regroup** for
+  a few seconds, and **repeating the same attack** in a round costs more each
+  time — so a rich team can't spam one trick.
+- **Defences take a few seconds to set up** (instant in the buy phase):
+  build ahead, or use a Shield in a pinch.
 - **The team that's behind earns a little more** (comeback income, tune).
 - **After a crash**, a rebooted site gets a few seconds of protection.
 

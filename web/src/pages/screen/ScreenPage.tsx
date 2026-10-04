@@ -1,4 +1,4 @@
-import { MessageScreen } from "../play/CountdownScreen";
+import { MessageScreen } from "../play/MessageScreen";
 
 // Big screen (leaderboard, now playing) — Milestone 9.
 export function ScreenPage() {

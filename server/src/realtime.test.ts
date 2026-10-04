@@ -1,43 +1,50 @@
-// End-to-end: real Socket.IO clients against a real server, with a short round.
+// End-to-end: real Socket.IO clients against a real server, with short rounds.
 
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { io as connect, type Socket } from "socket.io-client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { GameTiming } from "./config/game.js";
 import { createRealtime } from "./realtime.js";
-import { DEFAULT_CONFIG, ROUND_1, type MatchSetup } from "./sim/index.js";
+import { ROUNDS, type SimEvent } from "./sim/index.js";
+import type { SessionDeps } from "./services/session.service.js";
 import type {
   AckResponse,
   ClientToServerEvents,
   JoinResult,
   MatchView,
+  RoomView,
   ServerToClientEvents,
-  SessionView,
 } from "./types/contracts.js";
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-const TIMING: GameTiming = { countdownSec: 0, tickMs: 5, abandonAfterMs: 60_000, sweepEveryMs: 60_000 };
-const SHORT_ROUND: MatchSetup = {
-  config: DEFAULT_CONFIG,
-  scenario: { ...ROUND_1, id: "test", durationSec: 3, events: [] },
+const FAST: GameTiming = {
+  voteSec: 5,
+  buySec: 0,
+  resultSec: 0,
+  tickMs: 5,
+  abandonAfterMs: 60_000,
+  sideGoneMs: 60_000,
+  sweepEveryMs: 60_000,
 };
+const SHORT_ROUNDS = ROUNDS.map((r) => ({ ...r, durationSec: 1, rushes: [] }));
 
 let url = "";
-let realtime: ReturnType<typeof createRealtime>;
+let realtime: ReturnType<typeof createRealtime> | null = null;
 const clients: Client[] = [];
 
-beforeEach(async () => {
+async function startServer(timing: GameTiming = FAST, deps: SessionDeps = {}) {
   const http = createServer();
-  realtime = createRealtime(http, TIMING, SHORT_ROUND);
+  realtime = createRealtime(http, timing, { rounds: SHORT_ROUNDS, random: () => 0, ...deps });
   await new Promise<void>((resolve) => http.listen(0, resolve));
   url = `http://localhost:${(http.address() as AddressInfo).port}`;
-});
+}
 
 afterEach(async () => {
   for (const c of clients.splice(0)) c.disconnect();
-  await realtime.close();
+  await realtime?.close();
+  realtime = null;
 });
 
 async function client(): Promise<Client> {
@@ -48,19 +55,17 @@ async function client(): Promise<Client> {
 }
 
 type AckData = {
-  "team:create": JoinResult;
-  "team:join": JoinResult;
-  "team:rejoin": JoinResult;
-  "team:leave": null;
-  "session:start": null;
+  "room:create": JoinResult;
+  "room:join": JoinResult;
+  "room:rejoin": JoinResult;
+  "room:leave": null;
+  "room:slot": null;
+  "room:ready": null;
+  "room:teamName": null;
+  "vote:theme": null;
 };
 
-/** Emit with ack; resolve to the ack payload. */
-function call<E extends keyof AckData>(
-  c: Client,
-  event: E,
-  payload: Parameters<ClientToServerEvents[E]>[0],
-): Promise<AckResponse<AckData[E]>> {
+function call<E extends keyof AckData>(c: Client, event: E, payload: unknown): Promise<AckResponse<AckData[E]>> {
   return new Promise((resolve) => (c.emit as (...args: unknown[]) => void)(event, payload, resolve));
 }
 
@@ -69,156 +74,196 @@ function ok<T>(res: AckResponse<T>): T {
   return res.data;
 }
 
-/** Resolve with the first session update matching `predicate`. */
-function nextSession(c: Client, predicate: (s: SessionView) => boolean): Promise<SessionView> {
+function next<E extends "room:state" | "match:state" | "match:event">(
+  c: Client,
+  event: E,
+  predicate: (x: Parameters<ServerToClientEvents[E]>[0]) => boolean,
+): Promise<Parameters<ServerToClientEvents[E]>[0]> {
   return new Promise((resolve) => {
-    const on = (s: SessionView) => {
-      if (!predicate(s)) return;
-      c.off("session:state", on);
-      resolve(s);
+    const on = (x: Parameters<ServerToClientEvents[E]>[0]) => {
+      if (!predicate(x)) return;
+      (c.off as (e: string, f: unknown) => void)(event, on);
+      resolve(x);
     };
-    c.on("session:state", on);
+    (c.on as (e: string, f: unknown) => void)(event, on);
   });
 }
+const nextRoom = (c: Client, p: (r: RoomView) => boolean) => next(c, "room:state", p) as Promise<RoomView>;
+const nextMatch = (c: Client, p: (m: MatchView) => boolean) => next(c, "match:state", p) as Promise<MatchView>;
 
-function nextMatch(c: Client, predicate: (m: MatchView) => boolean): Promise<MatchView> {
-  return new Promise((resolve) => {
-    const on = (m: MatchView) => {
-      if (!predicate(m)) return;
-      c.off("match:state", on);
-      resolve(m);
-    };
-    c.on("match:state", on);
-  });
+/** Create a room with `n` players; returns clients and their seats. */
+async function room(n: number) {
+  const cs = [await client()];
+  const seats = [ok(await call(cs[0]!, "room:create", { playerName: "P1" }))];
+  for (let i = 1; i < n; i++) {
+    const c = await client();
+    cs.push(c);
+    seats.push(ok(await call(c, "room:join", { code: seats[0]!.room.code, playerName: `P${i + 1}` })));
+  }
+  return { cs, seats, code: seats[0]!.room.code };
 }
 
-async function teamOfThree() {
-  const [a, b, c] = [await client(), await client(), await client()];
-  const host = ok(await call(a, "team:create", { teamName: "Night Owls", playerName: "Priya" }));
-  const code = host.session.code;
-  const second = ok(await call(b, "team:join", { code, playerName: "Rahul" }));
-  const third = ok(await call(c, "team:join", { code: code.toLowerCase(), playerName: "Aisha" }));
-  return { a, b, c, code, host, second, third };
+async function readyAll(cs: Client[]) {
+  for (const c of cs) ok(await call(c, "room:ready", { ready: true }));
 }
 
-describe("team flow", () => {
-  it("forms a team of three and keeps every PC in sync", async () => {
-    const [a, b] = [await client(), await client()];
-    const host = ok(await call(a, "team:create", { teamName: "Night Owls", playerName: "Priya" }));
-    expect(host.session.code).toMatch(/^[A-HJ-NP-Z]{4}$/);
-    expect(host.session.players).toEqual([expect.objectContaining({ name: "Priya", isHost: true })]);
-
-    const seenByHost = nextSession(a, (s) => s.players.length === 2);
-    ok(await call(b, "team:join", { code: host.session.code, playerName: "Rahul" }));
-    expect((await seenByHost).players.map((p) => p.name)).toEqual(["Priya", "Rahul"]);
+describe("rooms", () => {
+  it("seats a 1v1 on opposite teams automatically", async () => {
+    await startServer();
+    const { seats } = await room(2);
+    const view = seats[1]!.room;
+    expect(view.players.map((p) => p.slot)).toEqual([1, 3]);
+    expect(view.canStart).toEqual({ ok: false, reason: "Waiting for everyone to be ready." });
   });
 
-  it("explains why a join fails", async () => {
-    const { code } = await teamOfThree();
-    const d = await client();
-    expect(await call(d, "team:join", { code, playerName: "Dev" })).toEqual({
+  it("explains why a room can't start", async () => {
+    await startServer();
+    const { seats, code } = await room(3);
+    expect(seats[2]!.room.canStart).toEqual({ ok: false, reason: "3 players — you need 2 (1v1) or 4 (2v2)." });
+
+    ok(await call(await client(), "room:join", { code, playerName: "P4" }));
+    expect(await call(await client(), "room:join", { code, playerName: "P5" })).toEqual({
       ok: false,
-      error: "That team is full (3 players).",
+      error: "That room is full (4 players).",
     });
-    expect(await call(d, "team:join", { code: "ZZZZ", playerName: "Dev" })).toEqual({
+    expect(await call(await client(), "room:join", { code: "ZZZZ", playerName: "X" })).toEqual({
       ok: false,
-      error: "No team with that code.",
+      error: "No room with that code.",
     });
-    expect((await call(d, "team:join", { code: "AB1", playerName: "Dev" })).ok).toBe(false);
   });
 
-  it("only lets the host start", async () => {
-    const { b } = await teamOfThree();
-    expect(await call(b, "session:start", {})).toEqual({ ok: false, error: "Only the host can start the game." });
+  it("changing slot clears ready; taken slots are refused", async () => {
+    await startServer();
+    const { cs } = await room(2);
+    ok(await call(cs[0]!, "room:ready", { ready: true }));
+    expect(await call(cs[0]!, "room:slot", { slot: 3 })).toEqual({ ok: false, error: "That slot is taken." });
+    const moved = nextRoom(cs[1]!, (r) => r.players[0]!.slot === 2);
+    ok(await call(cs[0]!, "room:slot", { slot: 2 }));
+    expect((await moved).players[0]!.ready).toBe(false);
   });
 
-  it("hands the host role on when the host leaves", async () => {
-    const { a, b, second } = await teamOfThree();
-    const update = nextSession(b, (s) => s.players.length === 2);
-    ok(await call(a, "team:leave", {}));
-    const s = await update;
-    expect(s.players.find((p) => p.isHost)?.id).toBe(second.playerId);
+  it("team names default to the players and can be changed", async () => {
+    await startServer();
+    const { cs } = await room(2);
+    const named = nextRoom(cs[1]!, (r) => r.teamNames[1] === "Night Owls");
+    ok(await call(cs[0]!, "room:teamName", { name: "Night Owls" }));
+    expect((await named).teamNames[2]).toBe("P2");
   });
 });
 
-describe("live match", () => {
-  it("plays one shared match from start to final", async () => {
-    const { a, b, c, code } = await teamOfThree();
+describe("theme vote", () => {
+  it("starts when everyone is ready; majority wins", async () => {
+    await startServer();
+    const { cs, seats } = await room(4);
+    expect(seats[3]!.room.players.map((p) => p.slot).sort()).toEqual([1, 2, 3, 4]); // auto-balanced 2v2
+    const voting = nextRoom(cs[0]!, (r) => r.phase === "vote");
+    await readyAll(cs);
+    expect((await voting).format).toBe("2v2");
 
-    const playing = Promise.all([a, b, c].map((p) => nextSession(p, (s) => s.phase === "playing")));
-    const firstFrame = nextMatch(c, () => true);
-    ok(await call(a, "session:start", {}));
-    await playing;
-    const start = await firstFrame;
-    expect(start.servers).toHaveLength(ROUND_1.startServers);
-    expect(start.servedShare).toBe(1);
-
-    const running = await nextMatch(a, (m) => m.tick > 0);
-    expect(running.crowd).toBeGreaterThan(0.5);
-    expect(running.crowd).toBeLessThan(2);
-
-    // A teammate presses + SERVERS; everyone sees the new (booting) server.
-    const grown = nextMatch(a, (m) => m.servers.length === ROUND_1.startServers + 1);
-    b.emit("game:action", { action: "addServer" });
-    expect((await grown).servers.at(-1)?.state).toBe("booting");
-
-    // Joining mid-game is refused.
-    const late = await client();
-    expect(await call(late, "team:join", { code, playerName: "Late" })).toEqual({
-      ok: false,
-      error: "That team has already started.",
-    });
-
-    const finals = await Promise.all([a, b, c].map((p) => nextSession(p, (s) => s.phase === "final")));
-    for (const s of finals) {
-      expect(s.result).not.toBeNull();
-      expect(s.result!.served).toBeGreaterThan(0);
-    }
+    const chosen = nextRoom(cs[0]!, (r) => r.theme !== null);
+    ok(await call(cs[0]!, "vote:theme", { theme: "sale" }));
+    ok(await call(cs[1]!, "vote:theme", { theme: "sale" }));
+    ok(await call(cs[2]!, "vote:theme", { theme: "results" }));
+    ok(await call(cs[3]!, "vote:theme", { theme: "launch" }));
+    expect((await chosen).theme).toBe("sale");
   });
 
-  it("ignores malformed actions without breaking the match", async () => {
-    const { a, b } = await teamOfThree();
-    ok(await call(a, "session:start", {}));
-    (b.emit as (...args: unknown[]) => void)("game:action", { action: "deleteEverything" });
-    (b.emit as (...args: unknown[]) => void)("game:action", "nonsense");
-    const final = await nextSession(a, (s) => s.phase === "final");
-    expect(final.result).not.toBeNull();
+  it("breaks a tie at random", async () => {
+    await startServer(FAST, { random: () => 0.99 });
+    const { cs } = await room(2);
+    await readyAll(cs);
+    const chosen = nextRoom(cs[0]!, (r) => r.theme !== null);
+    ok(await call(cs[0]!, "vote:theme", { theme: "tickets" }));
+    ok(await call(cs[1]!, "vote:theme", { theme: "results" }));
+    expect((await chosen).theme).toBe("results"); // the last of the tied themes, picked by random() = 0.99
+  });
+});
+
+describe("the duel", () => {
+  it("plays three rounds to a recorded final, each side seeing only its own coins", async () => {
+    await startServer({ ...FAST, voteSec: 0 });
+    const { cs } = await room(2);
+    const [a, b] = cs as [Client, Client];
+
+    const frameA = nextMatch(a, (m) => m.phase === "live");
+    const frameB = nextMatch(b, (m) => m.phase === "live");
+    await readyAll(cs);
+    const [ma, mb] = await Promise.all([frameA, frameB]);
+    expect(ma.side).toBe(1);
+    expect(mb.side).toBe(2);
+    expect(ma.me.coins).toBeGreaterThan(0);
+    expect("coins" in ma.them).toBe(false);
+
+    const final = await nextRoom(a, (r) => r.phase === "final");
+    expect(final.rounds).toHaveLength(3);
+    expect(final.final!.recorded).toBe(true);
+    expect(final.final!.points[1]).toBeGreaterThan(0);
+  });
+
+  it("attacks reach the other team as a warning", async () => {
+    await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 5, rushes: [] })) });
+    const { cs } = await room(2);
+    const [a, b] = cs as [Client, Client];
+    const live = nextMatch(a, (m) => m.phase === "live");
+    await readyAll(cs);
+    await live;
+
+    const warned = next(b, "match:event", (events) =>
+      (events as SimEvent[]).some((e) => e.type === "attackIncoming" && e.side === 2),
+    );
+    const incoming = nextMatch(b, (m) => m.incoming.length > 0);
+    a.emit("game:action", { kind: "attack", item: "bots" });
+    await warned;
+    expect((await incoming).incoming[0]!.attack).toBe("bots");
+  });
+
+  it("ignores malformed actions", async () => {
+    await startServer({ ...FAST, voteSec: 0 });
+    const { cs } = await room(2);
+    await readyAll(cs);
+    (cs[0]!.emit as (...a: unknown[]) => void)("game:action", { kind: "attack", item: "everything" });
+    (cs[0]!.emit as (...a: unknown[]) => void)("game:action", "nonsense");
+    expect((await nextRoom(cs[0]!, (r) => r.phase === "final")).final!.recorded).toBe(true);
+  });
+
+  it("a team that leaves mid-match forfeits — nothing recorded", async () => {
+    await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 30 })) });
+    const { cs } = await room(2);
+    const live = nextMatch(cs[0]!, (m) => m.phase === "live");
+    await readyAll(cs);
+    await live;
+    const final = nextRoom(cs[0]!, (r) => r.phase === "final");
+    ok(await call(cs[1]!, "room:leave", {}));
+    const f = (await final).final!;
+    expect(f.recorded).toBe(false);
+    expect(f.winner).toBe(1);
+    expect(f.endedEarly).toEqual({ side: 2, reason: "left" });
   });
 });
 
 describe("refresh / reconnect", () => {
-  it("puts a refreshed PC back in its seat", async () => {
-    const { a, b, second } = await teamOfThree();
+  it("puts a refreshed PC back in its seat, mid-match", async () => {
+    await startServer({ ...FAST, voteSec: 0, tickMs: 20 }, { rounds: ROUNDS.map((r) => ({ ...r, durationSec: 30 })) });
+    const { cs, seats, code } = await room(2);
+    const live = nextMatch(cs[1]!, (m) => m.phase === "live");
+    await readyAll(cs);
+    await live;
 
-    const dropped = nextSession(a, (s) => s.players.some((p) => !p.connected));
-    b.disconnect();
-    expect((await dropped).players.find((p) => p.id === second.playerId)?.connected).toBe(false);
-
+    cs[1]!.disconnect();
     const back = await client();
-    const restored: JoinResult = ok(await call(back, "team:rejoin", { code: second.session.code, token: second.token }));
-    expect(restored.playerId).toBe(second.playerId);
-    expect(restored.session.players.every((p) => p.connected)).toBe(true);
+    const frame = nextMatch(back, () => true);
+    const restored = ok(await call(back, "room:rejoin", { code, token: seats[1]!.token }));
+    expect(restored.playerId).toBe(seats[1]!.playerId);
+    expect(restored.room.phase).toBe("live");
+    expect((await frame).side).toBe(2);
   });
 
   it("rejects an unknown seat", async () => {
-    const { code } = await teamOfThree();
-    const x = await client();
-    expect(await call(x, "team:rejoin", { code, token: "0".repeat(32) })).toEqual({
+    await startServer();
+    const { code } = await room(2);
+    expect(await call(await client(), "room:rejoin", { code, token: "0".repeat(32) })).toEqual({
       ok: false,
-      error: "Your team is no longer here.",
+      error: "Your room is no longer here.",
     });
-  });
-
-  it("sends the live match straight away after a mid-game refresh", async () => {
-    const { a, b, second } = await teamOfThree();
-    ok(await call(a, "session:start", {}));
-    await nextMatch(a, (m) => m.tick > 2);
-
-    b.disconnect();
-    const back = await client();
-    const frame = nextMatch(back, () => true);
-    const restored = ok(await call(back, "team:rejoin", { code: second.session.code, token: second.token }));
-    expect(restored.session.phase).toBe("playing");
-    expect((await frame).servers.length).toBeGreaterThan(0);
   });
 });

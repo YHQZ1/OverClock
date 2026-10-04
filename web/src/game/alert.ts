@@ -1,4 +1,5 @@
 import type { MatchView } from "@server/types/contracts.js";
+import { ATTACK_INFO } from "./items";
 
 export type AlertLevel = "calm" | "notice" | "warn" | "bad";
 
@@ -6,38 +7,58 @@ export type AlertLevel = "calm" | "notice" | "warn" | "bad";
 export type Alert = { id: string; level: AlertLevel; title: string; hint: string };
 
 export function currentAlert(m: MatchView): Alert {
-  const idle = m.servers.filter((s) => s.state === "idle").length;
-  const starting = m.servers.some((s) => s.state === "booting");
+  const me = m.me;
+  const has = (kind: string) => me.effects.some((e) => e.kind === kind);
 
-  if (m.downSecondsLeft !== null) {
-    return { id: "down", level: "bad", title: "The site is down!", hint: `Rebooting — back in ${m.downSecondsLeft}s` };
+  if (m.phase === "buy") {
+    return { id: "buy", level: "notice", title: "Buy phase", hint: "Build before the crowd arrives — the shop stays open all round" };
   }
-  if (m.serversStatus === "failing" || m.critical) {
+  if (me.downSecondsLeft !== null) {
+    return { id: "down", level: "bad", title: "Your site is down!", hint: `Back in ${me.downSecondsLeft}s — nobody can get in` };
+  }
+
+  const next = [...m.incoming].sort((a, b) => a.secondsLeft - b.secondsLeft)[0];
+  if (next) {
+    const info = ATTACK_INFO[next.attack];
     return {
-      id: "failing",
+      id: `incoming-${next.id}`,
       level: "bad",
-      title: "People can’t get in!",
-      hint: starting ? "New servers are starting — keep going" : "Add servers now",
+      title: `${info.name} incoming in ${Math.ceil(next.secondsLeft)}s`,
+      hint: `Counter: ${info.counter}`,
     };
   }
-  if (m.serversStatus === "strained") {
+
+  if (me.parts.door === "failing" || me.parts.door === "strained") {
+    if (has("cutRoute")) return { id: "cut", level: "bad", title: "Connection cut!", hint: "A Second route stops this next time" };
+    if (me.botShare > 0.1) return { id: "bots", level: "bad", title: "Bots are flooding in!", hint: "Get a Bouncer, or use a Shield" };
+  }
+  if (me.parts.servers === "failing" || me.parts.servers === "strained") {
+    const melted = me.servers.some((s) => s.state === "melted");
+    const starting = me.servers.some((s) => s.state === "booting");
     return {
-      id: "strained",
-      level: "warn",
-      title: m.rush ? "Too many people!" : "Servers are struggling",
-      hint: starting ? "Help is on the way…" : "Add a server to let them in",
+      id: `servers-${me.parts.servers}`,
+      level: me.parts.servers === "failing" ? "bad" : "warn",
+      title: me.parts.servers === "failing" ? "People can’t get in!" : "Servers are struggling",
+      hint: melted ? "Servers melted — Instant backup brings them back" : starting ? "New servers are starting…" : "Add servers, or Overclock",
     };
   }
-  if (m.rush) {
-    return { id: "rush-ok", level: "notice", title: "A crowd is rushing in", hint: "You’re holding up — watch the servers" };
+  if (me.parts.db === "failing" || me.parts.db === "strained") {
+    return {
+      id: `db-${me.parts.db}`,
+      level: me.parts.db === "failing" ? "bad" : "warn",
+      title: "Database is slow!",
+      hint: "Backup database or Fast shelf",
+    };
   }
+  if (me.critical) return { id: "critical", level: "bad", title: "Health critical!", hint: "Emergency repair, or fix the red part" };
+  if (me.parts.shelf === "failing" && me.owned.shelf > 0) {
+    return { id: "shelf", level: "warn", title: "Your Fast shelf was emptied", hint: "It refills in a few seconds" };
+  }
+  if (m.them.downSecondsLeft !== null) return { id: "them-down", level: "notice", title: "Their site is down!", hint: "Push while they’re rebooting" };
+
+  const idle = me.servers.filter((s) => s.state === "idle").length;
   if (idle >= 2) {
-    return {
-      id: "idle",
-      level: "notice",
-      title: "All calm",
-      hint: `${idle} servers are idle — remove them to save money`,
-    };
+    return { id: "idle", level: "notice", title: "All calm", hint: `${idle} servers idle — sell them to save coins (Shift+1)` };
   }
-  return { id: "calm", level: "calm", title: "All calm", hint: "Everyone’s getting in" };
+  return { id: "calm", level: "calm", title: "All calm", hint: "Everyone’s getting in — maybe it’s time to attack" };
 }

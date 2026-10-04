@@ -1,21 +1,23 @@
-import type { MatchView } from "@server/types/contracts.js";
-import type { ReactNode } from "react";
+import type { EffectKind, MatchView, RoomView, ShopItemView, SiteView } from "@server/types/contracts.js";
+import { useState, type ReactNode } from "react";
 import { TopBar } from "../../components/TopBar";
 import { Frame, Label, cx } from "../../components/ui";
 import { currentAlert, type AlertLevel } from "../../game/alert";
 import type { Tone } from "../../game/feed";
 import { HealthTimeline } from "../../game/HealthTimeline";
+import { ATTACK_INFO, DEFENCE_INFO, ITEM_INFO } from "../../game/items";
 import { LiveMap } from "../../game/LiveMap";
-import { useShortcut } from "../../hooks/useShortcut";
+import { sfx } from "../../audio/sfx";
+import { useShortcut, useShortcuts } from "../../hooks/useShortcut";
 import { sendAction } from "../../socket/api";
 import { useGameStore } from "../../store/game";
-import { MessageScreen } from "./CountdownScreen";
+import { THEME_INFO } from "../../themes/themes";
+import { MessageScreen } from "./MessageScreen";
 
 const clock = (sec: number) => {
   const s = Math.ceil(sec);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
-
 const levelBg = (pct: number) => (pct >= 60 ? "bg-ok" : pct >= 25 ? "bg-warn" : "bg-bad");
 
 // ---------- HUD ----------
@@ -33,9 +35,9 @@ function Meter({ pct, className }: { pct: number; className: string }) {
 
 function Stat({ label, value, tone, children }: { label: string; value: string; tone?: string; children?: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col px-10 pt-3.5 pb-4 not-first:border-l not-first:border-line">
+    <div className="flex min-w-0 flex-col px-6 pt-3 pb-3.5 not-first:border-l not-first:border-line">
       <Label>{label}</Label>
-      <span className={cx("text-[clamp(26px,5vh,38px)] leading-tight font-semibold tracking-[-0.04em] tabular-nums", tone)}>
+      <span className={cx("text-[clamp(22px,4.4vh,34px)] leading-tight font-semibold tracking-[-0.04em] tabular-nums", tone)}>
         {value}
       </span>
       {children}
@@ -43,22 +45,36 @@ function Stat({ label, value, tone, children }: { label: string; value: string; 
   );
 }
 
-function Hud({ match }: { match: MatchView }) {
+function Hud({ match, room }: { match: MatchView; room: RoomView }) {
+  const { me, them } = match;
+  const ours = room.teamNames[match.side];
+  const theirs = room.teamNames[match.side === 1 ? 2 : 1];
   return (
-    <div className="grid grid-cols-4 border-b border-line">
-      <Stat label="Health" value={String(match.health)} tone={match.health < 25 ? "text-bad" : undefined}>
-        <Meter pct={match.health} className={levelBg(match.health)} />
+    <div className="grid grid-cols-[1fr_1fr_1fr_auto_1fr_1fr] border-b border-line">
+      <Stat label={`${ours} · health`} value={String(me.health)} tone={me.health < 25 ? "text-bad" : undefined}>
+        <Meter pct={me.health} className={levelBg(me.health)} />
       </Stat>
-      <Stat label="Budget" value={match.budget.toLocaleString()} tone={match.budget < 0 ? "text-bad" : undefined}>
-        <span className="text-xs text-muted">−{match.spendPerSec} every second</span>
-      </Stat>
-      <Stat label="Score" value={match.score.toLocaleString()}>
+      <Stat label="Coins" value={me.coins.toLocaleString()} tone="text-accent">
         <span className="truncate text-xs text-muted">
-          {match.served.toLocaleString()} got in · {match.lost.toLocaleString()} turned away
+          +{me.incomePerSec}/s · −{me.upkeepPerSec}/s upkeep
         </span>
       </Stat>
-      <Stat label="Time left" value={clock(match.timeLeftSec)}>
-        <Meter pct={(match.timeLeftSec / match.durationSec) * 100} className="bg-faint" />
+      <Stat label="Our score" value={me.score.toLocaleString()}>
+        <span className="truncate text-xs text-muted">
+          {me.served.toLocaleString()} in · {me.lost.toLocaleString()} turned away
+        </span>
+      </Stat>
+      <div className="flex flex-col items-center justify-center border-l border-line bg-surface px-7">
+        <Label>{match.phase === "buy" ? "Buy phase" : `Round ${match.round}`}</Label>
+        <span className="text-[clamp(26px,5vh,38px)] leading-tight font-semibold tabular-nums">
+          {match.phase === "buy" ? `${room.secondsLeft ?? 0}s` : clock(match.timeLeftSec)}
+        </span>
+      </div>
+      <Stat label={`${theirs} · health`} value={String(them.health)} tone="text-muted">
+        <Meter pct={them.health} className="bg-faint" />
+      </Stat>
+      <Stat label="Their score" value={them.score.toLocaleString()} tone="text-muted">
+        <span className="text-xs text-faint">{me.score >= them.score ? "You’re ahead" : "You’re behind"}</span>
       </Stat>
     </div>
   );
@@ -77,8 +93,7 @@ function AlertBar({ match }: { match: MatchView }) {
   const alert = currentAlert(match);
   const style = ALERT_STYLE[alert.level];
   return (
-    <div className={cx("flex items-center gap-4 border-b px-10 py-3", style.bar)} role="status" aria-live="polite">
-      {/* key → replays the flash whenever the alert changes */}
+    <div className={cx("flex items-center gap-4 border-b px-10 py-2.5", style.bar)} role="status" aria-live="polite">
       <div key={alert.id} className="flex animate-flash items-baseline gap-4">
         <span className={cx("size-2.5 shrink-0 self-center", style.mark)} aria-hidden />
         <span className="text-[17px] font-semibold tracking-[-0.01em]">{alert.title}</span>
@@ -88,139 +103,247 @@ function AlertBar({ match }: { match: MatchView }) {
   );
 }
 
-// ---------- controls ----------
+// ---------- map area ----------
 
-const CONTROL =
-  "relative flex h-[68px] cursor-pointer items-center justify-between overflow-hidden border px-[22px] text-xl font-semibold tracking-[-0.02em] transition-colors duration-150 active:enabled:translate-y-px disabled:cursor-not-allowed disabled:opacity-40";
+const EFFECT_NAME: Record<EffectKind, string> = {
+  surge: ATTACK_INFO.surge.name,
+  bots: ATTACK_INFO.bots.name,
+  cutRoute: "Route cut",
+  slowDb: "Database slowed",
+  flush: "Shelf emptied",
+  shield: "Shield",
+  overclock: "Overclock",
+  protected: "Rebooted — protected",
+};
+const HELPFUL: EffectKind[] = ["shield", "overclock", "protected"];
 
-const TONE_TEXT: Record<Tone, string> = { neutral: "text-muted", good: "text-ok", warn: "text-warn", bad: "text-bad" };
-const TONE_MARK: Record<Tone, string> = { neutral: "bg-faint", good: "bg-ok", warn: "bg-warn", bad: "bg-bad" };
-
-function Legend({ match }: { match: MatchView }) {
-  const count = (state: string) => match.servers.filter((s) => s.state === state).length;
-  const down = count("down");
-  const items = down
-    ? [{ n: down, label: "down", mark: "border border-bad bg-bad/25" }]
-    : [
-        { n: count("busy"), label: "busy", mark: "bg-ink" },
-        { n: count("idle"), label: "idle", mark: "border border-dashed border-faint" },
-        { n: count("booting"), label: "starting", mark: "border border-accent bg-accent/60" },
-      ];
+function EffectChips({ site, outgoing }: { site: SiteView; outgoing?: MatchView["outgoing"] }) {
   return (
-    <div className="flex gap-5 text-sm text-muted">
-      {items.map((it) => (
-        <span key={it.label} className="flex items-center gap-2">
-          <span className={cx("size-3", it.mark)} aria-hidden />
-          <span className="font-semibold text-ink tabular-nums">{it.n}</span> {it.label}
+    <div className="flex min-h-7 flex-wrap items-center gap-2">
+      {site.effects.map((e) => (
+        <span
+          key={e.kind}
+          className={cx(
+            "flex items-center gap-2 border px-2 py-0.5 text-xs font-medium",
+            HELPFUL.includes(e.kind) ? "border-accent/60 text-accent" : "border-bad/60 text-bad",
+          )}
+        >
+          {EFFECT_NAME[e.kind]} <span className="tabular-nums opacity-70">{e.secondsLeft}s</span>
+        </span>
+      ))}
+      {outgoing?.map((o) => (
+        <span key={o.id} className="flex items-center gap-2 border border-ok/60 px-2 py-0.5 text-xs font-medium text-ok">
+          {ATTACK_INFO[o.attack].name} → lands in {Math.ceil(o.secondsLeft)}s
         </span>
       ))}
     </div>
   );
 }
 
-function Controls({ match, down }: { match: MatchView; down: boolean }) {
+function MapArea({ match }: { match: MatchView }) {
+  const [focus, setFocus] = useState<"me" | "them">("me");
+  const history = useGameStore((s) => s.history);
+  const flip = (to?: "me" | "them") => {
+    setFocus((f) => to ?? (f === "me" ? "them" : "me"));
+    sfx.tab();
+  };
+  useShortcut("tab", () => flip());
+  const shown = focus === "me" ? match.me : match.them;
+  const other = focus === "me" ? match.them : match.me;
+  const down = match.me.downSecondsLeft !== null;
+
+  return (
+    <section className="relative flex min-h-0 min-w-0 flex-col">
+      <div className="flex items-center gap-5 px-10 pt-3">
+        <div className="flex border border-line-strong text-sm">
+          {(["me", "them"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => flip(f)}
+              className={cx("cursor-pointer px-3.5 py-1.5 font-medium", focus === f ? "bg-raised text-ink" : "text-muted hover:text-ink")}
+            >
+              {f === "me" ? "Our site" : "Their site"}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-faint">
+          <kbd>Tab</kbd> to switch
+        </span>
+        <div className="ml-auto">
+          <EffectChips site={shown} outgoing={focus === "them" ? match.outgoing : undefined} />
+        </div>
+      </div>
+
+      <div className="grid min-h-0 flex-1 place-items-center px-10 py-2">
+        <LiveMap site={shown} />
+      </div>
+
+      <div className="grid grid-cols-[1fr_auto] items-end gap-6 border-t border-line px-10 py-2.5">
+        <div>
+          <Label>Health this round — us above, them below</Label>
+          <div className="mt-1">
+            <HealthTimeline me={history.me} them={history.them} durationSec={match.durationSec} />
+          </div>
+        </div>
+        <button type="button" onClick={() => flip()} className="w-[220px] cursor-pointer text-left">
+          <Label>{focus === "me" ? "Their site" : "Our site"} · health {other.health}</Label>
+          <LiveMap site={other} compact />
+        </button>
+      </div>
+
+      {down && (
+        <div className="absolute inset-0 grid place-content-center justify-items-center bg-bg/70" role="alert">
+          <p className="text-[clamp(44px,9vh,80px)] font-semibold tracking-[-0.04em] text-bad">Your site is down</p>
+          <p className="mt-1 text-lg text-muted">Back in {match.me.downSecondsLeft}s — nobody can get in</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------- shop ----------
+
+type Tab = "defence" | "attack" | "utility";
+const TABS: { id: Tab; label: string; keys: string }[] = [
+  { id: "defence", label: "Defend", keys: "1–6" },
+  { id: "attack", label: "Attack", keys: "A–H" },
+  { id: "utility", label: "Boost", keys: "Q–R" },
+];
+
+function press(item: ShopItemView) {
+  const kind = item.kind === "defence" ? "buy" : item.kind === "utility" ? "use" : "attack";
+  sendAction({ kind, item: item.id } as Parameters<typeof sendAction>[0]);
+}
+
+function ShopRow({ item, locked }: { item: ShopItemView; locked: boolean }) {
+  const info = ITEM_INFO[item.id];
+  const maxed = item.kind === "defence" && item.owned >= item.max;
+  const coolingDown = item.cooldown > 0;
+  const disabled = locked || !item.affordable || maxed || coolingDown;
+  const canSell = item.kind === "defence" && item.owned > (item.id === "server" ? 1 : 0);
+
+  return (
+    <div className="group relative flex items-stretch border-b border-line">
+      <button
+        type="button"
+        onClick={() => press(item)}
+        disabled={disabled}
+        className="relative flex min-w-0 flex-1 cursor-pointer items-center gap-3 overflow-hidden py-[5px] pr-2 pl-6 text-left transition-colors enabled:hover:bg-surface disabled:cursor-not-allowed"
+      >
+        {coolingDown && (
+          <span className="absolute inset-y-0 left-0 bg-raised" style={{ width: `${item.cooldown * 100}%` }} aria-hidden />
+        )}
+        <kbd className="relative">{info.key.toUpperCase()}</kbd>
+        <span className={cx("relative min-w-0 flex-1", disabled && "opacity-45")}>
+          <span className="block truncate text-sm font-medium">
+            {info.name}
+            {item.kind === "defence" && item.owned > 0 && <span className="ml-2 text-xs font-normal text-accent">×{item.owned}</span>}
+          </span>
+          <span className="block truncate text-[11px] leading-tight text-faint">{info.hint}</span>
+        </span>
+        <span className={cx("relative text-sm font-semibold tabular-nums", item.affordable ? "text-ink" : "text-bad/80")}>
+          {maxed ? "max" : item.price}
+        </span>
+      </button>
+      {item.kind === "defence" && (
+        <button
+          type="button"
+          onClick={() => sendAction({ kind: "sell", item: item.id as keyof typeof DEFENCE_INFO })}
+          disabled={locked || !canSell}
+          title={`Sell (Shift+${info.key})`}
+          className="w-14 cursor-pointer border-l border-line text-xs text-muted transition-colors enabled:hover:bg-surface enabled:hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          Sell
+        </button>
+      )}
+    </div>
+  );
+}
+
+const TONE_TEXT: Record<Tone, string> = { neutral: "text-muted", good: "text-ok", warn: "text-warn", bad: "text-bad" };
+const TONE_MARK: Record<Tone, string> = { neutral: "bg-faint", good: "bg-ok", warn: "bg-warn", bad: "bg-bad" };
+
+function Shop({ match }: { match: MatchView }) {
+  const [tab, setTab] = useState<Tab>("defence");
   const feed = useGameStore((s) => s.feed);
-  const add = () => !down && sendAction("addServer");
-  const remove = () => !down && sendAction("removeServer");
-  useShortcut("2", add);
-  useShortcut("1", remove);
+  const locked = match.me.downSecondsLeft !== null;
+
+  // Every item keeps its shortcut, whichever tab is open.
+  const bindings: Record<string, () => void> = {};
+  for (const item of match.shop) {
+    const info = ITEM_INFO[item.id];
+    bindings[info.key] = () => press(item);
+    if (info.sellKey) bindings[info.sellKey] = () => sendAction({ kind: "sell", item: item.id as keyof typeof DEFENCE_INFO });
+  }
+  useShortcuts(bindings, { enabled: !locked });
+
+  const items = match.shop.filter((i) => i.kind === tab);
+  const incoming = match.incoming.length > 0;
 
   return (
     <aside className="flex min-h-0 flex-col border-l border-line">
-      <div className="flex flex-col gap-3 px-8 pt-6">
-        <button
-          type="button"
-          className={cx(
-            CONTROL,
-            "border-accent bg-accent text-on-accent hover:enabled:border-accent-hover hover:enabled:bg-accent-hover [&_kbd]:border-on-accent/25 [&_kbd]:text-on-accent/65",
-          )}
-          disabled={down || match.budget <= 0}
-          onClick={add}
-        >
-          {/* Cooldown sweeps away from the right edge */}
-          <span
-            className="absolute inset-y-0 right-0 bg-black/35 transition-[width] duration-100 ease-linear"
-            style={{ width: `${match.addCooldown * 100}%` }}
-          />
-          <span className="relative">+ Servers</span>
-          <kbd className="relative">2</kbd>
-        </button>
-        <button
-          type="button"
-          className={cx(CONTROL, "border-line-strong bg-surface hover:enabled:border-faint hover:enabled:bg-raised")}
-          disabled={down || match.servers.length <= 1}
-          onClick={remove}
-        >
-          <span className="relative">– Server</span>
-          <kbd className="relative">1</kbd>
-        </button>
+      <div className="grid grid-cols-3 border-b border-line">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cx(
+              "relative cursor-pointer px-3 py-2 text-left transition-colors not-first:border-l not-first:border-line",
+              tab === t.id ? "bg-surface text-ink" : "text-muted hover:text-ink",
+            )}
+          >
+            {tab === t.id && <span className="absolute inset-x-0 top-0 h-0.5 bg-accent" aria-hidden />}
+            <span className="block text-sm font-semibold">
+              {t.label}
+              {t.id === "utility" && incoming && <span className="ml-1.5 inline-block size-1.5 bg-bad align-middle" />}
+            </span>
+            <span className="text-[11px] text-faint">{t.keys}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="mt-5 border-t border-line px-8 py-4">
-        <Legend match={match} />
+      <div className="min-h-0 overflow-y-auto">
+        {items.map((item) => (
+          <ShopRow key={item.id} item={item} locked={locked} />
+        ))}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line px-8 py-4">
+      <div className="mt-auto flex flex-col border-t border-line px-6 py-2.5">
         <Label>What just happened</Label>
-        <ul className="mt-2.5 grid gap-2">
-          {feed.length === 0 && <li className="text-sm text-faint">Nothing yet — keep an eye on the servers.</li>}
+        <ul className="mt-1.5 grid gap-1 overflow-hidden">
+          {feed.length === 0 && <li className="text-sm text-faint">Nothing yet.</li>}
           {feed.map((item, i) => (
-            <li
-              key={item.id}
-              className={cx("flex animate-slide-in items-center gap-2.5 text-sm", TONE_TEXT[item.tone], i > 0 && "opacity-60")}
-            >
+            <li key={item.id} className={cx("flex animate-slide-in items-center gap-2.5 text-sm", TONE_TEXT[item.tone], i > 1 && "opacity-60")}>
               <span className={cx("size-1.5 shrink-0", TONE_MARK[item.tone])} aria-hidden />
-              {item.text}
+              <span className="truncate">{item.text}</span>
             </li>
           ))}
         </ul>
       </div>
-
-      <p className="border-t border-line px-8 py-4 text-[13px] text-muted">
-        More servers let more people in, but every server costs money each second.
-      </p>
     </aside>
   );
 }
 
 // ---------- screen ----------
 
-export function GameScreen({ match }: { match: MatchView | null }) {
-  const history = useGameStore((s) => s.healthHistory);
-  if (!match) return <MessageScreen right="Round 1" message="Loading the round…" />;
-  const down = match.downSecondsLeft !== null;
+export function GameScreen({ room, match }: { room: RoomView; match: MatchView | null }) {
+  if (!match) return <MessageScreen right={`Round ${room.round}`} message="Setting up the round…" />;
+  const theme = room.theme ? THEME_INFO[room.theme].name : "";
 
   return (
     <Frame>
-      <TopBar right="Round 1" />
-
+      <TopBar right={`Round ${match.round} of ${room.totalRounds} · ${theme}`} />
       <main className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)]">
-        <Hud match={match} />
+        <Hud match={match} room={room} />
         <AlertBar match={match} />
-
-        <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(340px,28%)]">
-          <section className="relative flex min-h-0 min-w-0 flex-col">
-            <div className="grid min-h-0 flex-1 place-items-center px-10 py-3">
-              <LiveMap match={match} />
-            </div>
-            <div className="border-t border-line px-10 pt-2.5 pb-3">
-              <Label>Health this round</Label>
-              <div className="mt-1.5">
-                <HealthTimeline history={history} durationSec={match.durationSec} />
-              </div>
-            </div>
-
-            {down && (
-              <div className="absolute inset-0 grid place-content-center justify-items-center bg-bg/70" role="alert">
-                <p className="text-[clamp(44px,9vh,80px)] font-semibold tracking-[-0.04em] text-bad">The site is down</p>
-                <p className="mt-1 text-lg text-muted">Rebooting in {match.downSecondsLeft}s — nobody can get in</p>
-              </div>
-            )}
-          </section>
-
-          <Controls match={match} down={down} />
+        <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(360px,30%)]">
+          <MapArea match={match} />
+          <Shop match={match} />
         </div>
       </main>
     </Frame>
   );
 }
+

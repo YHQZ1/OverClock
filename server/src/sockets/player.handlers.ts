@@ -1,36 +1,32 @@
 import type { Socket } from "socket.io";
 import type { ZodType } from "zod";
-import type { MatchService } from "../services/match.service.js";
-import type { SessionService } from "../services/session.service.js";
-import type { Seat, TeamService } from "../services/team.service.js";
-import type {
-  Ack,
-  ClientToServerEvents,
-  JoinResult,
-  ServerToClientEvents,
-  SocketData,
-} from "../types/contracts.js";
+import type { Services } from "../services/index.js";
+import { sideOf, type Seat } from "../services/room.service.js";
+import type { Side } from "../sim/index.js";
+import type { Ack, ClientToServerEvents, JoinResult, ServerToClientEvents, SocketData } from "../types/contracts.js";
 import { UserError, userMessage } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 import {
-  createTeamSchema,
+  createRoomSchema,
   emptySchema,
   gameActionSchema,
-  joinTeamSchema,
+  joinRoomSchema,
+  readySchema,
   rejoinSchema,
-  startSessionSchema,
+  slotSchema,
+  teamNameSchema,
+  voteSchema,
 } from "../validators/socket.schemas.js";
 
 export type PlayerSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
-export type Services = { teams: TeamService; sessions: SessionService; matches: MatchService };
-
-export const teamRoom = (code: string) => `team:${code}`;
+export const roomChannel = (code: string) => `room:${code}`;
+export const sideChannel = (code: string, side: Side) => `room:${code}:side:${side}`;
 
 /** Validate → run → ack. Unknown errors are logged and hidden from players. */
 function handle<P, T>(schema: ZodType<P>, payload: unknown, ack: unknown, run: (data: P) => T): void {
   const reply = typeof ack === "function" ? (ack as Ack<T>) : () => {};
-  const parsed = schema.safeParse(payload);
+  const parsed = schema.safeParse(payload ?? {});
   if (!parsed.success) {
     reply({ ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request." });
     return;
@@ -43,60 +39,100 @@ function handle<P, T>(schema: ZodType<P>, payload: unknown, ack: unknown, run: (
   }
 }
 
-export function registerPlayerHandlers(socket: PlayerSocket, { teams, sessions, matches }: Services): void {
-  socket.data.code = null;
-  socket.data.playerId = null;
+export function registerPlayerHandlers(socket: PlayerSocket, { rooms, sessions, matches }: Services): void {
+  socket.data = { code: null, playerId: null, side: null };
 
   const seated = (): { code: string; playerId: string } => {
     const { code, playerId } = socket.data;
-    if (!code || !playerId) throw new UserError("You're not in a team.");
+    if (!code || !playerId) throw new UserError("You're not in a room.");
     return { code, playerId };
   };
 
-  const sit = ({ team, player }: Seat): JoinResult => {
-    if (socket.data.code && socket.data.code !== team.code) void socket.leave(teamRoom(socket.data.code));
-    socket.data.code = team.code;
+  /** Keep this socket in its room's channel and its side's channel. */
+  const syncChannels = () => {
+    const { code, playerId } = socket.data;
+    const player = code ? rooms.get(code)?.players.find((p) => p.id === playerId) : undefined;
+    const side = player?.slot ? sideOf(player.slot) : null;
+    if (code && socket.data.side !== side) {
+      if (socket.data.side) void socket.leave(sideChannel(code, socket.data.side));
+      if (side) void socket.join(sideChannel(code, side));
+    }
+    socket.data.side = side;
+  };
+
+  const sit = ({ room, player }: Seat): JoinResult => {
+    if (socket.data.code && socket.data.code !== room.code) stand();
+    socket.data.code = room.code;
     socket.data.playerId = player.id;
-    void socket.join(teamRoom(team.code));
-    return { playerId: player.id, token: player.token, session: teams.view(team) };
+    void socket.join(roomChannel(room.code));
+    syncChannels();
+    return { playerId: player.id, token: player.token, room: rooms.view(room, sessions.totalRounds) };
   };
 
   const stand = () => {
-    if (socket.data.code) void socket.leave(teamRoom(socket.data.code));
-    socket.data.code = null;
-    socket.data.playerId = null;
+    const { code, side } = socket.data;
+    if (code) {
+      void socket.leave(roomChannel(code));
+      if (side) void socket.leave(sideChannel(code, side));
+    }
+    socket.data = { code: null, playerId: null, side: null };
   };
 
-  socket.on("team:create", (payload, ack) =>
-    handle(createTeamSchema, payload, ack, (p) => sit(sessions.createTeam(p.teamName, p.playerName))),
+  socket.on("room:create", (payload, ack) =>
+    handle(createRoomSchema, payload, ack, (p) => sit(sessions.createRoom(p.playerName))),
   );
 
-  socket.on("team:join", (payload, ack) =>
-    handle(joinTeamSchema, payload, ack, (p) => sit(sessions.joinTeam(p.code, p.playerName))),
+  socket.on("room:join", (payload, ack) =>
+    handle(joinRoomSchema, payload, ack, (p) => sit(sessions.joinRoom(p.code, p.playerName))),
   );
 
-  socket.on("team:rejoin", (payload, ack) =>
+  socket.on("room:rejoin", (payload, ack) =>
     handle(rejoinSchema, payload, ack, (p) => {
-      const result = sit(sessions.rejoinTeam(p.code, p.token));
-      const live = matches.view(p.code);
+      const result = sit(sessions.rejoinRoom(p.code, p.token));
+      const live = socket.data.side ? matches.view(p.code, socket.data.side) : null;
       if (live) socket.emit("match:state", live);
       return result;
     }),
   );
 
-  socket.on("team:leave", (payload, ack) =>
-    handle(emptySchema, payload ?? {}, ack, () => {
+  socket.on("room:leave", (payload, ack) =>
+    handle(emptySchema, payload, ack, () => {
       const { code, playerId } = seated();
       stand();
-      sessions.leaveTeam(code, playerId);
+      sessions.leaveRoom(code, playerId);
       return null;
     }),
   );
 
-  socket.on("session:start", (payload, ack) =>
-    handle(startSessionSchema, payload ?? {}, ack, () => {
+  socket.on("room:slot", (payload, ack) =>
+    handle(slotSchema, payload, ack, (p) => {
       const { code, playerId } = seated();
-      sessions.start(code, playerId);
+      sessions.setSlot(code, playerId, p.slot);
+      syncChannels();
+      return null;
+    }),
+  );
+
+  socket.on("room:ready", (payload, ack) =>
+    handle(readySchema, payload, ack, (p) => {
+      const { code, playerId } = seated();
+      sessions.setReady(code, playerId, p.ready);
+      return null;
+    }),
+  );
+
+  socket.on("room:teamName", (payload, ack) =>
+    handle(teamNameSchema, payload, ack, (p) => {
+      const { code, playerId } = seated();
+      sessions.setTeamName(code, playerId, p.name);
+      return null;
+    }),
+  );
+
+  socket.on("vote:theme", (payload, ack) =>
+    handle(voteSchema, payload, ack, (p) => {
+      const { code, playerId } = seated();
+      sessions.vote(code, playerId, p.theme);
       return null;
     }),
   );
@@ -105,7 +141,7 @@ export function registerPlayerHandlers(socket: PlayerSocket, { teams, sessions, 
     const parsed = gameActionSchema.safeParse(payload);
     const { code, playerId } = socket.data;
     if (!parsed.success || !code || !playerId) return;
-    sessions.action(code, playerId, { type: parsed.data.action });
+    sessions.game(code, playerId, parsed.data);
   });
 
   socket.on("disconnect", () => {

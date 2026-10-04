@@ -1,51 +1,62 @@
-// Round content: how long it lasts, how much budget, how traffic behaves
-// and which events happen. Pure data — the engine interprets it.
+// Round content: length, starting coins and the background crowd both sites
+// share. Pure data — the engine interprets it.
 
 export type RushSpec = {
-  kind: "rush";
-  atSec: number; // nominal start
+  atSec: number; // nominal start (seeded jitter applies)
   durationSec: number;
-  multiplier: number; // traffic × this at full strength
-  rampSec: number; // build-up and wind-down time
+  multiplier: number; // crowd × this at full strength
+  rampSec: number;
 };
-
-export type EventSpec = RushSpec;
 
 export type Scenario = {
   id: string;
   durationSec: number;
   startServers: number;
-  startBudget: number;
-
+  startCoins: number;
   traffic: {
     baseRate: number; // people per second at the start
-    growth: number; // base rises by this fraction by the end of the round
-    waveAmp: number; // gentle wave, as a fraction of base
+    growth: number; // base rises by this share by the end of the round
+    waveAmp: number; // gentle wave, as a share of base
     wavePeriodSec: number;
-    noiseAmp: number; // per-tick wobble, as a fraction
+    noiseAmp: number; // per-tick wobble, as a share
   };
-
-  events: EventSpec[];
-  /** Each event starts up to ± this many seconds from its nominal time (seeded). */
+  /** Natural rushes that hit both sites equally. */
+  rushes: RushSpec[];
   jitterSec: number;
 };
 
-/** Round 1 "Learn": one problem at a time, generous budget. */
-export const ROUND_1: Scenario = {
-  id: "round-1",
-  durationSec: 120,
-  startServers: 4,
-  startBudget: 6000,
-  traffic: {
-    baseRate: 100,
-    growth: 0.1,
-    waveAmp: 0.06,
-    wavePeriodSec: 20,
-    noiseAmp: 0.05,
+const traffic = { baseRate: 100, growth: 0.15, waveAmp: 0.06, wavePeriodSec: 20, noiseAmp: 0.05 };
+
+// Starting values (tune). Every round starts fresh: same coins, same servers.
+export const ROUNDS: readonly Scenario[] = [
+  {
+    id: "round-1",
+    durationSec: 90,
+    startServers: 4,
+    startCoins: 500,
+    traffic,
+    rushes: [{ atSec: 45, durationSec: 10, multiplier: 1.6, rampSec: 3 }],
+    jitterSec: 4,
   },
-  events: [
-    { kind: "rush", atSec: 25, durationSec: 15, multiplier: 2.5, rampSec: 4 },
-    { kind: "rush", atSec: 75, durationSec: 18, multiplier: 3, rampSec: 4 },
-  ],
-  jitterSec: 3,
-};
+  {
+    id: "round-2",
+    durationSec: 120,
+    startServers: 4,
+    startCoins: 500,
+    traffic: { ...traffic, growth: 0.25 },
+    rushes: [{ atSec: 60, durationSec: 12, multiplier: 1.8, rampSec: 3 }],
+    jitterSec: 5,
+  },
+  {
+    id: "round-3",
+    durationSec: 120,
+    startServers: 4,
+    startCoins: 500,
+    traffic: { ...traffic, growth: 0.35 },
+    rushes: [
+      { atSec: 40, durationSec: 10, multiplier: 1.8, rampSec: 3 },
+      { atSec: 95, durationSec: 15, multiplier: 2, rampSec: 3 },
+    ],
+    jitterSec: 5,
+  },
+];

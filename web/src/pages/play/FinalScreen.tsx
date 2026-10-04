@@ -1,55 +1,97 @@
-import type { SessionView } from "@server/types/contracts.js";
+import type { RoomView, Side } from "@server/types/contracts.js";
 import { useState } from "react";
 import { TopBar } from "../../components/TopBar";
 import { Button, Frame, Label, SPLIT, cx } from "../../components/ui";
 import { useShortcut } from "../../hooks/useShortcut";
 
-type Props = { session: SessionView; onDone: () => Promise<void> };
+type Props = { room: RoomView; mySide: Side | null; onDone: () => Promise<void> };
 
 const n = (x: number) => x.toLocaleString();
 
-function Row({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
-  return (
-    <div className="flex justify-between border-b border-line py-3">
-      <dt className="text-muted">{label}</dt>
-      <dd className={cx("tabular-nums", muted ? "font-medium text-muted" : "font-semibold")}>{value}</dd>
-    </div>
-  );
-}
-
-export function FinalScreen({ session, onDone }: Props) {
+export function FinalScreen({ room, mySide, onDone }: Props) {
   const [leaving, setLeaving] = useState(false);
-  const r = session.result;
+  const final = room.final;
   const done = () => {
     if (leaving) return;
     setLeaving(true);
     void onDone();
   };
   useShortcut("Enter", done);
+  if (!final) return null;
+
+  const winner = final.winner;
+  const headline = final.endedEarly
+    ? final.endedEarly.side === mySide
+      ? "Your team left the match"
+      : `${room.teamNames[final.endedEarly.side]} left the match`
+    : winner === null
+      ? "It’s a draw!"
+      : winner === mySide
+        ? "You win!"
+        : `${room.teamNames[winner]} won the match`;
 
   return (
     <Frame>
-      <TopBar right="Results" />
+      <TopBar right={`${room.format ?? ""} · final`} />
       <main className={SPLIT}>
-        <section className="px-10 py-[clamp(28px,6vh,64px)]">
-          <Label>{session.teamName} · Round score</Label>
-          <div className="mt-2 mb-[clamp(20px,5vh,40px)] text-[clamp(72px,14vh,128px)] leading-none font-semibold tracking-[-0.05em] text-accent">
-            {r ? n(r.total) : "—"}
+        <section className="flex min-w-0 flex-col">
+          <div className="px-10 pt-[clamp(24px,5vh,56px)] pb-6">
+            <Label>Match over</Label>
+            <h1
+              className={cx(
+                "mt-2 text-[clamp(48px,10vh,96px)] leading-none font-semibold tracking-[-0.05em]",
+                winner !== null && winner === mySide && "text-accent",
+              )}
+            >
+              {headline}
+            </h1>
+            {!final.recorded && <p className="mt-3 text-muted">This match ended early, so it won’t go on the leaderboard.</p>}
           </div>
-          {r && (
-            <dl className="grid max-w-[520px] border-t border-line">
-              <Row label="People served" value={`+${n(r.served)}`} />
-              <Row label="People turned away" value={`−${n(r.lostPenalty)}`} />
-              <Row label="Budget saved" value={r.budgetSaved >= 0 ? `+${n(r.budgetSaved)}` : `−${n(-r.budgetSaved)}`} />
-              <Row label="Time the site was down" value={`${r.downtimeSec}s`} muted />
-            </dl>
-          )}
+
+          <div className="grid flex-1 grid-cols-2 border-t border-line">
+            {([1, 2] as const).map((side) => (
+              <div key={side} className="px-10 py-6 not-first:border-l not-first:border-line">
+                <Label>
+                  {room.teamNames[side]}
+                  {side === mySide && " (you)"}
+                </Label>
+                <p
+                  className={cx(
+                    "mt-1 text-[clamp(40px,8vh,72px)] leading-none font-semibold tracking-[-0.05em] tabular-nums",
+                    winner === side ? "text-accent" : "text-muted",
+                  )}
+                >
+                  {n(final.totals[side].total)}
+                </p>
+                <dl className="mt-5 grid max-w-[420px] border-t border-line text-sm">
+                  {room.rounds.map((r) => (
+                    <div key={r.round} className="flex justify-between border-b border-line py-2">
+                      <dt className="text-muted">
+                        Round {r.round}
+                        {r.winner === side && <span className="ml-2 text-accent">won</span>}
+                      </dt>
+                      <dd className="font-semibold tabular-nums">{n(r.scores[side].total)}</dd>
+                    </div>
+                  ))}
+                  {final.recorded && (
+                    <div className="flex justify-between py-2">
+                      <dt className="text-muted">Leaderboard points</dt>
+                      <dd className="font-semibold tabular-nums text-accent">{n(final.points[side])}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            ))}
+          </div>
         </section>
 
         <aside className="flex flex-col justify-end gap-4 border-l border-line px-8 py-7">
-          <p className="text-muted">Thanks for playing! This PC goes back to the start for the next team.</p>
+          <p className="text-muted">
+            Leaderboard points count your score plus half of your opponent’s — beating a strong team is worth more.
+          </p>
+          <p className="text-muted">Thanks for playing! This PC goes back to the start for the next players.</p>
           <Button variant="primary" block disabled={leaving} onClick={done}>
-            Done — next team <kbd>Enter</kbd>
+            Done — next players <kbd>Enter</kbd>
           </Button>
         </aside>
       </main>

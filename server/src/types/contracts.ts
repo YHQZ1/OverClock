@@ -1,102 +1,183 @@
 // Real-time contract between server and clients. The web app imports this
 // file with `import type` only.
 
-import type { ScoreBreakdown, SimEvent } from "../sim/index.js";
+import type { ThemeId } from "../config/game.js";
 import type {
-  CreateTeamPayload,
+  AttackId,
+  DefenceId,
+  EffectKind,
+  ExtraDefenceId,
+  ItemId,
+  MatchTotals,
+  Part,
+  Side,
+  SimEvent,
+  SiteScore,
+  UtilityId,
+} from "../sim/index.js";
+import type {
+  CreateRoomPayload,
   GameActionPayload,
-  JoinTeamPayload,
+  JoinRoomPayload,
+  ReadyPayload,
   RejoinPayload,
-  StartSessionPayload,
+  SlotPayload,
+  TeamNamePayload,
+  VotePayload,
 } from "../validators/socket.schemas.js";
 
-export type { CreateTeamPayload, GameActionPayload, JoinTeamPayload, RejoinPayload, StartSessionPayload };
+export type {
+  AttackId,
+  CreateRoomPayload,
+  DefenceId,
+  EffectKind,
+  ExtraDefenceId,
+  GameActionPayload,
+  ItemId,
+  JoinRoomPayload,
+  Part,
+  ReadyPayload,
+  RejoinPayload,
+  Side,
+  SimEvent,
+  SiteScore,
+  SlotPayload,
+  TeamNamePayload,
+  ThemeId,
+  UtilityId,
+  VotePayload,
+};
 
-export type Phase = "lobby" | "countdown" | "playing" | "final";
+export type Slot = 1 | 2 | 3 | 4;
+export type Format = "1v1" | "2v2";
+export type Phase = "room" | "vote" | "buy" | "live" | "roundResult" | "final";
+
+// ---------- room ----------
 
 export type PlayerView = {
   id: string;
   name: string;
-  isHost: boolean;
+  slot: Slot | null;
+  ready: boolean;
   connected: boolean;
 };
 
-/** Everything a PC needs to decide which screen to show. Same for the whole team. */
-export type SessionView = {
+export type CanStart = { ok: true; format: Format } | { ok: false; reason: string };
+
+export type RoundSummary = { round: number; scores: Record<Side, SiteScore>; winner: Side | null };
+
+export type FinalSummary = {
+  totals: MatchTotals;
+  winner: Side | null;
+  /** Leaderboard points per side. */
+  points: Record<Side, number>;
+  /** False when the match ended early (e.g. a team left) — nothing goes on the leaderboard. */
+  recorded: boolean;
+  endedEarly: { side: Side; reason: "left" } | null;
+};
+
+/** Everything a PC needs to decide which screen to show. Same for the whole room. */
+export type RoomView = {
   code: string;
-  teamName: string;
   phase: Phase;
+  format: Format | null;
   players: PlayerView[];
-  /** Seconds left while phase is "countdown". */
-  countdown: number | null;
-  /** Round result once phase is "final". */
-  result: ScoreBreakdown | null;
+  teamNames: Record<Side, string>;
+  canStart: CanStart;
+  /** playerId → theme, during and after the vote. */
+  votes: Record<string, ThemeId>;
+  theme: ThemeId | null;
+  round: number;
+  totalRounds: number;
+  /** Countdown for timed phases (vote, buy, round result). */
+  secondsLeft: number | null;
+  rounds: RoundSummary[];
+  final: FinalSummary | null;
 };
 
-export type ServerSlotView = {
-  id: number;
-  state: "booting" | "busy" | "idle" | "down";
-  /** 0 → 1 while booting. */
-  bootProgress: number;
-};
+// ---------- live duel ----------
 
-/** How a part of the app is doing — drives green / yellow / red on the map. */
-export type PartStatus = "ok" | "strained" | "failing";
+export type PartStatus = "ok" | "strained" | "failing" | "none";
+export type ServerState = "booting" | "busy" | "idle" | "melted" | "down";
+export type ServerSlotView = { id: number; state: ServerState; progress: number };
 
-/** Player-safe snapshot of a live match, sent 10×/sec. */
-export type MatchView = {
-  tick: number;
-  timeLeftSec: number;
-  durationSec: number;
+export type EffectView = { kind: EffectKind; secondsLeft: number; share: number };
+
+/** One site as anyone may see it. */
+export type SiteView = {
   health: number;
-  budget: number;
-  startBudget: number;
-  /** Budget spent per second right now. */
-  spendPerSec: number;
-  /** Live score: served − lost penalty (budget is added at the end). */
   score: number;
   served: number;
   lost: number;
-  servers: ServerSlotView[];
-  serversStatus: PartStatus;
-  /** 0 → 1, fraction of the + SERVERS cooldown still remaining. */
-  addCooldown: number;
-  /** Seconds until reboot while the system is down, else null. */
-  downSecondsLeft: number | null;
   critical: boolean;
-  rush: boolean;
-  /** Crowd size relative to normal (1 = usual, 2.5 = rush). Drives the map, never shown as a number. */
+  downSecondsLeft: number | null;
+  servers: ServerSlotView[];
+  owned: Record<ExtraDefenceId, number>;
+  settingUp: ExtraDefenceId[];
+  parts: Record<Part, PartStatus>;
+  bottleneck: Part | null;
+  /** Crowd size relative to normal (1 = usual). Drives the map, never shown as a number. */
   crowd: number;
-  /** 0 → 1 share of arriving people who got in this moment. */
+  /** 0 → 1 share of real visitors getting in. */
   servedShare: number;
+  /** Bots relative to real visitors (0 = none). */
+  botShare: number;
+  effects: EffectView[];
 };
 
-export type JoinResult = {
-  playerId: string;
-  token: string;
-  session: SessionView;
+export type ShopItemView = {
+  id: ItemId;
+  kind: "defence" | "utility" | "attack";
+  price: number;
+  /** Defences: working + setting up. */
+  owned: number;
+  max: number;
+  /** 0 → 1 of cooldown remaining (attacks include the regroup wait). */
+  cooldown: number;
+  affordable: boolean;
 };
+
+export type AttackInFlight = { id: number; attack: AttackId; secondsLeft: number };
+
+/** Player-safe snapshot of the duel for one side, sent 10×/sec. */
+export type MatchView = {
+  side: Side;
+  round: number;
+  phase: "buy" | "live";
+  timeLeftSec: number;
+  durationSec: number;
+  me: SiteView & { coins: number; incomePerSec: number; upkeepPerSec: number };
+  /** The opponent's site — their coins stay hidden. */
+  them: SiteView;
+  shop: ShopItemView[];
+  incoming: AttackInFlight[];
+  outgoing: AttackInFlight[];
+};
+
+// ---------- messages ----------
+
+export type JoinResult = { playerId: string; token: string; room: RoomView };
 
 export type AckResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 export type Ack<T> = (res: AckResponse<T>) => void;
 
 export interface ClientToServerEvents {
-  "team:create": (payload: CreateTeamPayload, ack: Ack<JoinResult>) => void;
-  "team:join": (payload: JoinTeamPayload, ack: Ack<JoinResult>) => void;
-  "team:rejoin": (payload: RejoinPayload, ack: Ack<JoinResult>) => void;
-  "team:leave": (payload: Record<string, never>, ack: Ack<null>) => void;
-  "session:start": (payload: StartSessionPayload, ack: Ack<null>) => void;
+  "room:create": (payload: CreateRoomPayload, ack: Ack<JoinResult>) => void;
+  "room:join": (payload: JoinRoomPayload, ack: Ack<JoinResult>) => void;
+  "room:rejoin": (payload: RejoinPayload, ack: Ack<JoinResult>) => void;
+  "room:leave": (payload: Record<string, never>, ack: Ack<null>) => void;
+  "room:slot": (payload: SlotPayload, ack: Ack<null>) => void;
+  "room:ready": (payload: ReadyPayload, ack: Ack<null>) => void;
+  "room:teamName": (payload: TeamNamePayload, ack: Ack<null>) => void;
+  "vote:theme": (payload: VotePayload, ack: Ack<null>) => void;
   "game:action": (payload: GameActionPayload) => void;
 }
 
 export interface ServerToClientEvents {
-  "session:state": (session: SessionView) => void;
+  "room:state": (room: RoomView) => void;
   "match:state": (match: MatchView) => void;
   "match:event": (events: SimEvent[]) => void;
 }
 
 /** Per-socket data: who this connection is. */
-export type SocketData = {
-  code: string | null;
-  playerId: string | null;
-};
+export type SocketData = { code: string | null; playerId: string | null; side: Side | null };

@@ -1,16 +1,15 @@
 import type { GameTiming } from "../config/game.js";
-import type { MatchSetup } from "../sim/index.js";
 import type { Broadcaster } from "./broadcaster.js";
 import { MatchService } from "./match.service.js";
-import { SessionService } from "./session.service.js";
-import { TeamService } from "./team.service.js";
+import { RoomService } from "./room.service.js";
+import { SessionService, type SessionDeps } from "./session.service.js";
 
-export function createServices(notify: Broadcaster, timing: GameTiming, setup?: MatchSetup) {
-  const teams = new TeamService();
-  const matches = new MatchService(notify, timing, setup);
-  const sessions = new SessionService(teams, matches, notify, timing);
+export function createServices(notify: Broadcaster, timing: GameTiming, deps: SessionDeps = {}) {
+  const rooms = new RoomService(deps.now);
+  const matches = new MatchService(notify, timing);
+  const sessions = new SessionService(rooms, matches, notify, timing, deps);
   return {
-    teams,
+    rooms,
     matches,
     sessions,
     start() {
@@ -23,3 +22,5 @@ export function createServices(notify: Broadcaster, timing: GameTiming, setup?: 
     },
   };
 }
+
+export type Services = ReturnType<typeof createServices>;
