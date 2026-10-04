@@ -3,6 +3,7 @@
 // sparring partner) and the load test (many at once). Dev tooling only.
 
 import { io, type Socket } from "socket.io-client";
+import { THEMES } from "../config/game.js";
 import type {
   AttackId,
   ClientToServerEvents,
@@ -175,7 +176,7 @@ export function runBot(opts: BotOptions): Promise<BotResult> {
         voted = true; // room updates keep arriving while our vote is in flight — vote once
         const counts = new Map<ThemeId, number>();
         for (const t of Object.values(r.votes)) counts.set(t, (counts.get(t) ?? 0) + 1);
-        const pick = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "results";
+        const pick = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? THEMES[0];
         await ack("vote:theme", { theme: pick });
       }
       if (r.phase !== prev) log(`${opts.name}: ${r.phase}${r.round ? ` (round ${r.round})` : ""}`);
