@@ -71,4 +71,20 @@ describe("game store", () => {
     store.clear();
     expect(useGameStore.getState()).toMatchObject({ playerId: null, room: null, match: null, feed: [] });
   });
+
+  it("remembers what this team used and what hit it, for the reveal — and forgets it on clear", () => {
+    const store = useGameStore.getState();
+    store.seat("p1", room("ABCD"));
+    store.setMatch(match()); // side 1
+    store.pushEvents([
+      { side: 1, type: "bought", item: "bouncer", by: "Priya" },
+      { side: 1, type: "attackSent", attack: "bots", by: "Priya" },
+      { side: 1, type: "attackLanded", attack: "wrongTurn" },
+      { side: 2, type: "bought", item: "shelf", by: "Rahul" }, // theirs: not ours
+      { side: 1, type: "bought", item: "bouncer", by: "Priya" },
+    ]);
+    expect(useGameStore.getState().usage).toEqual({ used: ["bouncer", "bots"], hitBy: ["wrongTurn"] });
+    store.clear();
+    expect(useGameStore.getState().usage).toEqual({ used: [], hitBy: [] });
+  });
 });

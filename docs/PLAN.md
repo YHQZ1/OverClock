@@ -74,7 +74,10 @@ In order. Each item ends playable and tested.
 14. [x] **Themes**: Nasdaq, FanCode, Miniclip, BookMyShow — vote cards with
         logos, accent colour, words (visitors, alerts, round lines), a music
         style each. Later: ChronoNexia "split timeline" framing
-15. [ ] **The reveal**: "what you actually built" cards
+15. [x] **The reveal**: "What you actually built" after the final (8s or
+        Enter) — story, the site with real names, all 20 items decoded with
+        real products / incidents (what the team used highlighted), apps to
+        build next; Enter → Home
 16. [ ] **Deploy** to Render; test from a lab PC (firewall)
 17. [~] **Juice**: sound done — effects for every action and event, a
         signature sound per attack, attack-ready ping, heartbeat when

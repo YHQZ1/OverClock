@@ -38,6 +38,7 @@ choices are kept at the bottom so we remember why we moved on.
 | **Only completed matches are recorded** | Leaving halfway records nothing. |
 | **Crash and reboot** at 0 health (no elimination) | Fixed match length; nobody sits idle. |
 | **Player-friendly names; real concepts revealed at the end** (Traffic splitter → load balancer, Bouncer → rate limiter, Fast shelf → cache…) | Never show tech terms before the reveal. |
+| **The reveal is its own step: final (8s, or Enter) → reveal (as long as they like) → Enter → Home**; real product names and incidents included; what the team used is highlighted | A button would get skipped; the auto-advance means everyone sees it. Real names (Redis, Cloudflare, Mirai…) make it concrete for CS students and searchable later. |
 | **Every alert says what's wrong *and* what to do** | First-timers shouldn't have to work out the fix. |
 | **The map is drawn from relative values only** (crowd vs normal, share getting in) | Shows a rush and people turned away without technical numbers. |
 | **Opponent's coins are hidden; their health and defences are visible** | Scouting matters, bluffing stays possible. |

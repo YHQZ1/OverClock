@@ -1,22 +1,25 @@
 import type { RoomView, Side } from "@server/types/contracts.js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TopBar } from "../../components/TopBar";
 import { Button, Frame, Label, SPLIT, cx } from "../../components/ui";
 import { useShortcut } from "../../hooks/useShortcut";
 
-type Props = { room: RoomView; mySide: Side | null; onDone: () => Promise<void> };
+/** How long the result stays up before "What you actually built". */
+export const REVEAL_AFTER_SEC = 8;
+
+type Props = { room: RoomView; mySide: Side | null; onNext: () => void };
 
 const n = (x: number) => x.toLocaleString();
 
-export function FinalScreen({ room, mySide, onDone }: Props) {
-  const [leaving, setLeaving] = useState(false);
+export function FinalScreen({ room, mySide, onNext }: Props) {
   const final = room.final;
-  const done = () => {
-    if (leaving) return;
-    setLeaving(true);
-    void onDone();
-  };
-  useShortcut("Enter", done);
+  const [left, setLeft] = useState(REVEAL_AFTER_SEC);
+  useEffect(() => {
+    if (left <= 0) return onNext();
+    const t = setTimeout(() => setLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left, onNext]);
+  useShortcut("Enter", onNext);
   if (!final) return null;
 
   const winner = final.winner;
@@ -106,9 +109,8 @@ export function FinalScreen({ room, mySide, onDone }: Props) {
           <p className="text-sm text-muted">
             Leaderboard points count your score plus half of your opponent’s — beating a strong team is worth more.
           </p>
-          <p className="text-sm text-muted">Thanks for playing! This PC goes back to the start for the next players.</p>
-          <Button variant="primary" block disabled={leaving} onClick={done}>
-            Done — next players <kbd>Enter</kbd>
+          <Button variant="primary" block onClick={onNext}>
+            What you actually built <span className="font-normal tabular-nums opacity-70">in {left}s</span> <kbd>Enter</kbd>
           </Button>
         </aside>
       </main>

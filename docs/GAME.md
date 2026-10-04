@@ -265,11 +265,28 @@ Every alert is visual. Lab PCs may have no speakers; sound is a bonus.
 
 ## The reveal
 
-At the end of the match: **"What you actually built"** cards — *Traffic
-splitter → that's a load balancer. Bouncer → a rate limiter. Bot army → a
-DDoS attack.* For CS students a cool reveal; for everyone else a fun fact.
-Never required to enjoy the game. Player screens never show technical terms
-before this.
+After the final screen (8 seconds, or Enter), every player gets **"What you
+actually built"** — one scrolling page in the theme they played, and the only
+place real technical names and products appear:
+
+1. **The story** — "You just kept a ticketing site selling through a concert
+   ticket drop": what they were really running.
+2. **Your site, with its real names** — the map they played, part by part:
+   users & requests → API gateway + firewall → application servers → cache →
+   database, each with their game name ("You called it: Seat map").
+3. **Decoded** — all 20 items: game name → real concept, what it really is,
+   and real products (Redis, NGINX, Cloudflare, AWS Auto Scaling…) or, for
+   attacks, a real incident (Mirai botnet 2016, MyEtherWallet DNS hijack 2018,
+   Facebook 2021 lockout). **What their team used, sent, or got hit by is
+   highlighted and listed first.**
+4. **You could build these too** — three real apps per theme on the same
+   building blocks (e.g. IRCTC-style Tatkal booking, your fest's registration
+   site).
+
+They read for as long as they like; **Enter** ("Done — next players") clears
+the seat and returns the PC to Home. Content lives in `web/src/game/reveal.ts`.
+Never required to enjoy the game — and player screens never show technical
+terms before this.
 
 ## Themes
 

@@ -14,9 +14,14 @@ test.describe("the duel", () => {
     // Three rounds play out to the final screen on both PCs.
     for (const page of [a, b]) {
       await expect(page.getByText("Match over")).toBeVisible({ timeout: 120_000 });
-      await expect(page.getByRole("button", { name: /Done — next players/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /What you actually built/ })).toBeVisible();
     }
 
+    // Final → "What you actually built" (Enter, or by itself after a few seconds) → Done → home.
+    await a.keyboard.press("Enter");
+    await expect(a.getByText("What you actually built").first()).toBeVisible();
+    await expect(a.getByRole("heading", { name: "Decoded" })).toBeVisible();
+    await expect(b.getByRole("heading", { name: "Decoded" })).toBeVisible({ timeout: 15_000 }); // B waited: it moved on by itself
     // Done → back home; a refresh must not drop this PC into the old room.
     await a.getByRole("button", { name: /Done — next players/ }).click();
     await expect(a.getByRole("heading", { name: "Create a room" })).toBeVisible();

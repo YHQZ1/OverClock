@@ -1,9 +1,13 @@
 import { create } from "zustand";
-import type { MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
+import type { AttackId, ItemId, MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
 import { describe, type FeedItem } from "../game/feed";
 import { wordsFor } from "../themes/themes";
 
 const FEED_SIZE = 3;
+
+/** What this team did this match — the reveal highlights these. */
+export type Usage = { used: ItemId[]; hitBy: AttackId[] };
+const NO_USAGE: Usage = { used: [], hitBy: [] };
 
 type GameStore = {
   connected: boolean;
@@ -16,6 +20,8 @@ type GameStore = {
   feed: FeedItem[];
   /** Health once per second of the current round, for both sites. */
   history: Record<"me" | "them", number[]>;
+  /** Items this team bought, used or sent, and attacks that hit it, across the match. */
+  usage: Usage;
 
   setConnected: (connected: boolean) => void;
   setRestoring: (restoring: boolean) => void;
@@ -38,10 +44,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   match: null,
   feed: [],
   history: EMPTY_HISTORY,
+  usage: NO_USAGE,
 
   setConnected: (connected) => set({ connected }),
   setRestoring: (restoring) => set({ restoring }),
-  seat: (playerId, room) => set({ playerId, room, match: null, feed: [], history: EMPTY_HISTORY }),
+  seat: (playerId, room) => set({ playerId, room, match: null, feed: [], history: EMPTY_HISTORY, usage: NO_USAGE }),
   setRoom: (room) => set((s) => (s.room && s.room.code !== room.code ? s : { room })),
 
   setMatch: (match) =>
@@ -66,11 +73,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!side) return;
     const me = room?.players.find((p) => p.id === playerId)?.name ?? "";
     const words = wordsFor(room?.theme);
+
+    const used = new Set(get().usage.used);
+    const hitBy = new Set(get().usage.hitBy);
+    for (const e of events) {
+      if (e.side !== side) continue;
+      if (e.type === "bought" || e.type === "used") used.add(e.item);
+      else if (e.type === "attackSent") used.add(e.attack);
+      else if (e.type === "attackLanded") hitBy.add(e.attack);
+    }
+    if (used.size !== get().usage.used.length || hitBy.size !== get().usage.hitBy.length) set({ usage: { used: [...used], hitBy: [...hitBy] } });
+
     const lines = events.map((e) => describe(e, side, me, words)).filter((x): x is Omit<FeedItem, "id"> => x !== null);
     if (lines.length === 0) return;
     const items = lines.map((l) => ({ ...l, id: nextFeedId++ })).reverse();
     set((s) => ({ feed: [...items, ...s.feed].slice(0, FEED_SIZE) }));
   },
 
-  clear: () => set({ playerId: null, room: null, match: null, feed: [], history: EMPTY_HISTORY, restoring: false }),
+  clear: () => set({ playerId: null, room: null, match: null, feed: [], history: EMPTY_HISTORY, usage: NO_USAGE, restoring: false }),
 }));

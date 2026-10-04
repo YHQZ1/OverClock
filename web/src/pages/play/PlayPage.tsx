@@ -1,4 +1,5 @@
 import type { RoomView, Side } from "@server/types/contracts.js";
+import { useCallback, useState } from "react";
 import { useSoundEffects } from "../../audio/useSoundEffects";
 import { useTitle } from "../../hooks/useTitle";
 import { THEME_INFO } from "../../themes/themes";
@@ -12,6 +13,7 @@ import { HomeScreen } from "./HomeScreen";
 import { MessageScreen } from "./MessageScreen";
 import { RoomScreen } from "./RoomScreen";
 import { RoundResultScreen } from "./RoundResultScreen";
+import { RevealScreen } from "./RevealScreen";
 import { VoteScreen } from "./VoteScreen";
 import { accentVars } from "../../themes/themes";
 
@@ -25,7 +27,13 @@ export function PlayPage() {
   const connected = useGameStore((s) => s.connected);
   const restoring = useGameStore((s) => s.restoring);
 
-  useTitle(restoring || !room || !playerId ? null : tabTitle(room));
+  // After the final, the reveal — per match, so the next match starts on its final again.
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const matchId = room?.phase === "final" ? (room.final?.matchId ?? null) : null;
+  const showReveal = matchId !== null && revealed === matchId;
+  const toReveal = useCallback(() => setRevealed(matchId), [matchId]);
+
+  useTitle(restoring || !room || !playerId ? null : showReveal ? "What you actually built" : tabTitle(room));
 
   const slot = room?.players.find((p) => p.id === playerId)?.slot ?? null;
   const mySide: Side | null = slot === null ? null : slot <= 2 ? 1 : 2;
@@ -54,7 +62,11 @@ export function PlayPage() {
         screen = <RoundResultScreen room={room} mySide={mySide} />;
         break;
       case "final":
-        screen = <FinalScreen room={room} mySide={mySide} onDone={leaveRoom} />;
+        screen = showReveal ? (
+          <RevealScreen room={room} onDone={leaveRoom} />
+        ) : (
+          <FinalScreen room={room} mySide={mySide} onNext={toReveal} />
+        );
         break;
     }
   }
