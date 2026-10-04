@@ -275,6 +275,19 @@ describe("refresh / reconnect", () => {
     expect((await frame).side).toBe(2);
   });
 
+  it("stays connected when the old connection closes after the new one has rejoined", async () => {
+    await startServer();
+    const { cs, seats, code } = await room(2);
+    const back = await client();
+    ok(await call(back, "room:rejoin", { code, token: seats[1]!.token })); // the new connection rejoins first…
+
+    cs[1]!.disconnect(); // …then the old one closes
+    await new Promise((r) => setTimeout(r, 100));
+    const me = realtime!.services.rooms.get(code)!.players.find((p) => p.id === seats[1]!.playerId)!;
+    expect(me.connected).toBe(true);
+    expect(realtime!.services.rooms.get(code)!.sideGoneSince[2]).toBeNull();
+  });
+
   it("rejects an unknown seat", async () => {
     await startServer();
     const { code } = await room(2);

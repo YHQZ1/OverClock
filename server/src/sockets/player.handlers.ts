@@ -144,8 +144,13 @@ export function registerPlayerHandlers(socket: PlayerSocket, { rooms, sessions, 
     sessions.game(code, playerId, parsed.data);
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     const { code, playerId } = socket.data;
-    if (code && playerId) sessions.setConnected(code, playerId, false);
+    if (!code || !playerId) return;
+    // A flaky network can reconnect (and rejoin) before the old connection's close
+    // arrives — then the player is still here and must not be marked gone.
+    const sockets = await socket.nsp.in(roomChannel(code)).fetchSockets();
+    if (sockets.some((s) => s.id !== socket.id && s.data.playerId === playerId)) return;
+    sessions.setConnected(code, playerId, false);
   });
 }
