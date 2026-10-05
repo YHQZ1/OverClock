@@ -15,13 +15,13 @@ export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Si
   return (
     <Frame>
       <TopBar theme={room.theme} right={`Round ${last.round} of ${room.totalRounds}`} />
-      <main className="flex min-h-0 flex-col">
-        <div className="flex items-end justify-between border-b border-line px-10 pt-[clamp(20px,5vh,48px)] pb-6">
+      <main className="flex flex-col lg:min-h-0">
+        <div className="flex flex-col gap-3 border-b border-line px-4 pt-[clamp(1.25rem,5vh,3rem)] pb-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-10">
           <div>
             <Label>Round {last.round} result</Label>
             <h1
               className={cx(
-                "mt-2 text-[clamp(40px,8vh,72px)] leading-none font-semibold tracking-[-0.045em]",
+                "mt-2 text-[clamp(2.5rem,8vh,4.5rem)] leading-none font-semibold tracking-[-0.045em]",
                 last.winner === mySide && "text-accent",
               )}
             >
@@ -33,7 +33,7 @@ export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Si
           </p>
         </div>
 
-        <div className="grid flex-1 grid-cols-2">
+        <div className="grid flex-1 gap-px bg-line sm:grid-cols-2">
           {([1, 2] as const).map((side) => (
             <TeamResult
               key={side}
@@ -46,7 +46,7 @@ export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Si
           ))}
         </div>
 
-        <div className="border-t border-line px-10 py-4 text-sm text-muted">
+        <div className="border-t border-line px-4 sm:px-6 lg:px-10 py-4 text-sm text-muted">
           Scores so far —{" "}
           {([1, 2] as const)
             .map((side) => `${room.teamNames[side]}: ${n(room.rounds.reduce((sum, r) => sum + r.scores[side].total, 0))}`)
@@ -66,15 +66,15 @@ function TeamResult({ name, score, won, you, visitors }: { name: string; score: 
     ["Times the site went down", String(score.crashes)],
   ];
   return (
-    <section className="px-10 py-8 not-first:border-l not-first:border-line">
+    <section className="bg-bg px-4 py-8 sm:px-6 lg:px-10">
       <Label>
         {name}
         {you && " (you)"}
       </Label>
-      <p className={cx("mt-2 text-[clamp(48px,10vh,88px)] leading-none font-semibold tracking-[-0.05em] tabular-nums", won ? "text-accent" : "text-muted")}>
+      <p className={cx("mt-2 text-[clamp(3rem,10vh,5.5rem)] leading-none font-semibold tracking-[-0.05em] tabular-nums", won ? "text-accent" : "text-muted")}>
         {n(score.total)}
       </p>
-      <dl className="mt-6 grid max-w-[440px] border-t border-line">
+      <dl className="mt-6 grid max-w-[27.5rem] border-t border-line">
         {rows.map(([label, value]) => (
           <div key={label} className="flex justify-between border-b border-line py-2.5">
             <dt className="text-muted">{label}</dt>

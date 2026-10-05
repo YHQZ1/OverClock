@@ -1,7 +1,7 @@
 import type { EffectKind, MatchView, RoomView, ShopItemView, SiteView } from "@server/types/contracts.js";
 import { useState, type ReactNode } from "react";
 import { TopBar } from "../../components/TopBar";
-import { Frame, Label, cx } from "../../components/ui";
+import { Frame, Label, SPLIT_SIDE, cx } from "../../components/ui";
 import { currentAlert, type AlertLevel } from "../../game/alert";
 import type { Tone } from "../../game/feed";
 import { HealthTimeline } from "../../game/HealthTimeline";
@@ -33,12 +33,26 @@ function Meter({ pct, className }: { pct: number; className: string }) {
   );
 }
 
-function Stat({ label, value, tone, extra, children }: { label: string; value: string; tone?: string; extra?: ReactNode; children?: ReactNode }) {
+function Stat({
+  label,
+  value,
+  tone,
+  extra,
+  className,
+  children,
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  extra?: ReactNode;
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
-    <div className="flex min-w-0 flex-col px-6 pt-3 pb-3.5 not-first:border-l not-first:border-line">
+    <div className={cx("flex min-w-0 flex-col bg-bg px-4 pt-3 pb-3.5 sm:px-6", className)}>
       <Label>{label}</Label>
       <span className="flex items-baseline gap-3">
-        <span className={cx("text-[clamp(22px,4.4vh,34px)] leading-tight font-semibold tracking-[-0.04em] tabular-nums", tone)}>
+        <span className={cx("text-[clamp(1.375rem,4.4vh,2.125rem)] leading-tight font-semibold tracking-[-0.04em] tabular-nums", tone)}>
           {value}
         </span>
         {extra}
@@ -64,7 +78,7 @@ function Hud({ match, room }: { match: MatchView; room: RoomView }) {
   const ours = room.teamNames[match.side];
   const theirs = room.teamNames[match.side === 1 ? 2 : 1];
   return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_auto_1fr_1fr] border-b border-line">
+    <div className="grid grid-cols-2 gap-px border-b border-line bg-line sm:grid-cols-5 lg:grid-cols-[1fr_1fr_1fr_auto_1fr_1fr]">
       <Stat label={`${ours} · health`} value={String(me.health)} tone={me.health < 25 ? "text-bad" : undefined}>
         <Meter pct={me.health} className={levelBg(me.health)} />
       </Stat>
@@ -78,16 +92,17 @@ function Hud({ match, room }: { match: MatchView; room: RoomView }) {
           {me.served.toLocaleString()} in · {me.lost.toLocaleString()} turned away
         </span>
       </Stat>
-      <div className="flex flex-col items-center justify-center border-l border-line bg-surface px-7">
+      <div className="order-first col-span-2 flex flex-col items-center justify-center bg-surface px-7 py-2 sm:col-span-5 lg:order-none lg:col-span-1 lg:py-0">
         <Label>{match.phase === "buy" ? "Buy phase" : `Round ${match.round}`}</Label>
-        <span className="text-[clamp(26px,5vh,38px)] leading-tight font-semibold tabular-nums">
+        <span className="text-[clamp(1.625rem,5vh,2.375rem)] leading-tight font-semibold tabular-nums">
           {match.phase === "buy" ? `${room.secondsLeft ?? 0}s` : clock(match.timeLeftSec)}
         </span>
       </div>
       <Stat label={`${theirs} · health`} value={String(them.health)} tone="text-muted">
         <Meter pct={them.health} className="bg-faint" />
       </Stat>
-      <Stat label="Their score" value={them.score.toLocaleString()} tone="text-muted">
+      {/* Odd one out on phones: spans the row, so no empty cell. */}
+      <Stat label="Their score" value={them.score.toLocaleString()} tone="text-muted" className="col-span-2 sm:col-span-1">
         <span className="text-xs text-faint">{me.score >= them.score ? "You’re ahead" : "You’re behind"}</span>
       </Stat>
     </div>
@@ -107,11 +122,11 @@ function AlertBar({ match, words }: { match: MatchView; words: ThemeWords }) {
   const alert = currentAlert(match, words);
   const style = ALERT_STYLE[alert.level];
   return (
-    <div className={cx("flex items-center gap-4 border-b px-10 py-2.5", style.bar)} role="status" aria-live="polite">
-      <div key={alert.id} className="flex animate-flash items-baseline gap-4">
+    <div className={cx("flex items-center gap-4 border-b px-4 sm:px-6 lg:px-10 py-2.5", style.bar)} role="status" aria-live="polite">
+      <div key={alert.id} className="flex animate-flash flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={cx("size-2.5 shrink-0 self-center", style.mark)} aria-hidden />
-        <span className="text-[17px] font-semibold tracking-[-0.01em]">{alert.title}</span>
-        <span className={cx("text-[15px]", style.hint)}>{alert.hint}</span>
+        <span className="text-[1.0625rem] font-semibold tracking-[-0.01em]">{alert.title}</span>
+        <span className={cx("text-[0.9375rem]", style.hint)}>{alert.hint}</span>
       </div>
     </div>
   );
@@ -180,7 +195,7 @@ function MapArea({ match, words }: { match: MatchView; words: ThemeWords }) {
 
   return (
     <section className="relative flex min-h-0 min-w-0 flex-col">
-      <div className="flex items-center gap-5 px-10 pt-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 pt-3 sm:px-6 lg:px-10">
         <div className="flex border border-line-strong text-sm">
           {(["me", "them"] as const).map((f) => (
             <button
@@ -193,7 +208,7 @@ function MapArea({ match, words }: { match: MatchView; words: ThemeWords }) {
             </button>
           ))}
         </div>
-        <span className="text-xs text-faint">
+        <span className="hidden text-xs text-faint sm:inline">
           <kbd>Tab</kbd> to switch
         </span>
         <div className="ml-auto">
@@ -201,18 +216,18 @@ function MapArea({ match, words }: { match: MatchView; words: ThemeWords }) {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 place-items-center px-10 py-2">
+      <div className="grid min-h-0 flex-1 place-items-center px-4 sm:px-6 lg:px-10 py-2">
         <LiveMap site={shown} labels={{ crowd: capitalise(words.visitors), ...words.parts }} />
       </div>
 
-      <div className="grid grid-cols-[1fr_auto] items-end gap-6 border-t border-line px-10 py-2.5">
+      <div className="grid items-end gap-4 border-t border-line px-4 py-2.5 sm:grid-cols-[1fr_auto] sm:gap-6 sm:px-6 lg:px-10">
         <div>
           <Label>Health this round — us above, them below</Label>
           <div className="mt-1">
             <HealthTimeline me={history.me} them={history.them} durationSec={match.durationSec} />
           </div>
         </div>
-        <button type="button" onClick={() => flip()} className="w-[220px] cursor-pointer text-left">
+        <button type="button" onClick={() => flip()} className="w-[13.75rem] cursor-pointer text-left">
           <Label>{focus === "me" ? "Their site" : "Our site"} · health {other.health}</Label>
           <LiveMap site={other} compact />
         </button>
@@ -220,7 +235,7 @@ function MapArea({ match, words }: { match: MatchView; words: ThemeWords }) {
 
       {down && (
         <div className="absolute inset-0 grid place-content-center justify-items-center bg-bg/70" role="alert">
-          <p className="text-[clamp(44px,9vh,80px)] font-semibold tracking-[-0.04em] text-bad">Your site is down</p>
+          <p className="text-[clamp(2.75rem,9vh,5rem)] font-semibold tracking-[-0.04em] text-bad">Your site is down</p>
           <p className="mt-1 text-lg text-muted">
             Back in {match.me.downSecondsLeft}s — {words.downLine}
           </p>
@@ -257,7 +272,7 @@ function ShopRow({ item, locked, words }: { item: ShopItemView; locked: boolean;
         type="button"
         onClick={() => press(item)}
         disabled={disabled}
-        className="relative flex min-w-0 flex-1 cursor-pointer items-center gap-3 overflow-hidden py-[5px] pr-2 pl-6 text-left transition-colors enabled:hover:bg-surface disabled:cursor-not-allowed"
+        className="relative flex min-w-0 flex-1 cursor-pointer items-center gap-3 overflow-hidden py-[0.3125rem] pr-2 pl-6 text-left transition-colors enabled:hover:bg-surface disabled:cursor-not-allowed"
       >
         {coolingDown && (
           <span className="absolute inset-y-0 left-0 bg-raised" style={{ width: `${item.cooldown * 100}%` }} aria-hidden />
@@ -268,7 +283,7 @@ function ShopRow({ item, locked, words }: { item: ShopItemView; locked: boolean;
             {words.names[item.id]}
             {item.kind === "defence" && item.owned > 0 && <span className="ml-2 text-xs font-normal text-accent">×{item.owned}</span>}
           </span>
-          <span className="block truncate text-[11px] leading-tight text-faint">{itemHint(words, item.id)}</span>
+          <span className="block truncate text-[0.6875rem] leading-tight text-faint">{itemHint(words, item.id)}</span>
         </span>
         <span className={cx("relative text-sm font-semibold tabular-nums", item.affordable ? "text-ink" : "text-bad/80")}>
           {maxed ? "max" : item.price}
@@ -311,7 +326,7 @@ function Shop({ match, words }: { match: MatchView; words: ThemeWords }) {
   const incoming = match.incoming.length > 0;
 
   return (
-    <aside className="flex min-h-0 flex-col border-l border-line">
+    <aside className={cx("flex flex-col lg:min-h-0", SPLIT_SIDE)}>
       <div className="grid grid-cols-3 border-b border-line">
         {TABS.map((t) => (
           <button
@@ -328,7 +343,7 @@ function Shop({ match, words }: { match: MatchView; words: ThemeWords }) {
               {t.label}
               {t.id === "utility" && incoming && <span className="ml-1.5 inline-block size-1.5 bg-bad align-middle" />}
             </span>
-            <span className="text-[11px] text-faint">{t.keys}</span>
+            <span className="text-[0.6875rem] text-faint">{t.keys}</span>
           </button>
         ))}
       </div>
@@ -370,10 +385,10 @@ export function GameScreen({ room, match }: { room: RoomView; match: MatchView |
   return (
     <Frame>
       <TopBar theme={room.theme} right={`Round ${match.round} of ${room.totalRounds}`} />
-      <main className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)]">
+      <main className="grid lg:min-h-0 lg:grid-rows-[auto_auto_minmax(0,1fr)]">
         <Hud match={match} room={room} />
         <AlertBar match={match} words={words} />
-        <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(360px,30%)]">
+        <div className="grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(22.5rem,30%)]">
           <MapArea match={match} words={words} />
           <Shop match={match} words={words} />
         </div>

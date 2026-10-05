@@ -51,14 +51,14 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
   };
 
   return (
-    <div className="grid h-full min-h-[600px] grid-rows-[auto_minmax(0,1fr)]">
-      <header className="flex h-16 items-center justify-between border-b border-line px-8">
-        <div className="flex items-center gap-2.5 text-[15px] font-semibold">
+    <div className="grid min-h-full grid-rows-[auto_minmax(0,1fr)] lg:h-full lg:min-h-[37.5rem]">
+      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-line px-4 py-3 sm:px-8 lg:h-16 lg:py-0">
+        <div className="flex items-center gap-2.5 text-[0.9375rem] font-semibold">
           <span className="size-2.5 bg-accent" aria-hidden />
           Overclock <span className="font-normal text-muted">· Control panel</span>
           {!feed.connected && <span className="ml-3 text-sm font-normal text-bad">Reconnecting…</span>}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <a href="/live" target="_blank" rel="noreferrer">
             <Button variant="primary">Open live matches ↗</Button>
           </a>
@@ -74,7 +74,7 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
         </div>
       </header>
 
-      <main className="grid min-h-0 grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+      <main className="grid lg:min-h-0 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         {/* ---- rooms ---- */}
         <section className="flex min-h-0 flex-col">
           <SectionHead title="Rooms" note={`${rooms.length} open · ${feed.matches.length} in a match`} />
@@ -84,10 +84,10 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
             ) : (
               <ul>
                 {rooms.map((r) => (
-                  <li key={r.code} className="flex items-center gap-5 border-b border-line px-8 py-3.5">
+                  <li key={r.code} className="flex items-center gap-5 border-b border-line px-4 sm:px-8 py-3.5">
                     <span className="w-14 font-semibold tabular-nums">{r.code}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px]">
+                      <p className="truncate text-[0.9375rem]">
                         {r.teamNames[1]} <span className="text-faint">vs</span> {r.teamNames[2]}
                       </p>
                       <p className="truncate text-xs text-muted">
@@ -114,7 +114,7 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
         </section>
 
         {/* ---- leaderboard ---- */}
-        <section className="flex min-h-0 flex-col border-l border-line">
+        <section className="flex flex-col border-t border-line lg:min-h-0 lg:border-t-0 lg:border-l">
           <SectionHead title="Leaderboard" note="Hide takes a team off the projector; Unhide puts it back.">
             <div className="flex border border-line-strong text-sm">
               {(["1v1", "2v2"] as const).map((f) => (
@@ -133,7 +133,7 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
             </div>
           </SectionHead>
           {error && (
-            <p role="alert" className="border-b border-line px-8 py-2 text-sm text-bad">
+            <p role="alert" className="border-b border-line px-4 sm:px-8 py-2 text-sm text-bad">
               {error}
             </p>
           )}
@@ -154,7 +154,7 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
               </ol>
             )}
           </div>
-          <div className="border-t border-line px-8 py-4">
+          <div className="border-t border-line px-4 sm:px-8 py-4">
             <Button
               block
               className="border-bad/50 text-bad"
@@ -174,7 +174,7 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
 
 function SectionHead({ title, note, children }: { title: string; note: string; children?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4 border-b border-line px-8 pt-6 pb-4">
+    <div className="flex items-end justify-between gap-4 border-b border-line px-4 sm:px-8 pt-6 pb-4">
       <div>
         <h2 className="text-lg font-semibold tracking-[-0.02em]">{title}</h2>
         <p className="text-sm text-muted">{note}</p>
@@ -185,14 +185,14 @@ function SectionHead({ title, note, children }: { title: string; note: string; c
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="px-8 py-6 text-sm text-faint">{children}</p>;
+  return <p className="px-4 sm:px-8 py-6 text-sm text-faint">{children}</p>;
 }
 
 function BoardRow({ entry: e, onToggle }: { entry: AdminEntry; onToggle: () => void }) {
   return (
     <li
       className={cx(
-        "grid grid-cols-[2.5rem_minmax(0,1fr)_auto_5rem] items-center gap-3 border-b border-line px-8 py-2.5 text-sm",
+        "grid grid-cols-[2.5rem_minmax(0,1fr)_auto_5rem] items-center gap-3 border-b border-line px-4 sm:px-8 py-2.5 text-sm",
         e.hidden && "text-faint",
       )}
     >

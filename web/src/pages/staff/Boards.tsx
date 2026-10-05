@@ -79,7 +79,7 @@ const AWARD_TITLES: Record<keyof Awards, string> = {
 
 export function AwardsRow({ awards }: { awards: Awards | null }) {
   return (
-    <div className="grid grid-cols-3 border-t border-line">
+    <div className="grid border-t border-line sm:grid-cols-3">
       {(Object.keys(AWARD_TITLES) as (keyof Awards)[]).map((key) => (
         <AwardCard key={key} title={AWARD_TITLES[key]} award={awards?.[key] ?? null} />
       ))}
@@ -89,7 +89,7 @@ export function AwardsRow({ awards }: { awards: Awards | null }) {
 
 function AwardCard({ title, award }: { title: string; award: Award | null }) {
   return (
-    <div className="min-w-0 px-[1.2vw] py-[1.6vh] not-first:border-l not-first:border-line">
+    <div className="min-w-0 border-line px-4 py-[1.6vh] not-first:border-t sm:px-[1.2vw] sm:not-first:border-t-0 sm:not-first:border-l">
       <p className="text-[1.5vh] text-faint">{title}</p>
       <p className={cx("mt-[0.4vh] truncate text-[2.1vh] font-semibold", award ? "text-accent" : "text-faint")}>
         {award ? award.team : "Up for grabs"}

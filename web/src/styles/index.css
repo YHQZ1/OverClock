@@ -114,8 +114,15 @@
     height: 100%;
   }
 
+  /* Everything in rem grows with this: 16px up to a 1366px-wide screen, then
+     smoothly bigger (≈18px at 1920, ≈21px at 2560), so large monitors aren't
+     tiny and empty. The projector pages size themselves by screen height. */
+  html {
+    font-size: clamp(16px, 0.4vw + 10.5px, 22px);
+  }
+
   body {
-    @apply bg-bg font-sans text-[15px] leading-[1.55] text-ink antialiased;
+    @apply bg-bg font-sans text-[0.9375rem] leading-[1.55] text-ink antialiased;
     color-scheme: dark;
     font-feature-settings: "cv11", "ss01";
   }
@@ -139,7 +146,7 @@
   }
 
   kbd {
-    @apply inline-grid h-5 min-w-5 place-items-center border border-line-strong px-[5px] font-sans text-[11px] leading-none font-medium text-muted;
+    @apply inline-grid h-5 min-w-5 place-items-center border border-line-strong px-[0.3125rem] font-sans text-[0.6875rem] leading-none font-medium text-muted;
   }
 
   input::placeholder {

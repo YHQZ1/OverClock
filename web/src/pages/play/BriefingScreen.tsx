@@ -26,25 +26,25 @@ export function BriefingScreen({ room, playerId }: { room: RoomView; playerId: s
   return (
     <Frame>
       <TopBar theme={room.theme} right={`${room.format ?? ""} · how to play`} />
-      <main className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-        <div className="flex items-end justify-between gap-8 border-b border-line px-10 pt-[clamp(10px,2.2vh,32px)] pb-[clamp(8px,1.6vh,20px)]">
+      <main className="grid lg:min-h-0 lg:grid-rows-[auto_minmax(0,1fr)]">
+        <div className="flex items-end justify-between gap-8 border-b border-line px-4 sm:px-6 lg:px-10 pt-[clamp(0.625rem,2.2vh,2rem)] pb-[clamp(0.5rem,1.6vh,1.25rem)]">
           <div className="min-w-0">
             <Label>Before round 1 · read this once</Label>
-            <h1 className="mt-1 text-[clamp(26px,4.4vh,46px)] leading-tight font-semibold tracking-[-0.04em]">
+            <h1 className="mt-1 text-[clamp(1.625rem,4.4vh,2.875rem)] leading-tight font-semibold tracking-[-0.04em]">
               Serve {words.visitors} to earn coins. <span className="text-accent">Spend them wisely.</span>
             </h1>
-            <p className="mt-1 text-[15px] text-muted">
+            <p className="mt-1 text-[0.9375rem] text-muted">
               Defend your {site}, or flood theirs. Every attack has a counter — build it before it lands. Most {words.visitors} served over
               three rounds wins.
             </p>
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-[clamp(30px,5.6vh,48px)] leading-none font-semibold tabular-nums">{room.secondsLeft ?? 0}</p>
+            <p className="text-[clamp(1.875rem,5.6vh,3rem)] leading-none font-semibold tabular-nums">{room.secondsLeft ?? 0}</p>
             <Label>starts automatically</Label>
           </div>
         </div>
 
-        <div className="grid min-h-0 grid-cols-3">
+        <div className="grid gap-px bg-line lg:min-h-0 lg:grid-cols-3">
           <Column title="Defend" keys="1–7" note="Build and keep · costs a little every second">
             {ids(DEFENCE_INFO).map((id) => (
               <Item key={id} id={id} words={words} />
@@ -55,13 +55,13 @@ export function BriefingScreen({ room, playerId }: { room: RoomView; playerId: s
               <Item key={id} id={id} words={words} counter={counterText(words, id)} />
             ))}
           </Column>
-          <div className="flex min-h-0 flex-col border-l border-line">
+          <div className="flex flex-col bg-bg lg:min-h-0">
             <Column title="Boost" keys="Q–R" note="One-off · use any time">
               {ids(UTILITY_INFO).map((id) => (
                 <Item key={id} id={id} words={words} />
               ))}
             </Column>
-            <div className="mt-auto border-t border-line px-8 py-5">
+            <div className="mt-auto border-t border-line px-4 sm:px-6 lg:px-8 py-5">
               <ul className="grid gap-1.5 text-sm">
                 {room.players
                   .filter((p) => p.slot !== null)
@@ -89,9 +89,9 @@ export function BriefingScreen({ room, playerId }: { room: RoomView; playerId: s
 
 function Column({ title, keys, note, children }: { title: string; keys: string; note: string; children: ReactNode }) {
   return (
-    <section className="flex min-h-0 flex-col not-first:border-l not-first:border-line">
-      <div className="flex items-baseline justify-between border-b border-line px-8 py-2">
-        <span className="text-[15px] font-semibold">
+    <section className="flex flex-col bg-bg lg:min-h-0">
+      <div className="flex items-baseline justify-between border-b border-line px-4 sm:px-6 lg:px-8 py-2">
+        <span className="text-[0.9375rem] font-semibold">
           {title} <span className="ml-1 text-xs font-normal text-faint">{keys}</span>
         </span>
         <span className="text-xs text-faint">{note}</span>
@@ -103,12 +103,12 @@ function Column({ title, keys, note, children }: { title: string; keys: string; 
 
 function Item({ id, words, counter }: { id: ItemId; words: ThemeWords; counter?: string }) {
   return (
-    <li className="flex items-start gap-3 border-b border-line px-8 py-[clamp(3px,0.5vh,9px)]">
+    <li className="flex items-start gap-3 border-b border-line px-4 sm:px-6 lg:px-8 py-[clamp(3px,0.5vh,0.5625rem)]">
       <kbd className="mt-0.5 shrink-0">{ITEM_INFO[id].key.toUpperCase()}</kbd>
       <span className="min-w-0">
-        <span className="block truncate text-sm leading-[18px] font-medium">{words.names[id]}</span>
-        <span className="block truncate text-xs leading-[15px] text-muted">{itemHint(words, id)}</span>
-        {counter && <span className="block truncate text-xs leading-[15px] text-accent">Beaten by: {counter}</span>}
+        <span className="block truncate text-sm leading-[1.125rem] font-medium">{words.names[id]}</span>
+        <span className="block truncate text-xs leading-[0.9375rem] text-muted">{itemHint(words, id)}</span>
+        {counter && <span className="block truncate text-xs leading-[0.9375rem] text-accent">Beaten by: {counter}</span>}
       </span>
     </li>
   );

@@ -44,8 +44,8 @@ function Live({ feed }: { feed: StaffFeed }) {
   return (
     <div className="grid h-screen min-h-[600px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
       <ProjectorHeader title="Live" connected={feed.connected} />
-      <div className="grid min-h-0 grid-cols-[minmax(260px,23vw)_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col border-r border-line">
+      <div className="grid md:min-h-0 md:grid-cols-[minmax(16rem,23vw)_minmax(0,1fr)]">
+        <aside className="flex max-h-[40vh] flex-col border-b border-line md:max-h-none md:min-h-0 md:border-r md:border-b-0">
           <div className="flex items-baseline justify-between px-[1.4vw] pt-[2vh] pb-[1.2vh]">
             <h2 className="text-[2.2vh] font-semibold tracking-[-0.02em]">Matches</h2>
             <span className="text-[1.6vh] text-faint">{feed.matches.length} live</span>

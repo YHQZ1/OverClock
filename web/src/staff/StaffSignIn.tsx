@@ -21,10 +21,10 @@ export function StaffSignIn({ title, onSignedIn }: { title: string; onSignedIn: 
   };
 
   return (
-    <div className="grid h-full min-h-[600px] place-items-center px-6">
-      <form onSubmit={submit} className="grid w-full max-w-[380px] gap-5 border border-line p-8">
+    <div className="grid h-full min-h-[37.5rem] place-items-center px-6">
+      <form onSubmit={submit} className="grid w-full max-w-[23.75rem] gap-5 border border-line p-8">
         <div>
-          <div className="flex items-center gap-2.5 text-[15px] font-semibold">
+          <div className="flex items-center gap-2.5 text-[0.9375rem] font-semibold">
             <span className="size-2.5 bg-accent" aria-hidden />
             Overclock · Staff
           </div>

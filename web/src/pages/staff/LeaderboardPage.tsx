@@ -9,9 +9,9 @@ export function LeaderboardPage() {
   return (
     <StaffGate title="Leaderboard">
       {(feed) => (
-        <div className="grid h-screen min-h-[600px] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+        <div className="grid min-h-screen grid-rows-[auto_minmax(0,1fr)_auto] md:h-screen md:min-h-[600px] md:overflow-hidden">
           <ProjectorHeader title="Leaderboard" connected={feed.connected} />
-          <div className="grid min-h-0 grid-cols-2 [&>*+*]:border-l [&>*+*]:border-line">
+          <div className="grid gap-px bg-line md:min-h-0 md:grid-cols-2 [&>*]:bg-bg">
             <Board format="1v1" boards={feed.boards} />
             <Board format="2v2" boards={feed.boards} />
           </div>

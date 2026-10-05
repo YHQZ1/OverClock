@@ -1,7 +1,7 @@
 import type { PlayerView, RoomView, Side, Slot } from "@server/types/contracts.js";
 import { useState, type FormEvent } from "react";
 import { TopBar } from "../../components/TopBar";
-import { Button, Frame, Label, SPLIT, cx } from "../../components/ui";
+import { Button, Frame, Label, SPLIT, SPLIT_SIDE, cx } from "../../components/ui";
 import { useShortcut, useShortcuts } from "../../hooks/useShortcut";
 import { pickSlot, setReady, setTeamName } from "../../socket/api";
 
@@ -39,36 +39,38 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
 
       <main className={SPLIT}>
         <section className="flex min-w-0 flex-col">
-          <div className="flex items-end justify-between gap-6 px-10 pt-[clamp(20px,4vh,40px)] pb-6">
+          <div className="flex flex-col gap-4 px-4 pt-[clamp(1.25rem,4vh,2.5rem)] pb-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-10">
             <div>
               <Label>Room code — share it with everyone playing</Label>
               <div className="mt-2 flex" aria-label={`Room code ${room.code.split("").join(" ")}`}>
                 {room.code.split("").map((ch, i) => (
                   <span
                     key={i}
-                    className="grid h-[clamp(64px,11vh,96px)] w-[clamp(56px,9.5vh,84px)] place-items-center border border-line-strong text-[clamp(38px,7vh,60px)] font-semibold tracking-[-0.04em] not-first:border-l-0"
+                    className="grid h-[clamp(4rem,11vh,6rem)] w-[clamp(3.5rem,9.5vh,5.25rem)] place-items-center border border-line-strong text-[clamp(2.375rem,7vh,3.75rem)] font-semibold tracking-[-0.04em] not-first:border-l-0"
                   >
                     {ch}
                   </span>
                 ))}
               </div>
             </div>
-            <p className="max-w-[30ch] pb-1 text-right text-sm text-muted">
+            <p className="max-w-[30ch] pb-1 text-sm text-muted sm:text-right">
               Pick a slot (<kbd>1</kbd>–<kbd>4</kbd>), then press Ready. Two players = 1v1, four = 2v2.
             </p>
           </div>
 
-          <div className="grid flex-1 grid-cols-[1fr_auto_1fr] border-t border-line">
+          <div className="grid flex-1 border-t border-line sm:grid-cols-[1fr_auto_1fr]">
             <Team side={1} room={room} playerId={playerId} mine={mySide === 1} onTake={take} />
-            <div className="grid place-items-center border-x border-line px-5 text-sm font-semibold text-faint">vs</div>
+            <div className="grid place-items-center border-y border-line py-2 text-sm font-semibold text-faint sm:border-x sm:border-y-0 sm:px-5 sm:py-0">
+              vs
+            </div>
             <Team side={2} room={room} playerId={playerId} mine={mySide === 2} onTake={take} />
           </div>
 
           <div className="border-t border-line">
-            <ol className="grid grid-cols-3">
+            <ol className="grid gap-px bg-line md:grid-cols-3">
               {HOW_TO_PLAY.map((h, i) => (
-                <li key={h.title} className="py-4 pr-7 pl-10 not-first:border-l not-first:border-line not-first:pl-7">
-                  <h3 className="mb-1 flex gap-2.5 text-[15px] font-semibold tracking-[-0.01em]">
+                <li key={h.title} className="bg-bg px-4 py-4 sm:px-6 md:pr-7 lg:first:pl-10">
+                  <h3 className="mb-1 flex gap-2.5 text-[0.9375rem] font-semibold tracking-[-0.01em]">
                     <span className="text-accent">{i + 1}</span>
                     {h.title}
                   </h3>
@@ -79,8 +81,8 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
           </div>
         </section>
 
-        <aside className="flex flex-col border-l border-line">
-          <div className="border-b border-line px-8 py-6">
+        <aside className={cx("flex flex-col", SPLIT_SIDE)}>
+          <div className="border-b border-line px-4 sm:px-6 lg:px-8 py-6">
             <Label>You</Label>
             <p className="mt-1 text-2xl font-semibold tracking-[-0.03em]">{me?.name}</p>
             <p className="mt-1 text-sm text-muted">
@@ -88,9 +90,9 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
             </p>
           </div>
 
-          <div className="flex-1 px-8 py-6">
+          <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
             <Label>Starting</Label>
-            <p className={cx("mt-2 text-[15px]", room.canStart.ok ? "text-ok" : "text-ink")}>
+            <p className={cx("mt-2 text-[0.9375rem]", room.canStart.ok ? "text-ok" : "text-ink")}>
               {room.canStart.ok ? `Everyone’s ready — ${room.canStart.format}!` : room.canStart.reason}
             </p>
             <ul className="mt-4 grid gap-1.5 text-sm">
@@ -102,10 +104,10 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
                 </li>
               ))}
             </ul>
-            {error && <p className="mt-4 text-[13px] text-bad">{error}</p>}
+            {error && <p className="mt-4 text-[0.8125rem] text-bad">{error}</p>}
           </div>
 
-          <div className="grid gap-3 px-8 pt-2 pb-7">
+          <div className="grid gap-3 px-4 sm:px-6 lg:px-8 pt-2 pb-7">
             <Button variant={me?.ready ? "default" : "primary"} block onClick={toggleReady} disabled={!me?.slot}>
               {me?.ready ? "Not ready" : "Ready"} <kbd>R</kbd>
             </Button>
@@ -129,7 +131,7 @@ type TeamProps = { side: Side; room: RoomView; playerId: string; mine: boolean; 
 function Team({ side, room, playerId, mine, onTake }: TeamProps) {
   const slots: Slot[] = side === 1 ? [1, 2] : [3, 4];
   return (
-    <div className="flex min-w-0 flex-col px-8 py-6">
+    <div className="flex min-w-0 flex-col px-4 sm:px-6 lg:px-8 py-6">
       <TeamName side={side} name={room.teamNames[side]} editable={mine} />
       <div className="mt-4 grid gap-3">
         {slots.map((slot) => (
@@ -175,7 +177,7 @@ function TeamName({ side, name, editable }: { side: Side; name: string; editable
       {editable && (
         <button
           type="button"
-          className="shrink-0 cursor-pointer text-[13px] text-muted hover:text-ink"
+          className="shrink-0 cursor-pointer text-[0.8125rem] text-muted hover:text-ink"
           onClick={() => (setValue(name), setEditing(true))}
         >
           Rename
@@ -191,7 +193,7 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
       <button
         type="button"
         onClick={() => onTake(slot)}
-        className="flex h-[68px] cursor-pointer items-center justify-between border border-dashed border-line-strong px-4 text-left text-muted transition-colors hover:border-accent hover:text-ink"
+        className="flex h-[4.25rem] cursor-pointer items-center justify-between border border-dashed border-line-strong px-4 text-left text-muted transition-colors hover:border-accent hover:text-ink"
       >
         <span>Take slot {slot}</span>
         <kbd>{slot}</kbd>
@@ -200,7 +202,7 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
   }
   const isYou = player.id === you;
   return (
-    <div className={cx("flex h-[68px] items-center gap-3 border px-4", isYou ? "border-accent" : "border-line-strong", !player.connected && "opacity-50")}>
+    <div className={cx("flex h-[4.25rem] items-center gap-3 border px-4", isYou ? "border-accent" : "border-line-strong", !player.connected && "opacity-50")}>
       <span className="grid size-8 place-items-center border border-line-strong text-sm font-semibold">{player.name.charAt(0).toUpperCase()}</span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">
@@ -209,7 +211,7 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
         </p>
         <p className="text-xs text-faint">Slot {slot}</p>
       </div>
-      <span className={cx("text-[13px] font-medium", player.ready ? "text-ok" : "text-faint")}>
+      <span className={cx("text-[0.8125rem] font-medium", player.ready ? "text-ok" : "text-faint")}>
         {player.ready ? "Ready" : player.connected ? "Not ready" : "Away"}
       </span>
     </div>

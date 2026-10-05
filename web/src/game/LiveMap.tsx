@@ -223,7 +223,7 @@ export function LiveMap({ site, compact = false, labels = DEFAULT_LABELS }: { si
 
   return (
     <svg
-      className={cx("block h-auto max-h-full w-full transition-opacity duration-300", compact ? "max-w-[420px]" : "max-w-[900px]", down && "opacity-40")}
+      className={cx("block h-auto max-h-full w-full transition-opacity duration-300", compact ? "max-w-[26.25rem]" : "max-w-[56.25rem]", down && "opacity-40")}
       viewBox={`0 0 ${W} ${H}`}
       role="img"
       aria-label="Live map of the site"
@@ -283,7 +283,7 @@ export function LiveMap({ site, compact = false, labels = DEFAULT_LABELS }: { si
       <Node x={DB.x} size={DB.size} icon="db" status={site.parts.db} />
 
       {!compact && (
-        <g className="text-[13px] font-medium" textAnchor="middle">
+        <g className="text-[0.8125rem] font-medium" textAnchor="middle">
           <text className="fill-muted" x={70} y={LABEL_Y}>
             {labels.crowd}
           </text>
@@ -304,10 +304,10 @@ export function LiveMap({ site, compact = false, labels = DEFAULT_LABELS }: { si
       {site.blind && (
         <g>
           <rect className="fill-bg" opacity={0.94} width={W} height={H} />
-          <text x={W / 2} y={MID - 6} textAnchor="middle" className="fill-bad text-[34px] font-semibold tracking-[-0.03em]">
+          <text x={W / 2} y={MID - 6} textAnchor="middle" className="fill-bad text-[2.125rem] font-semibold tracking-[-0.03em]">
             Blindfolded
           </text>
-          <text x={W / 2} y={MID + 24} textAnchor="middle" className="fill-muted text-[15px]">
+          <text x={W / 2} y={MID + 24} textAnchor="middle" className="fill-muted text-[0.9375rem]">
             Your map and alerts are dark for a few seconds
           </text>
         </g>

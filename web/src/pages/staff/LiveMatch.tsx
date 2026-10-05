@@ -88,7 +88,7 @@ function TeamPanel({
   const health = site?.health ?? null;
   const players = team.players.join(" · ");
   return (
-    <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,0.85fr)_minmax(0,1.6fr)] items-center gap-[2vw] px-[2.5vw] py-[1.5vh] not-first:border-t not-first:border-line">
+    <div className="grid min-h-0 min-w-0 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.6fr)] items-center gap-[2vw] px-[2.5vw] py-[1.5vh] not-first:border-t not-first:border-line">
       <div className="min-w-0">
         <p className="truncate text-[3.4vh] font-semibold tracking-[-0.02em]">{team.name}</p>
         {players !== team.name && <p className="truncate text-[1.7vh] text-muted">{players}</p>}

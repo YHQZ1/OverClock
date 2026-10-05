@@ -80,7 +80,7 @@ export function PlayPage() {
         {screen}
       </div>
       {!connected && !restoring && room && (
-        <div className="fixed inset-x-0 top-0 z-10 border-b border-bad bg-bg px-10 py-2.5 text-sm font-medium text-bad">
+        <div className="fixed inset-x-0 top-0 z-10 border-b border-bad bg-bg px-4 sm:px-6 lg:px-10 py-2.5 text-sm font-medium text-bad">
           Connection lost — reconnecting…
         </div>
       )}

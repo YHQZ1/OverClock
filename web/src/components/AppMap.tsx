@@ -117,7 +117,7 @@ export function AppMap() {
   const reduceMotion = useMemo(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
 
   return (
-    <svg className="block h-auto w-full max-w-[760px]" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="People flowing through the app">
+    <svg className="block h-auto w-full max-w-[47.5rem]" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="People flowing through the app">
       <defs>
         <pattern id="appmap-grid" width="16" height="16" patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="0.8" className="fill-line-strong" />
@@ -180,7 +180,7 @@ export function AppMap() {
       <Node x={DB.x} y={MID} size={DB.size} icon="db" />
 
       {/* labels */}
-      <g className="fill-muted text-[13px] font-medium">
+      <g className="fill-muted text-[0.8125rem] font-medium">
         <text x={64} y={H - 4} textAnchor="middle">
           People
         </text>
