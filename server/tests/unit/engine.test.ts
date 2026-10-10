@@ -5,6 +5,7 @@ import {
   ROUNDS,
   createDuel,
   priceOf,
+  refundOf,
   replay,
   runRound,
   step,
@@ -21,6 +22,7 @@ const setup: MatchSetup = { scenario: ROUNDS[0]!, config };
 const t = (sec: number) => toTicks(sec, config);
 
 const buy = (side: Side, item: ItemId): Action => ({ side, kind: "buy", item });
+const sell = (side: Side, item: ItemId): Action => ({ side, kind: "sell", item });
 const use = (side: Side, item: ItemId): Action => ({ side, kind: "use", item });
 const attack = (side: Side, item: ItemId): Action => ({ side, kind: "attack", item });
 
@@ -101,12 +103,60 @@ describe("shop", () => {
     );
   });
 
-  it("there is no selling", () => {
-    // @ts-expect-error — "sell" is gone from the action kinds
-    const sell: Action = { side: 1, kind: "sell", item: "server" };
-    const { events, state } = step(createDuel(setup, 1), [sell], setup);
-    expect(state.sites[1].servers).toHaveLength(ROUNDS[0]!.startServers);
-    expect(events).toContainEqual(expect.objectContaining({ type: "rejected", reason: "wrongKind" }));
+  it("sells a defence back for half, and it stops protecting you", () => {
+    let s = rich(createDuel(setup, 1), 1000);
+    s = step(s, [buy(1, "bouncer")], setup, { paused: true }).state;
+    const paid = priceOf(s.sites[1], "bouncer", config);
+    const coins = s.sites[1].coins;
+    expect(s.sites[1].owned.bouncer).toBe(1);
+
+    const sold = step(s, [sell(1, "bouncer")], setup, { paused: true });
+    expect(sold.state.sites[1].owned.bouncer).toBe(0);
+    expect(sold.state.sites[1].coins).toBeCloseTo(coins + paid * config.sellRefund, 6);
+    expect(sold.events).toContainEqual(expect.objectContaining({ side: 1, type: "sold", item: "bouncer" }));
+    expect(refundOf(sold.state.sites[1], "bouncer", config)).toBe(0);
+  });
+
+  it("sells the newest server and its price steps back down; never your last", () => {
+    let s = rich(createDuel(setup, 1), 5000);
+    const start = s.sites[1].servers.length;
+    const first = priceOf(s.sites[1], "server", config);
+    s = step(s, [buy(1, "server"), buy(1, "server")], setup, { paused: true }).state;
+    expect(s.sites[1].servers).toHaveLength(start + 2);
+    const secondPaid = priceOf(s.sites[1], "server", config) - config.items.defences.server.priceStep;
+    expect(secondPaid).toBe(first + config.items.defences.server.priceStep);
+
+    const coins = s.sites[1].coins;
+    s = step(s, [sell(1, "server")], setup, { paused: true }).state;
+    expect(s.sites[1].servers).toHaveLength(start + 1);
+    expect(s.sites[1].coins).toBeCloseTo(coins + secondPaid * config.sellRefund, 6);
+    expect(priceOf(s.sites[1], "server", config)).toBe(secondPaid);
+
+    // sell right down to the minimum, then the next one is refused
+    for (let i = 0; i < 20; i++) s = step(s, [sell(1, "server")], setup, { paused: true }).state;
+    expect(s.sites[1].servers).toHaveLength(config.minServers);
+    expect(step(s, [sell(1, "server")], setup, { paused: true }).events).toContainEqual(
+      expect.objectContaining({ type: "rejected", reason: "min" }),
+    );
+  });
+
+  it("buying and selling in a loop only loses coins", () => {
+    let s = rich(createDuel(setup, 1), 1000);
+    const before = s.sites[1].coins;
+    for (let i = 0; i < 5; i++) {
+      s = step(s, [buy(1, "bouncer")], setup, { paused: true }).state;
+      s = step(s, [sell(1, "bouncer")], setup, { paused: true }).state;
+    }
+    expect(s.sites[1].coins).toBeLessThan(before);
+  });
+
+  it("refuses to sell what you don't have, or a card that isn't a defence", () => {
+    const s = rich(createDuel(setup, 1));
+    expect(step(s, [sell(1, "lockAddress")], setup).events).toContainEqual(
+      expect.objectContaining({ type: "rejected", reason: "none" }),
+    );
+    const bad: Action = { side: 1, kind: "sell", item: "shield" };
+    expect(step(s, [bad], setup).events).toContainEqual(expect.objectContaining({ type: "rejected", reason: "wrongKind" }));
   });
 
   it("explains why a purchase fails", () => {

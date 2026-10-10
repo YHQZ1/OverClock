@@ -9,9 +9,9 @@ import type { AttackId, DefenceId, ItemId, UtilityId } from "@server/types/contr
 export type ItemInfo = { name: string; hint: string; key: string };
 
 export const DEFENCE_INFO: Record<DefenceId, ItemInfo> = {
-  server: { name: "Server", hint: "One more {server} — more {visitors} get in.", key: "1" },
-  bouncer: { name: "Bouncer", hint: "Turns bots away at the gate — and a few real {visitors}.", key: "2" },
-  lockAddress: { name: "Verified link", hint: "Nobody can send your {visitors} to a fake link.", key: "3" },
+  server: { name: "Server", hint: "One more {server} — more {visitors} get in. Sell it back for half.", key: "1" },
+  bouncer: { name: "Bouncer", hint: "Turns bots away at the gate — and a few real {visitors}. Sell it back for half.", key: "2" },
+  lockAddress: { name: "Verified link", hint: "Nobody can send your {visitors} to a fake link. Sell it back for half.", key: "3" },
 };
 
 export const UTILITY_INFO: Record<UtilityId, ItemInfo> = {

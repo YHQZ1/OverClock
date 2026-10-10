@@ -49,6 +49,19 @@ describe("match views", () => {
     expect(server).toMatchObject({ owned: ROUNDS[0]!.startServers, affordable: true, cooldown: 0 });
   });
 
+  it("show what selling a defence would give back, and nothing for cards that can't be sold", () => {
+    let s = createDuel(setup, 1);
+    s = { ...s, sites: { ...s.sites, 1: { ...s.sites[1], coins: 1000 } } };
+    const none = toMatchView(s, 1, setup, { round: 1, phase: "buy" }).shop;
+    expect(none.find((i) => i.id === "bouncer")!.refund).toBe(0); // not owned yet
+    expect(none.find((i) => i.id === "surge")!.refund).toBe(0);
+    expect(none.find((i) => i.id === "server")!.refund).toBeGreaterThan(0); // starts with spare servers
+
+    s = step(s, [{ side: 1, kind: "buy", item: "bouncer" }], setup, { paused: true }).state;
+    const owned = toMatchView(s, 1, setup, { round: 1, phase: "buy" }).shop.find((i) => i.id === "bouncer")!;
+    expect(owned.refund).toBe(setup.config.items.defences.bouncer.price * setup.config.sellRefund);
+  });
+
   it("show the attacker its attacks in flight", () => {
     let s = createDuel(setup, 1);
     s = step(s, [{ side: 1, kind: "attack", item: "surge" }], setup).state;

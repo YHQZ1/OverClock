@@ -56,7 +56,8 @@ each other** in every pairing.
 | Bouncer | stops 85% of bots, wrongly turns away 3% of real people |
 | Setup | servers 2s, other defences 4s (instant in the buy phase) |
 | Attacks | 3s warning · regroup 5s after any attack · +25% per repeat of the same attack · +8% to all attacks per attack sent (each round) |
-| Upkeep, selling | none — each extra server costs more (60, 80, 100…), max 12 |
+| Upkeep | none — each extra server costs more (60, 80, 100…), max 12 |
+| Selling | 50% of what it cost; the newest server's price steps back down; never your last server. Bots never sell, so bot results are unchanged |
 
 | Card | Price | Cooldown | Effect |
 | --- | ---: | --- | --- |

@@ -9,6 +9,7 @@ const REJECTED: Partial<Record<string, string>> = {
   cooldown: "Still recharging",
   max: "You already have the most you can",
   none: "Nothing to do that to",
+  min: "You need to keep at least one",
   paused: "Wait for the round to start",
   jammed: "Your controls are jammed",
   down: "Your site is down",
@@ -27,6 +28,8 @@ export function describe(event: SimEvent, mySide: Side, me: string, words: Theme
   switch (event.type) {
     case "bought":
       return mine ? { text: `${who(event.by)} bought ${n[event.item]}`, tone: "neutral" } : null;
+    case "sold":
+      return mine ? { text: `${who(event.by)} sold ${n[event.item]}`, tone: "neutral" } : null;
     case "used":
       return mine ? { text: `${who(event.by)} used ${n[event.item]}`, tone: "good" } : null;
     case "attackSent":

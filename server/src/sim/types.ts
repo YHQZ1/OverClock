@@ -95,16 +95,16 @@ export type DuelState = {
   sites: Record<Side, SiteState>;
 };
 
-export type ActionKind = "buy" | "use" | "attack";
+export type ActionKind = "buy" | "sell" | "use" | "attack";
 
 /** A player's intent. `by` is a display name carried into events (no logic uses it). */
 export type Action = { side: Side; kind: ActionKind; item: ItemId; by?: string };
 
-export type RejectReason = "coins" | "cooldown" | "max" | "none" | "down" | "paused" | "ended" | "wrongKind" | "jammed";
+export type RejectReason = "coins" | "cooldown" | "max" | "min" | "none" | "down" | "paused" | "ended" | "wrongKind" | "jammed";
 
 /** Every event names the side it concerns. */
 export type SimEvent =
-  | { side: Side; type: "bought" | "used"; item: ItemId; by?: string }
+  | { side: Side; type: "bought" | "used" | "sold"; item: ItemId; by?: string }
   | { side: Side; type: "attackSent"; attack: AttackId; by?: string }
   | { side: Side; type: "attackIncoming"; attack: AttackId; inSec: number }
   | { side: Side; type: "attackLanded"; attack: AttackId }

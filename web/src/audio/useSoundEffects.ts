@@ -39,6 +39,9 @@ export function useSoundEffects(): void {
           case "bought":
             if (mine) play("buy");
             break;
+          case "sold":
+            if (mine) play("sell");
+            break;
           case "used":
             if (mine) play("boost");
             break;

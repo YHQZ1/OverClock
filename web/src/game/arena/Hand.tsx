@@ -1,4 +1,4 @@
-import type { ItemId, MatchView, ShopItemView } from "@server/types/contracts.js";
+import type { DefenceId, ItemId, MatchView, ShopItemView } from "@server/types/contracts.js";
 import type { CSSProperties } from "react";
 import { cx } from "../../components/ui";
 import { useShortcuts } from "../../hooks/useShortcut";
@@ -20,6 +20,10 @@ function press(item: ShopItemView) {
   sendAction({ kind, item: item.id } as Parameters<typeof sendAction>[0]);
 }
 
+function sell(item: ShopItemView) {
+  sendAction({ kind: "sell", item: item.id as DefenceId });
+}
+
 function Card({ item, words, locked, recommended }: { item: ShopItemView; words: ThemeWords; locked: boolean; recommended: boolean }) {
   const style = KIND_STYLE[item.kind];
   const info = ITEM_INFO[item.id];
@@ -28,40 +32,54 @@ function Card({ item, words, locked, recommended }: { item: ShopItemView; words:
   const cooling = item.cooldown > 0;
   const disabled = locked || !item.affordable || maxed || cooling || kept;
 
+  const canSell = item.kind === "defence" && item.refund > 0 && !locked;
+
   return (
-    <button
-      type="button"
-      onClick={() => press(item)}
-      disabled={disabled}
-      title={itemHint(words, item.id)}
-      style={{ "--cd": item.cooldown } as CSSProperties}
-      className={cx(
-        "group relative grid min-w-0 flex-1 basis-0 grid-rows-[1fr_auto] overflow-hidden border-[3px] border-black text-center text-bg shadow-[0_5px_0_#000] transition-transform duration-100",
-        "h-[clamp(6.25rem,17vh,9.5rem)] cursor-pointer enabled:hover:-translate-y-1 enabled:active:translate-y-0.5 enabled:active:shadow-[0_2px_0_#000] disabled:cursor-not-allowed",
-        style.solid,
-        recommended && "-translate-y-2 animate-bob",
-        !kept && !item.affordable && !cooling && "saturate-[0.25] brightness-[0.7]",
+    <div className="relative flex min-w-0 flex-1 basis-0">
+      <button
+        type="button"
+        onClick={() => press(item)}
+        disabled={disabled}
+        title={itemHint(words, item.id)}
+        style={{ "--cd": item.cooldown } as CSSProperties}
+        className={cx(
+          "group relative grid w-full min-w-0 grid-rows-[1fr_auto] overflow-hidden border-[3px] border-black text-center text-bg shadow-[0_5px_0_#000] transition-transform duration-100",
+          "h-[clamp(6.25rem,17vh,9.5rem)] cursor-pointer enabled:hover:-translate-y-1 enabled:active:translate-y-0.5 enabled:active:shadow-[0_2px_0_#000] disabled:cursor-not-allowed",
+          style.solid,
+          recommended && "-translate-y-2 animate-bob",
+          !kept && !item.affordable && !cooling && "saturate-[0.25] brightness-[0.7]",
+        )}
+      >
+        {cooling && <span className="absolute inset-0 z-[1] origin-top bg-bg/70" style={{ transform: `scaleY(${item.cooldown})` }} aria-hidden />}
+        <span className="absolute top-1 left-1 z-[2] grid h-[1.875rem] min-w-[1.875rem] place-items-center rounded-full border-[3px] border-black bg-[#ffd23f] px-1.5 font-display text-base leading-none font-extrabold tabular-nums">
+          {item.price}
+        </span>
+        <span className="absolute top-1.5 right-1.5 z-[2] grid size-5 place-items-center bg-bg font-display text-[0.8125rem] leading-none font-extrabold text-ink">
+          {info.key.toUpperCase()}
+        </span>
+        {item.kind === "defence" && item.id === "server" && (
+          <span className="absolute right-1.5 bottom-[2.6rem] z-[2] font-display text-sm leading-none font-extrabold">×{item.owned}</span>
+        )}
+        <span className="grid place-items-center pt-3.5">
+          <ItemIcon id={item.id} className="size-[clamp(1.75rem,5.2vh,2.875rem)] fill-none stroke-bg stroke-[2.2] [stroke-linecap:round] [stroke-linejoin:round]" />
+        </span>
+        <span className="relative z-[2] grid min-h-[2.5em] place-items-center bg-bg px-0.5 pt-1.5 pb-1 font-display text-[clamp(0.8125rem,1.9vh,1rem)] leading-none font-extrabold tracking-[0.02em] text-ink uppercase">
+          {words.names[item.id]}
+        </span>
+        {kept && <span className="absolute inset-x-0 bottom-[2.6rem] z-[2] font-display text-sm font-extrabold tracking-[0.1em] uppercase">Ready</span>}
+        {maxed && !kept && <span className="absolute inset-x-0 bottom-[2.6rem] z-[2] font-display text-sm font-extrabold tracking-[0.1em] uppercase">Max</span>}
+      </button>
+      {canSell && (
+        <button
+          type="button"
+          onClick={() => sell(item)}
+          title={`Sell it back for ${item.refund} (Shift+${info.key})`}
+          className="absolute bottom-[2.8rem] left-1 z-[4] cursor-pointer border-2 border-black bg-bg px-1.5 py-0.5 font-display text-[0.8125rem] leading-none font-extrabold tracking-[0.04em] whitespace-nowrap text-ink uppercase transition-colors hover:bg-ink hover:text-bg"
+        >
+          Sell +{item.refund}
+        </button>
       )}
-    >
-      {cooling && <span className="absolute inset-0 z-[1] origin-top bg-bg/70" style={{ transform: `scaleY(${item.cooldown})` }} aria-hidden />}
-      <span className="absolute top-1 left-1 z-[2] grid h-[1.875rem] min-w-[1.875rem] place-items-center rounded-full border-[3px] border-black bg-[#ffd23f] px-1.5 font-display text-base leading-none font-extrabold tabular-nums">
-        {item.price}
-      </span>
-      <span className="absolute top-1.5 right-1.5 z-[2] grid size-5 place-items-center bg-bg font-display text-[0.8125rem] leading-none font-extrabold text-ink">
-        {info.key.toUpperCase()}
-      </span>
-      {item.kind === "defence" && item.id === "server" && (
-        <span className="absolute right-1.5 bottom-[2.6rem] z-[2] font-display text-sm leading-none font-extrabold">×{item.owned}</span>
-      )}
-      <span className="grid place-items-center pt-3.5">
-        <ItemIcon id={item.id} className="size-[clamp(1.75rem,5.2vh,2.875rem)] fill-none stroke-bg stroke-[2.2] [stroke-linecap:round] [stroke-linejoin:round]" />
-      </span>
-      <span className="relative z-[2] grid min-h-[2.5em] place-items-center bg-bg px-0.5 pt-1.5 pb-1 font-display text-[clamp(0.8125rem,1.9vh,1rem)] leading-none font-extrabold tracking-[0.02em] text-ink uppercase">
-        {words.names[item.id]}
-      </span>
-      {kept && <span className="absolute inset-x-0 bottom-[2.6rem] z-[2] font-display text-sm font-extrabold tracking-[0.1em] uppercase">Ready</span>}
-      {maxed && !kept && <span className="absolute inset-x-0 bottom-[2.6rem] z-[2] font-display text-sm font-extrabold tracking-[0.1em] uppercase">Max</span>}
-    </button>
+    </div>
   );
 }
 
@@ -98,7 +116,14 @@ export function Hand({ match, words, recommended }: { match: MatchView; words: T
   const locked = match.me.downSecondsLeft !== null || frozen !== undefined;
 
   // Every card keeps its key, wherever it sits.
-  useShortcuts(Object.fromEntries(match.shop.map((item) => [ITEM_INFO[item.id].key, () => press(item)])), { enabled: !locked });
+  useShortcuts(
+    {
+      ...Object.fromEntries(match.shop.map((item) => [ITEM_INFO[item.id].key, () => press(item)])),
+      // Shift + a defence's key sells one back.
+      ...Object.fromEntries(match.shop.filter((i) => i.kind === "defence").map((item) => [`shift+${ITEM_INFO[item.id].key}`, () => sell(item)])),
+    },
+    { enabled: !locked },
+  );
 
   const by = (kind: ShopItemView["kind"]) => match.shop.filter((i) => i.kind === kind);
   return (

@@ -98,9 +98,9 @@ server/src/
   limit, so whoever can't be served gives up; health; coins; owned defences;
   active effects (attacks landed, shield, overclock); cooldowns.
 - **`step(state, actions)`** advances one tick (1/10 s) for both sites:
-  apply actions (buy, use, attack) → timers and effects → crowd arrives →
+  apply actions (buy, sell, use, attack) → timers and effects → crowd arrives →
   gate (Bouncer turns bots away) → servers; what they can't take gives up →
-  health, coins (income only: no upkeep, no selling), crash/reboot → events.
+  health, coins (income only: no upkeep; selling refunds half), crash/reboot → events.
 - **Actions carry the side** that issued them; attacks resolve against the
   other side after their warning delay.
 - **Bots** are `Policy` functions `(state, side) → actions`; the balance
@@ -150,6 +150,7 @@ Client → server
 | `room:teamName` | `{ side: 1 \| 2, name }`                  | Players on that side only              |
 | `vote:theme`    | `{ theme }`                               | During THEME_VOTE; can change vote     |
 | `game:buy`      | `{ item }`                                | Defences; shop open in BUY and LIVE    |
+| `game:sell`     | `{ item }`                                | Defences: 50% back; never the last server |
 | `game:use`      | `{ item }`                                | Utilities                              |
 | `game:attack`   | `{ attack }`                              | Cooldown + warning                     |
 | `briefing:continue` | `{}`                                 | Finished the briefing steps; round 1 starts when all connected players have (or at the hidden cap) |

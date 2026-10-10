@@ -4,6 +4,7 @@ import {
   UTILITIES,
   other,
   priceOf,
+  refundOf,
   siteScore,
   type DuelState,
   type MatchSetup,
@@ -67,18 +68,18 @@ function shopView(site: SiteState, { config }: MatchSetup): ShopItemView[] {
     ...DEFENCES.map((id): ShopItemView => {
       const owned = id === "server" ? site.servers.length : site.owned[id] + site.setups.filter((s) => s.item === id).length;
       const price = priceOf(site, id, config);
-      return { id, kind: "defence", price, owned, max: defences[id].max, cooldown: 0, affordable: coins >= price && owned < defences[id].max };
+      return { id, kind: "defence", price, owned, max: defences[id].max, cooldown: 0, affordable: coins >= price && owned < defences[id].max, refund: refundOf(site, id, config) };
     }),
     ...UTILITIES.map((id): ShopItemView => {
       const price = priceOf(site, id, config);
       const left = site.cooldowns[id] ?? 0;
-      return { id, kind: "utility", price, owned: 0, max: 1, cooldown: r2(left / (utilities[id].cooldownSec * tick)), affordable: coins >= price };
+      return { id, kind: "utility", price, owned: 0, max: 1, cooldown: r2(left / (utilities[id].cooldownSec * tick)), affordable: coins >= price, refund: 0 };
     }),
     ...ATTACKS.map((id): ShopItemView => {
       const price = priceOf(site, id, config);
       const own = (site.cooldowns[id] ?? 0) / (attacks[id].cooldownSec * tick);
       const regroup = site.regroupTicks / (config.attackRegroupSec * tick);
-      return { id, kind: "attack", price, owned: 0, max: 1, cooldown: r2(Math.max(own, regroup)), affordable: coins >= price };
+      return { id, kind: "attack", price, owned: 0, max: 1, cooldown: r2(Math.max(own, regroup)), affordable: coins >= price, refund: 0 };
     }),
   ];
 }

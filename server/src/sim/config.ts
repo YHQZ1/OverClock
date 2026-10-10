@@ -17,8 +17,10 @@ export type SimConfig = {
   bouncerBotBlock: number; // share of bots stopped
   bouncerFalsePositive: number; // share of real people wrongly turned away
 
-  // Economy (no upkeep, no selling — docs/DECISIONS.md)
+  // Economy (no upkeep; defences can be sold back — docs/DECISIONS.md)
   incomePerPerson: number; // coins per visitor served
+  sellRefund: number; // share of what a defence cost that comes back when you sell it
+  minServers: number; // you can't sell your last server(s)
   comebackGap: number; // trailing by more than this share of the leader's score…
   comebackBoost: number; // …earns this much more
   attackRegroupSec: number; // after any attack, all attacks wait this long
@@ -56,6 +58,8 @@ export const DEFAULT_CONFIG: SimConfig = {
 
   // Lower than the upkeep-era 0.15: nothing drains it now, so net income is higher.
   incomePerPerson: 0.11,
+  sellRefund: 0.5,
+  minServers: 1,
   comebackGap: 0.15,
   comebackBoost: 1.25,
   attackRegroupSec: 5,

@@ -268,6 +268,7 @@ export const sfx = {
   vote: () => bell(N.C6, { dur: 0.35, gain: 0.18, index: 1.5 }),
 
   // Economy
+  sell: () => voice({ freq: N.A5, to: N.A4, type: "triangle", dur: 0.16, gain: 0.2, cutoff: 3000 }),
   buy: () => {
     bell(N.E6, { dur: 0.25, gain: 0.16, ratio: 2, index: 1.2, reverb: 0.15 });
     bell(N.A5 * 2, { at: 0.05, dur: 0.3, gain: 0.14, ratio: 2, index: 1.2, reverb: 0.15 });

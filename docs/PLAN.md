@@ -86,6 +86,11 @@ small accents, the club logo top-left (and as the tab icon) and the club
 footer. The default accent is now paper, so nothing falls back to violet;
 in-match screens still take the app's colour.
 
+**Selling is back (Sat 10 Oct, on request):** defences sell for 50%
+(Shift + key or the "Sell +N" tab); the engine, view, validator, feed,
+sound and hand are done and tested; bots don't sell, so balance is unchanged.
+Watch in playtest 2 whether players use it.
+
 If time: the demo looping on Home and `/live` between matches.
 
 ## Build queue (duel)

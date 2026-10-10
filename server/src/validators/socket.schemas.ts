@@ -27,6 +27,7 @@ export const voteSchema = z.object({ theme: z.enum(THEMES) });
 
 export const gameActionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("buy"), item: z.enum(DEFENCES) }),
+  z.object({ kind: z.literal("sell"), item: z.enum(DEFENCES) }),
   z.object({ kind: z.literal("use"), item: z.enum(UTILITIES) }),
   z.object({ kind: z.literal("attack"), item: z.enum(ATTACKS) }),
 ]);

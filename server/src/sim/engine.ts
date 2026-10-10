@@ -1,5 +1,5 @@
 import { toTicks, type SimConfig } from "./config.js";
-import { isAttack, isDefence, isUtility, type AttackId, type ItemId, type UtilityId } from "./items.js";
+import { isAttack, isDefence, isUtility, type AttackId, type DefenceId, type ItemId, type UtilityId } from "./items.js";
 import { nextFloat, nextRange, seedRng } from "./rng.js";
 import type { Scenario } from "./scenario.js";
 import {
@@ -152,6 +152,21 @@ export function priceOf(site: SiteState, item: ItemId, config: SimConfig): numbe
   return spec.price + (item === "server" ? spec.priceStep * site.serversBought : 0);
 }
 
+/**
+ * What selling one of this defence gives back right now — a share of what it
+ * cost (the newest server's price steps back down), 0 when there's nothing to
+ * sell. Under 100%, so buying and selling in a loop only loses coins.
+ */
+export function refundOf(site: SiteState, item: DefenceId, config: SimConfig): number {
+  const spec = config.items.defences[item];
+  if (item === "server") {
+    if (site.servers.length <= config.minServers) return 0;
+    return (spec.price + spec.priceStep * Math.max(0, site.serversBought - 1)) * config.sellRefund;
+  }
+  const have = site.owned[item] + site.setups.filter((x) => x.item === item).length;
+  return have > 0 ? spec.price * config.sellRefund : 0;
+}
+
 // ---------- actions ----------
 
 function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean, events: SimEvent[]): void {
@@ -195,6 +210,31 @@ function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean
       return;
     }
 
+    case "sell": {
+      if (!isDefence(a.item)) return reject("wrongKind");
+      if (a.item === "server" && site.servers.length <= config.minServers) return reject("min");
+      const refund = refundOf(site, a.item, config);
+      if (a.item !== "server" && refund === 0) return reject("none");
+      if (a.item === "server") {
+        // Sell one that is still starting first, then a healthy one, a wrecked one last.
+        const order = [...site.servers.keys()].reverse();
+        const pick =
+          order.find((i) => site.servers[i]!.bootTicksLeft > 0) ??
+          order.find((i) => site.servers[i]!.meltedTicksLeft === 0) ??
+          order[0]!;
+        site.servers.splice(pick, 1);
+        site.serversBought = Math.max(0, site.serversBought - 1);
+      } else {
+        // A defence still being set up is cancelled before a finished one is sold.
+        const pending = site.setups.findIndex((x) => x.item === a.item);
+        if (pending >= 0) site.setups.splice(pending, 1);
+        else site.owned[a.item]--;
+      }
+      site.coins += refund;
+      events.push({ side: a.side, type: "sold", item: a.item, by: a.by });
+      return;
+    }
+
     case "use": {
       if (!isUtility(a.item)) return reject("wrongKind");
       if (paused) return reject("paused");
@@ -229,7 +269,7 @@ function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean
       return;
     }
 
-    // Not a kind the game has (selling was removed) — never trust a client.
+    // Not a kind the game has — never trust a client.
     default:
       return reject("wrongKind");
   }

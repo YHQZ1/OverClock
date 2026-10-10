@@ -16,6 +16,11 @@ describe("feed lines", () => {
     expect(line({ side: 2, type: "bought", item: "bouncer", by: "Delta" }, 1, "Alpha")).toBeNull(); // their shopping stays secret
   });
 
+  it("say when something was sold back", () => {
+    expect(line({ side: 1, type: "sold", item: "bouncer", by: "Alpha" }, 1, "Alpha")?.text).toBe("You sold Bouncer");
+    expect(line({ side: 2, type: "sold", item: "server", by: "Delta" }, 1, "Alpha")).toBeNull();
+  });
+
   it("explain your own failed presses, not your teammate's", () => {
     expect(line({ side: 1, type: "rejected", kind: "buy", item: "bouncer", reason: "coins", by: "Alpha" }, 1, "Alpha")?.text).toBe(
       "Not enough coins — Bouncer",

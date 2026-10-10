@@ -47,6 +47,7 @@ export function shop(patch: Partial<Record<ItemId, Partial<ShopItemView>>> = {})
     max: id === "server" ? 12 : 1,
     cooldown: 0,
     affordable: true,
+    refund: 0,
     ...patch[id],
   }));
 }

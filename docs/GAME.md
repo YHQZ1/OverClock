@@ -14,7 +14,7 @@ the final values (see BALANCE.md).
 > **Redesign after the first playtest (2026-10-10).** Tech-club juniors took
 > two rounds to understand the game, found the screen overloaded, didn't know
 > the themes well, and called the look lifeless. So: 12 items instead of 20,
-> no upkeep or selling, four apps everyone has on their phone, a briefing in
+> no upkeep, four apps everyone has on their phone, a briefing in
 > small steps plus a demo match, and a Clash Royale-style arena instead of
 > maps and panels. This document describes the redesigned game; DECISIONS.md
 > keeps what it replaced.
@@ -194,7 +194,10 @@ There are **no fixed roles**:
 
 ## The cards (12)
 
-Open during the buy phase **and** the whole live round. No selling. Every card
+Open during the buy phase **and** the whole live round. Defences can be sold
+back for **half** of what they cost (Shift + the card's key, or the small
+"Sell +N" tab on the card); you always keep at least one server, and the
+newest server's price steps back down when you sell it. Every card
 has a keyboard key, an icon and a position that **never change between
 themes** — only the name does (see Themes). Icons are drawn (SVG), not emoji,
 so they look the same on the lab PCs; emoji below are placeholders.

@@ -208,6 +208,8 @@ export type ShopItemView = {
   /** 0 → 1 of cooldown remaining (attacks include the regroup wait). */
   cooldown: number;
   affordable: boolean;
+  /** Defences: the coins you get back for selling one now (0 → nothing to sell, or your last server). */
+  refund: number;
 };
 
 export type AttackInFlight = { id: number; attack: AttackId; secondsLeft: number };
