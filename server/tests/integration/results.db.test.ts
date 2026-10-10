@@ -41,7 +41,7 @@ describe.skipIf(!URL)("PgResultStore (Postgres)", () => {
       [3, 4000, m2.teams[1]!.name, m2.teams[0]!.name, false],
       [4, 3000, m1.teams[1]!.name, m1.teams[0]!.name, false],
     ]);
-    expect(one[0]).toMatchObject({ matchId: m2.id, side: 1, players: m2.teams[0]!.players, theme: "nasdaq" });
+    expect(one[0]).toMatchObject({ matchId: m2.id, side: 1, players: m2.teams[0]!.players, theme: "bookmyshow" });
     expect(two).toHaveLength(2);
     expect(await store.ranks(m1.id)).toEqual({ 1: 2, 2: 4 });
 

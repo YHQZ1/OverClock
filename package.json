@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @overclock/server --filter @overclock/web --parallel dev",
+    "dev:round": "DEV_ROUNDS=1 pnpm dev",
     "build": "pnpm --filter @overclock/server --filter @overclock/web build",
     "start": "pnpm --filter @overclock/server start",
     "test": "pnpm test:unit && pnpm test:integration",

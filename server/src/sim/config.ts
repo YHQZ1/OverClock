@@ -7,31 +7,20 @@ import { DEFAULT_CATALOGUE, type Catalogue } from "./items.js";
 export type SimConfig = {
   tickRate: number; // ticks per second
 
-  // Servers
+  // Servers — the only capacity limit (the queue is the signal)
   serverCapacity: number; // people per second one online server handles
   bootSec: number;
   /** Other defences take this long to set up (instant in the buy phase). */
   setupSec: number;
-  minServers: number;
-  /** Without a Traffic splitter, servers beyond this many work at `unsplitEfficiency`. */
-  splitterFreeServers: number;
-  unsplitEfficiency: number;
-
-  // Database + Fast shelf
-  dbCapacity: number; // people per second the database handles
-  dbPerBackup: number; // extra per Backup database
-  shelfHitShare: number; // share of visitors a warm shelf answers on its own
-  shelfWarmSec: number; // cold → warm after buying or a flush
 
   // Bouncer
   bouncerBotBlock: number; // share of bots stopped
   bouncerFalsePositive: number; // share of real people wrongly turned away
 
-  // Economy
+  // Economy (no upkeep, no selling — docs/DECISIONS.md)
   incomePerPerson: number; // coins per visitor served
   comebackGap: number; // trailing by more than this share of the leader's score…
   comebackBoost: number; // …earns this much more
-  sellRefund: number; // share of the price returned on sale
   attackRegroupSec: number; // after any attack, all attacks wait this long
   attackPriceStep: number; // each repeat of the same attack in a round costs this much more
   attackFatigueStep: number; // every attack sent makes all attacks this much pricier for the round
@@ -61,22 +50,14 @@ export const DEFAULT_CONFIG: SimConfig = {
   serverCapacity: 30,
   bootSec: 2,
   setupSec: 4,
-  minServers: 1,
-  splitterFreeServers: 4,
-  unsplitEfficiency: 0.6,
-
-  dbCapacity: 150,
-  dbPerBackup: 120,
-  shelfHitShare: 0.6,
-  shelfWarmSec: 8,
 
   bouncerBotBlock: 0.85,
   bouncerFalsePositive: 0.03,
 
-  incomePerPerson: 0.15,
+  // Lower than the upkeep-era 0.15: nothing drains it now, so net income is higher.
+  incomePerPerson: 0.11,
   comebackGap: 0.15,
   comebackBoost: 1.25,
-  sellRefund: 0.5,
   attackRegroupSec: 5,
   attackPriceStep: 0.25,
   attackFatigueStep: 0.08,

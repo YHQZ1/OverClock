@@ -41,7 +41,7 @@ infra/    docker-compose (Postgres), render.yaml, .env.example
    `@server/*`). The server sends timers (cooldowns, boot progress, vote and
    buy-phase countdowns) inside the state, so the web app needs no engine code.
 6. **Player-safe views.** Hidden engine numbers (traffic per second, internal
-   capacities) never leave the server. The map is drawn from relative values;
+   capacities) never leave the server. The arena is drawn from relative values;
    a team sees the opponent's site health and defences but **not their coins**.
 
 ## The server decides the screen
@@ -50,7 +50,9 @@ Each **room** has one phase. Every PC in the room renders the screen for that
 phase, so all PCs stay in sync and refresh/reconnect is trivial.
 
 ```
- ROOM ──(everyone ready, 1v1 or 2v2)──► THEME_VOTE (10s) ──► BRIEFING (all Continue, ≤ 60s)
+ ROOM ──(everyone ready, 1v1 or 2v2)──► THEME_VOTE (10s) ──► THEME_PICK (3s) ──► BRIEFING
+                                                       (5 steps, each at their own pace;
+                                                        everyone done → go; hidden 3-min cap)
                                                                   │
             ┌─────────────────────────────────────────────────────┘
             ▼
@@ -76,10 +78,11 @@ server/src/
 ├── services/
 │   ├── broadcaster.ts       # interface services use to push updates
 │   ├── room.service.ts      # codes, slots, ready, team names, rejoin tokens
-│   ├── session.service.ts   # phase machine: vote, briefing, buy, live, results, abandon
+│   ├── session.service.ts   # phase machine: vote, theme pick, briefing, buy, live, results, abandon
+│   ├── demo.ts              # the briefing's scripted demo match, recorded from the engine
 │   ├── match.service.ts     # live duel: 10 Hz loop, sim.step(), player-safe views
 │   └── result.service.ts    # save completed matches, match points, leaderboards
-├── sim/               # PURE engine: two sites, crowd, pipeline, shop, attacks, scoring, rng, bots
+├── sim/               # PURE engine: two sites, crowd, servers + gate, 12 cards, scoring, rng, bots
 ├── db/                # Drizzle schema, client, migrations
 ├── middlewares/       # error handler
 ├── validators/        # Zod schemas for HTTP bodies and socket payloads
@@ -91,13 +94,13 @@ server/src/
 
 - **Match state** holds two **sites** (one per team), the shared background
   crowd, the round clock and the seeded RNG.
-- **Site:** pipeline stages (front door with routes, servers, fast shelf,
-  database), each with a limit; health; coins; owned defences; active
-  effects (attacks in flight, shields, overclock); cooldowns.
+- **Site:** a gate (with an optional Bouncer) and servers — the only capacity
+  limit, so whoever can't be served gives up; health; coins; owned defences;
+  active effects (attacks landed, shield, overclock); cooldowns.
 - **`step(state, actions)`** advances one tick (1/10 s) for both sites:
-  apply actions (buy, sell, use, attack) → timers and effects → crowd
-  arrives → flows through the pipeline, the first stage over its limit is the
-  bottleneck → health, coins (income − upkeep), crash/reboot → events.
+  apply actions (buy, use, attack) → timers and effects → crowd arrives →
+  gate (Bouncer turns bots away) → servers; what they can't take gives up →
+  health, coins (income only: no upkeep, no selling), crash/reboot → events.
 - **Actions carry the side** that issued them; attacks resolve against the
   other side after their warning delay.
 - **Bots** are `Policy` functions `(state, side) → actions`; the balance
@@ -110,14 +113,16 @@ server/src/
 web/src/
 ├── main.tsx, App.tsx       # router: /play, /admin, /live, /leaderboard
 ├── socket/                 # the one Socket.IO connection, api (acks), seat storage, useGameSocket
-├── store/                  # Zustand: room, match snapshot, feed, history — mirrors the server
+├── store/                  # Zustand: room, match snapshot, feed, banner, usage — mirrors the server
 ├── styles/index.css        # Tailwind v4 import + @theme design tokens (the only CSS file)
 ├── components/             # TopBar, AppMap, ui.tsx (Button, Field, Label, Frame)
-├── game/                   # LiveMap, HealthTimeline, alert + feed text — pictures of server state
-├── themes/                 # theme id → words, icons, crowd colours
+├── game/                   # items (keys, hints), icons, alert + feed text, reveal content, demo.json
+│   └── arena/              # Arena (both sites, SVG), Hand (the cards), ScoreBar, kinds
+├── themes/                 # theme id → words, card names, accent, how the site is drawn
 └── pages/
     ├── play/               # PlayPage renders one screen per phase:
-    │                       #   Home, Room, ThemeVote, Game (buy + live), RoundResult, Final
+    │                       #   Home, Room, Vote, ThemePick, Briefing (5 steps + DemoPlayer),
+    │                       #   Game (the arena: buy + live), RoundResult, Final, Reveal
     └── screen/             # big screen: leaderboards, live matches, awards
 ```
 
@@ -145,12 +150,11 @@ Client → server
 | `room:teamName` | `{ side: 1 \| 2, name }`                  | Players on that side only              |
 | `vote:theme`    | `{ theme }`                               | During THEME_VOTE; can change vote     |
 | `game:buy`      | `{ item }`                                | Defences; shop open in BUY and LIVE    |
-| `game:sell`     | `{ item }`                                | Partial refund                         |
 | `game:use`      | `{ item }`                                | Utilities                              |
 | `game:attack`   | `{ attack }`                              | Cooldown + warning                     |
-| `briefing:continue` | `{}`                                 | Read the briefing; round 1 starts when all connected players have (or after 60s) |
+| `briefing:continue` | `{}`                                 | Finished the briefing steps; round 1 starts when all connected players have (or at the hidden cap) |
 | `screen:watch`  | `{ token }`                               | Staff (big screen / admin): signs the connection in, joins the `screen` channel; ack = boards + awards + matches + control |
-| `admin:rooms` · `admin:boards` · `admin:endRoom` · `admin:hide` · `admin:resetBoards` | see `contracts.ts` | Staff only (signed-in connection): list rooms, list every saved entry (hidden ones too), end a room, hide / unhide a team (`hidden: bool`), wipe results (`confirm: "RESET"`) |
+| `admin:rooms` · `admin:boards` · `admin:endRoom` · `admin:skipBriefing` · `admin:hide` · `admin:resetBoards` | see `contracts.ts` | Staff only (signed-in connection): list rooms, list every saved entry (hidden ones too), end a room, move a stuck briefing on, hide / unhide a team (`hidden: bool`), wipe results (`confirm: "RESET"`) |
 
 Server → client
 

@@ -21,7 +21,6 @@ const setup: MatchSetup = { scenario: ROUNDS[0]!, config };
 const t = (sec: number) => toTicks(sec, config);
 
 const buy = (side: Side, item: ItemId): Action => ({ side, kind: "buy", item });
-const sell = (side: Side, item: ItemId): Action => ({ side, kind: "sell", item });
 const use = (side: Side, item: ItemId): Action => ({ side, kind: "use", item });
 const attack = (side: Side, item: ItemId): Action => ({ side, kind: "attack", item });
 
@@ -60,9 +59,10 @@ describe("fair start", () => {
 describe("shop", () => {
   it("servers start up, other defences set up, both cost coins", () => {
     let s = rich(createDuel(setup, 1));
+    const prices = priceOf(s.sites[1], "server", config) + priceOf(s.sites[1], "bouncer", config);
     s = step(s, [buy(1, "server"), buy(1, "bouncer")], setup).state;
     const site = s.sites[1];
-    expect(site.totals.coinsSpent).toBe(priceOf(site, "server", config) + priceOf(site, "bouncer", config));
+    expect(site.totals.coinsSpent).toBe(prices);
     expect(site.servers.at(-1)!.bootTicksLeft).toBeGreaterThan(0);
     expect(site.owned.bouncer).toBe(0);
     expect(site.setups).toHaveLength(1);
@@ -84,26 +84,38 @@ describe("shop", () => {
     expect(events.filter((e) => e.type === "rejected" && e.reason === "paused")).toHaveLength(2);
   });
 
-  it("sells for a partial refund and keeps at least one server", () => {
-    let s = createDuel(setup, 1);
-    const coins = s.sites[1].coins;
-    s = step(s, [sell(1, "server")], setup).state;
-    expect(s.sites[1].servers).toHaveLength(ROUNDS[0]!.startServers - 1);
-    expect(s.sites[1].coins).toBeGreaterThan(coins + config.items.defences.server.price * config.sellRefund - 1);
+  it("each extra server costs more than the last, up to a max", () => {
+    const { server } = config.items.defences;
+    let s = rich(createDuel(setup, 1), 100_000);
+    const first = priceOf(s.sites[1], "server", config);
+    expect(first).toBe(server.price);
+    s = step(s, [buy(1, "server")], setup, { paused: true }).state;
+    expect(priceOf(s.sites[1], "server", config)).toBe(server.price + server.priceStep);
+    s = step(s, [buy(1, "server")], setup, { paused: true }).state;
+    expect(priceOf(s.sites[1], "server", config)).toBe(server.price + 2 * server.priceStep);
 
-    s = { ...s, sites: { ...s.sites, 1: { ...s.sites[1], servers: [{ id: 0, bootTicksLeft: 0, meltedTicksLeft: 0 }] } } };
-    expect(step(s, [sell(1, "server")], setup).events).toContainEqual(
-      expect.objectContaining({ type: "rejected", reason: "min" }),
+    for (let i = 0; i < 20; i++) s = step(s, [buy(1, "server")], setup, { paused: true }).state;
+    expect(s.sites[1].servers).toHaveLength(server.max);
+    expect(step(s, [buy(1, "server")], setup, { paused: true }).events).toContainEqual(
+      expect.objectContaining({ type: "rejected", reason: "max" }),
     );
+  });
+
+  it("there is no selling", () => {
+    // @ts-expect-error — "sell" is gone from the action kinds
+    const sell: Action = { side: 1, kind: "sell", item: "server" };
+    const { events, state } = step(createDuel(setup, 1), [sell], setup);
+    expect(state.sites[1].servers).toHaveLength(ROUNDS[0]!.startServers);
+    expect(events).toContainEqual(expect.objectContaining({ type: "rejected", reason: "wrongKind" }));
   });
 
   it("explains why a purchase fails", () => {
     const broke = { ...createDuel(setup, 1) };
     broke.sites = { ...broke.sites, 1: { ...broke.sites[1], coins: 10 } };
-    const reasons = step(broke, [buy(1, "splitter"), sell(1, "bouncer"), use(1, "instantBackup")], setup).events.map(
+    const reasons = step(broke, [buy(1, "bouncer"), use(1, "instantBackup")], setup).events.map(
       (e) => e.type === "rejected" && e.reason,
     );
-    expect(reasons).toEqual(["coins", "none", "none"]);
+    expect(reasons).toEqual(["coins", "none"]);
   });
 });
 
@@ -171,22 +183,24 @@ describe("new attacks", () => {
     );
   });
 
-  it("slowing their servers lets fewer people in", () => {
-    const busy = (s: DuelState) => ({ ...s, crowdRate: 200 });
-    const slowed = run(land("slowServers", busy), t(3));
-    expect(slowed.sites[2].flow.servedShare).toBeLessThan(slowed.sites[1].flow.servedShare);
+  it("a locked address cuts wrong turn to a blip", () => {
+    const locked = (s: DuelState) => step(s, [buy(2, "lockAddress")], setup, { paused: true }).state;
+    expect(land("wrongTurn").sites[2].effects.find((e) => e.kind === "wrongTurn")!.ticksLeft).toBeGreaterThan(t(5));
+    expect(land("wrongTurn", locked).sites[2].effects.find((e) => e.kind === "wrongTurn")!.ticksLeft).toBeLessThanOrEqual(t(1));
   });
 
-  it("a traffic splitter shrugs off being knocked out", () => {
-    const withSplitter = (s: DuelState) => step(s, [buy(2, "splitter")], setup, { paused: true }).state;
-    const s = land("breakSplitter", withSplitter);
-    expect(s.sites[2].effects.find((e) => e.kind === "breakSplitter")!.ticksLeft).toBeLessThanOrEqual(t(2));
+  it("more people than the counters can take means a queue: some give up", () => {
+    const busy = (s: DuelState) => ({ ...s, crowdRate: 400 });
+    const s = run(land("surge", busy), t(3));
+    expect(s.sites[2].flow.servedShare).toBeLessThan(0.8);
+    expect(s.sites[2].flow.bottleneck).toBe("servers");
   });
 
-  it("a backup monitor shortens a blindfold to a blip", () => {
-    const monitored = (s: DuelState) => step(s, [buy(2, "backupMonitor")], setup, { paused: true }).state;
-    expect(land("blindfold").sites[2].effects.find((e) => e.kind === "blindfold")!.ticksLeft).toBeGreaterThan(t(5));
-    expect(land("blindfold", monitored).sites[2].effects.find((e) => e.kind === "blindfold")!.ticksLeft).toBeLessThanOrEqual(t(1));
+  it("bots eat capacity until a bouncer turns them away", () => {
+    const bouncer = (s: DuelState) => step(s, [buy(2, "bouncer")], setup, { paused: true }).state;
+    const open = run(land("bots"), t(4));
+    const guarded = run(land("bots", bouncer), t(4));
+    expect(guarded.sites[2].flow.servedShare).toBeGreaterThan(open.sites[2].flow.servedShare);
   });
 
   it("every attack makes all attacks pricier for the round", () => {
@@ -211,13 +225,12 @@ describe("crash, reboot and money", () => {
     expect(back.sites[2].effects.some((e) => e.kind === "protected")).toBe(true);
   });
 
-  it("can't pay upkeep → the newest server switches off", () => {
+  it("there is no upkeep: coins only go down when you spend", () => {
     const s0 = createDuel(setup, 1);
-    const servers = Array.from({ length: 30 }, (_, id) => ({ id, bootTicksLeft: 0, meltedTicksLeft: 0 })); // more upkeep than income
-    const broke = { ...s0, sites: { ...s0.sites, 1: { ...s0.sites[1], coins: 0, servers } } };
-    const { events, state } = step(broke, [], setup);
-    expect(events).toContainEqual({ side: 1, type: "serverSwitchedOff" });
-    expect(state.sites[1].servers).toHaveLength(29);
-    expect(state.sites[1].coins).toBe(0);
+    const many = Array.from({ length: 12 }, (_, id) => ({ id, bootTicksLeft: 0, meltedTicksLeft: 0 }));
+    const rushed = { ...s0, sites: { ...s0.sites, 1: { ...s0.sites[1], coins: 100, servers: many } } };
+    const s = run(rushed, t(10));
+    expect(s.sites[1].coins).toBeGreaterThan(100);
+    expect(s.sites[1].servers).toHaveLength(12);
   });
 });

@@ -5,7 +5,6 @@ import {
   other,
   priceOf,
   siteScore,
-  upkeepPerSec,
   type DuelState,
   type MatchSetup,
   type Part,
@@ -34,13 +33,8 @@ export function siteView(site: SiteState, { scenario, config }: MatchSetup): Sit
 
   const pass = site.flow.passShare;
   const parts: Record<Part, PartStatus> = down
-    ? { door: "failing", servers: "failing", shelf: site.owned.shelf ? "failing" : "none", db: "failing" }
-    : {
-        door: statusOf(pass.door),
-        servers: statusOf(pass.servers),
-        shelf: site.owned.shelf ? (site.shelfWarmth >= 0.9 ? "ok" : site.shelfWarmth >= 0.4 ? "strained" : "failing") : "none",
-        db: statusOf(pass.db),
-      };
+    ? { door: "failing", servers: "failing" }
+    : { door: statusOf(pass.door), servers: statusOf(pass.servers) };
 
   return {
     health: Math.round(site.health),
@@ -62,24 +56,6 @@ export function siteView(site: SiteState, { scenario, config }: MatchSetup): Sit
       secondsLeft: Math.ceil(e.ticksLeft / tick),
       share: r2(e.ticksLeft / e.totalTicks),
     })),
-    blind: false,
-  };
-}
-
-/** What a blindfolded team sees of its own site: health, and nothing else useful. */
-function blindfolded(view: SiteView): SiteView {
-  const hidden = "hidden" as const;
-  return {
-    ...view,
-    servers: view.servers.map((s) => ({ ...s, state: "unknown", progress: 0 })),
-    parts: { door: hidden, servers: hidden, shelf: hidden, db: hidden },
-    bottleneck: null,
-    crowd: 1,
-    servedShare: 1,
-    botShare: 0,
-    critical: false,
-    effects: view.effects.filter((e) => e.kind === "blindfold"),
-    blind: true,
   };
 }
 
@@ -119,8 +95,6 @@ export function toMatchView(
   const them = state.sites[other(side)];
   const tick = config.tickRate;
   const income = me.flow.served * config.incomePerPerson * tick;
-  const blind = me.effects.some((e) => e.kind === "blindfold");
-  const mine = siteView(me, setup);
 
   return {
     side,
@@ -129,15 +103,13 @@ export function toMatchView(
     timeLeftSec: Math.max(0, (state.durationTicks - state.tick) / tick),
     durationSec: scenario.durationSec,
     me: {
-      ...(blind ? blindfolded(mine) : mine),
+      ...siteView(me, setup),
       coins: Math.floor(me.coins),
       incomePerSec: Math.round(income),
-      upkeepPerSec: r1(upkeepPerSec(me, config)),
     },
     them: siteView(them, setup),
     shop: shopView(me, setup),
-    // Blindfolded teams don't see warnings either.
-    incoming: blind ? [] : me.incoming.map((i) => ({ id: i.id, attack: i.attack, secondsLeft: r1(i.ticksUntil / tick) })),
+    incoming: me.incoming.map((i) => ({ id: i.id, attack: i.attack, secondsLeft: r1(i.ticksUntil / tick) })),
     outgoing: them.incoming.map((i) => ({ id: i.id, attack: i.attack, secondsLeft: r1(i.ticksUntil / tick) })),
   };
 }

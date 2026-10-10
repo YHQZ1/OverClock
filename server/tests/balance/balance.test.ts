@@ -43,13 +43,17 @@ describe("duel balance", () => {
     }
   });
 
+  // The rusher never defends, so with only five attacks (each with a counter)
+  // it loses to everyone: counting wins against it would make any competent
+  // strategy look dominant. Dominance is measured against opponents that defend.
   it("no single strategy dominates", () => {
+    const defenders = PLAYERS.filter((b) => b !== "rusher");
     for (const a of PLAYERS) {
       let wins = 0;
       let games = 0;
-      for (const b of PLAYERS) {
+      for (const b of defenders) {
         if (a === b) continue;
-        for (const seed of SEEDS.slice(0, 4)) {
+        for (const seed of SEEDS) {
           games++;
           if (match(a, b, seed).winner === 1) wins++;
         }
@@ -61,11 +65,6 @@ describe("duel balance", () => {
 
 describe("every attack has a counter that measurably helps", () => {
   const normal: MatchSetup = { scenario: { ...ROUNDS[1]!, rushes: [] }, config };
-  /** A busy site (10 servers, a big crowd, a roomy database) — where server attacks really bite. */
-  const busy: MatchSetup = {
-    scenario: { ...ROUNDS[1]!, startServers: 10, traffic: { ...ROUNDS[1]!.traffic, baseRate: 220, growth: 0 }, rushes: [] },
-    config: { ...config, dbCapacity: 400 },
-  };
   const at = toTicks(20, config);
 
   /** Defender's round score when side 1 sends `attack` at 20s (or nothing). */
@@ -82,20 +81,17 @@ describe("every attack has a counter that measurably helps", () => {
 
   const cases: { attack: AttackId; prepare?: ItemId[]; react?: [Action["kind"], ItemId] }[] = [
     { attack: "bots", prepare: ["bouncer"] },
-    { attack: "slowDb", prepare: ["backupDb"] },
     { attack: "surge", react: ["use", "overclock"] },
     { attack: "destroy", react: ["use", "instantBackup"] },
-    { attack: "slowServers", react: ["use", "overclock"] },
-    { attack: "breakSplitter", prepare: ["splitter"] },
     { attack: "wrongTurn", prepare: ["lockAddress"] },
   ];
-  // Blindfold and Jam only hurt players who press things — covered by the engine tests.
+  // Jam only hurts players who press things — covered by the engine tests.
 
   for (const c of cases) {
     const counter = [...(c.prepare ?? []), ...(c.react ? [c.react[1]] : [])].join(" + ");
     it(`${c.attack} → ${counter}`, () => {
       const prepare = c.prepare ?? [];
-      const round = c.attack === "slowServers" || c.attack === "breakSplitter" ? busy : normal;
+      const round = normal;
       const damage = defenderScore(round, null, []) - defenderScore(round, c.attack, []);
       const damageCountered = defenderScore(round, null, prepare) - defenderScore(round, c.attack, prepare, c.react);
       expect(damage, "the attack should hurt").toBeGreaterThan(100);

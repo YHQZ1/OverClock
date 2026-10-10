@@ -57,6 +57,13 @@ export function registerScreenHandlers(socket: PlayerSocket, { admin, screen, se
       return null;
     }),
   );
+  socket.on("admin:skipBriefing", (payload, ack) =>
+    handle(roomSchema, payload, ack, ({ code }) => {
+      staff();
+      sessions.skipBriefing(code);
+      return null;
+    }),
+  );
   socket.on("admin:boards", (payload, ack) =>
     handleAsync(emptySchema, payload, ack, async () => {
       staff();

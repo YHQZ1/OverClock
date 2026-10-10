@@ -62,11 +62,7 @@ function decide(m: MatchView, memo: { handled: Set<number>; built: number; sent:
     memo.handled.add(inc.id);
     const counter: Record<AttackId, GameActionPayload | null> = {
       bots: !m.me.owned.bouncer ? { kind: "buy", item: "bouncer" } : shield,
-      slowDb: m.me.owned.backupDb < 1 ? { kind: "buy", item: "backupDb" } : shield,
       surge: { kind: "use", item: "overclock" },
-      slowServers: { kind: "use", item: "overclock" },
-      breakSplitter: m.me.owned.splitter ? null : shield,
-      blindfold: m.me.owned.backupMonitor ? null : shield,
       wrongTurn: m.me.owned.lockAddress ? null : shield,
       destroy: shield,
       jam: shield,
@@ -81,24 +77,16 @@ function decide(m: MatchView, memo: { handled: Set<number>; built: number; sent:
 
   // 3. Scale to what the map shows.
   const booting = m.me.servers.filter((s) => s.state === "booting").length;
-  const idle = m.me.servers.filter((s) => s.state === "idle").length;
   if (m.me.bottleneck === "servers" && booting < 2 && can(m, "server")) return [{ kind: "buy", item: "server" }, "servers are the bottleneck"];
-  if (m.me.bottleneck === "db" && can(m, "backupDb")) return [{ kind: "buy", item: "backupDb" }, "database is the bottleneck"];
-  if (!m.me.bottleneck && idle >= 2 && booting === 0) return [{ kind: "sell", item: "server" }, `${idle} servers idle`];
-  if (m.me.servers.length > 5 && !m.me.owned.splitter && can(m, "splitter")) return [{ kind: "buy", item: "splitter" }, "lots of servers"];
 
   // 4. Attack with spare coins — rotate, skipping what they're protected against.
   if (m.me.coins >= 420) {
     const them = m.them.owned;
     const all: AttackId[] = [
       ...(them.lockAddress ? [] : (["wrongTurn"] as const)),
-      ...(them.backupMonitor ? [] : (["blindfold"] as const)),
       ...(them.bouncer ? [] : (["bots"] as const)),
-      ...(them.backupDb ? [] : (["slowDb"] as const)),
-      ...(them.splitter ? [] : (["breakSplitter"] as const)),
       "jam",
       "destroy",
-      "slowServers",
       "surge",
     ];
     const offset = memo.sent % all.length;

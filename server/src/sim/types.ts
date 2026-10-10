@@ -12,7 +12,7 @@ export type ServerUnit = {
   id: number;
   /** > 0 while starting up. */
   bootTicksLeft: number;
-  /** > 0 while wrecked by an attack (offline, no upkeep). */
+  /** > 0 while wrecked by an attack (offline). */
   meltedTicksLeft: number;
 };
 
@@ -23,8 +23,8 @@ export type Effect = { kind: EffectKind; ticksLeft: number; totalTicks: number }
 /** An attack on its way, announced to the target. */
 export type Incoming = { id: number; attack: AttackId; ticksUntil: number };
 
-/** The parts of the pipeline, in the order visitors travel through them. */
-export type Part = "door" | "servers" | "shelf" | "db";
+/** The parts of a site, in the order visitors travel through them. */
+export type Part = "door" | "servers";
 
 export type SiteTotals = {
   served: number;
@@ -55,19 +55,17 @@ export type SiteFlow = {
 export type SiteState = {
   servers: ServerUnit[];
   nextServerId: number;
+  /** Servers bought this round — each costs more than the last. */
+  serversBought: number;
   /** Defences that are set up and working. */
   owned: Record<ExtraDefenceId, number>;
   /** Defences bought but still setting up. */
   setups: { item: ExtraDefenceId; ticksLeft: number }[];
-  /** 0 (cold) → 1 (warm). Only matters with a Fast shelf. */
-  shelfWarmth: number;
 
   coins: number;
   health: number;
   crashTicksLeft: number;
   critical: boolean;
-  /** Ticks until the next "out of coins" switch-off may happen. */
-  switchOffTicks: number;
 
   effects: Effect[];
   incoming: Incoming[];
@@ -97,22 +95,22 @@ export type DuelState = {
   sites: Record<Side, SiteState>;
 };
 
-export type ActionKind = "buy" | "sell" | "use" | "attack";
+export type ActionKind = "buy" | "use" | "attack";
 
 /** A player's intent. `by` is a display name carried into events (no logic uses it). */
 export type Action = { side: Side; kind: ActionKind; item: ItemId; by?: string };
 
-export type RejectReason = "coins" | "cooldown" | "max" | "min" | "none" | "down" | "paused" | "ended" | "wrongKind" | "jammed";
+export type RejectReason = "coins" | "cooldown" | "max" | "none" | "down" | "paused" | "ended" | "wrongKind" | "jammed";
 
 /** Every event names the side it concerns. */
 export type SimEvent =
-  | { side: Side; type: "bought" | "sold" | "used"; item: ItemId; by?: string }
+  | { side: Side; type: "bought" | "used"; item: ItemId; by?: string }
   | { side: Side; type: "attackSent"; attack: AttackId; by?: string }
   | { side: Side; type: "attackIncoming"; attack: AttackId; inSec: number }
   | { side: Side; type: "attackLanded"; attack: AttackId }
   | { side: Side; type: "attackBlocked"; attack: AttackId; reason: "shield" | "protected" }
   | { side: Side; type: "rejected"; kind: ActionKind; item: ItemId; reason: RejectReason; by?: string }
-  | { side: Side; type: "serverOnline" | "serverSwitchedOff" | "serversRestored" }
+  | { side: Side; type: "serverOnline" | "serversRestored" }
   | { side: Side; type: "defenceReady"; item: ExtraDefenceId }
   | { side: Side; type: "serversMelted"; count: number }
   | { side: Side; type: "rushStarted" | "rushEnded" | "critical" | "recovered" | "crashed" | "rebooted" }

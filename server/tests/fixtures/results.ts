@@ -18,7 +18,7 @@ export function record(a: number, b: number, format: "1v1" | "2v2" = "1v1"): Mat
     id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
     code: "ABCD",
     format,
-    theme: "nasdaq",
+    theme: "bookmyshow",
     winner: a === b ? null : a > b ? 1 : 2,
     completedAt: new Date(1_800_000_000_000 + n * 1000),
     teams: [team(1, a, `Home ${n}`), team(2, b, `Away ${n}`)],

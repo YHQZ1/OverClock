@@ -13,6 +13,7 @@ import type { Leaderboards, MatchView, RoomView } from "../../src/types/contract
 
 const TIMING: GameTiming = {
   voteSec: 0,
+  themePickSec: 0,
   briefingSec: 0,
   buySec: 0,
   resultSec: 0,
@@ -77,21 +78,21 @@ describe("SessionService", () => {
   it("ends the vote early once everyone has voted; majority wins", () => {
     const ctx = started({ voteSec: 10 });
     expect(ctx.room.phase).toBe("vote");
-    ctx.sessions.vote(ctx.room.code, ctx.a.id, "miniclip");
+    ctx.sessions.vote(ctx.room.code, ctx.a.id, "spotify");
     expect(ctx.room.phase).toBe("vote");
-    ctx.sessions.vote(ctx.room.code, ctx.b.id, "miniclip");
-    expect(ctx.room.theme).toBe("miniclip");
+    ctx.sessions.vote(ctx.room.code, ctx.b.id, "spotify");
+    expect(ctx.room.theme).toBe("spotify");
     expect(ctx.room.phase).toBe("live");
   });
 
   it("breaks a tie at random — and picks at random with no votes", () => {
     const tie = started({ voteSec: 10 }, () => 0.99);
-    tie.sessions.vote(tie.room.code, tie.a.id, "fancode");
-    tie.sessions.vote(tie.room.code, tie.b.id, "bookmyshow");
-    expect(tie.room.theme).toBe("bookmyshow");
+    tie.sessions.vote(tie.room.code, tie.a.id, "netflix");
+    tie.sessions.vote(tie.room.code, tie.b.id, "gpay");
+    expect(tie.room.theme).toBe("gpay");
 
     const none = started({}, () => 0); // voteSec 0: nobody votes
-    expect(none.room.theme).toBe("nasdaq");
+    expect(none.room.theme).toBe("bookmyshow");
   });
 
   it("briefs everyone before round 1; the round starts once all have continued", () => {
@@ -103,6 +104,28 @@ describe("SessionService", () => {
     expect([...room.briefed]).toEqual([a.id]);
     sessions.continueBriefing(room.code, b.id);
     expect(room.phase).toBe("live"); // buySec 0 here
+  });
+
+  it("shows the winning theme for a few seconds before the briefing", () => {
+    vi.useFakeTimers();
+    try {
+      const { room, advance } = started({ themePickSec: 3, briefingSec: 60 });
+      expect(room.phase).toBe("themePick");
+      expect(room.theme).not.toBeNull();
+      advance(3100);
+      vi.advanceTimersByTime(3100);
+      expect(room.phase).toBe("briefing");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("lets staff move a stuck briefing on", () => {
+    const { sessions, room } = started({ briefingSec: 60 });
+    expect(room.phase).toBe("briefing");
+    sessions.skipBriefing(room.code);
+    expect(room.phase).toBe("live");
+    expect(() => sessions.skipBriefing(room.code)).not.toThrow(); // already started: nothing to do
   });
 
   it("doesn't let a disconnected player hold up the briefing", () => {
@@ -121,7 +144,7 @@ describe("SessionService", () => {
 
   it("refuses votes once voting has closed", () => {
     const { sessions, room, a } = started();
-    expect(() => sessions.vote(room.code, a.id, "miniclip")).toThrow("Voting has closed.");
+    expect(() => sessions.vote(room.code, a.id, "spotify")).toThrow("Voting has closed.");
   });
 
   it("routes a player's press to their side, with their name", () => {

@@ -9,7 +9,6 @@ import {
   type DuelState,
   type Effect,
   type EffectKind,
-  type ExtraDefenceId,
   type Part,
   type RejectReason,
   type Side,
@@ -21,22 +20,17 @@ import {
 /** Everything fixed for one round. */
 export type MatchSetup = { scenario: Scenario; config: SimConfig };
 
-const EXTRA_DEFENCES: readonly ExtraDefenceId[] = ["splitter", "bouncer", "shelf", "backupDb", "lockAddress", "backupMonitor"];
-/** What switches off first when a team can't pay upkeep (after spare servers). */
-const SWITCH_OFF_ORDER: readonly ExtraDefenceId[] = ["backupMonitor", "lockAddress", "backupDb", "shelf", "bouncer", "splitter"];
-
-function newSite({ scenario, config }: MatchSetup): SiteState {
+function newSite({ scenario }: MatchSetup): SiteState {
   return {
     servers: Array.from({ length: scenario.startServers }, (_, id) => ({ id, bootTicksLeft: 0, meltedTicksLeft: 0 })),
     nextServerId: scenario.startServers,
-    owned: { splitter: 0, bouncer: 0, shelf: 0, backupDb: 0, lockAddress: 0, backupMonitor: 0 },
+    serversBought: 0,
+    owned: { bouncer: 0, lockAddress: 0 },
     setups: [],
-    shelfWarmth: 0,
     coins: scenario.startCoins,
     health: 100,
     crashTicksLeft: 0,
     critical: false,
-    switchOffTicks: 0,
     effects: [],
     incoming: [],
     cooldowns: {},
@@ -49,7 +43,7 @@ function newSite({ scenario, config }: MatchSetup): SiteState {
       lost: 0,
       servedShare: 1,
       utilization: 0,
-      passShare: { door: 1, servers: 1, shelf: 1, db: 1 },
+      passShare: { door: 1, servers: 1 },
       bottleneck: null,
     },
     totals: {
@@ -146,18 +140,7 @@ export function siteScore(site: SiteState, config: SimConfig): number {
   return site.totals.served - site.totals.lost * config.lostPenalty;
 }
 
-/** Upkeep per second: running/starting servers plus owned defences. Melted servers are free. */
-export function upkeepPerSec(site: SiteState, config: SimConfig): number {
-  const { defences } = config.items;
-  const servers = site.servers.filter((u) => u.meltedTicksLeft === 0).length;
-  return (
-    servers * defences.server.upkeepPerSec +
-    EXTRA_DEFENCES.reduce((sum, id) => sum + site.owned[id] * defences[id].upkeepPerSec, 0) +
-    site.setups.reduce((sum, x) => sum + defences[x.item].upkeepPerSec, 0)
-  );
-}
-
-/** What an item costs this side right now (repeated attacks cost more). */
+/** What an item costs this side right now (repeats and extra servers cost more). */
 export function priceOf(site: SiteState, item: ItemId, config: SimConfig): number {
   if (isAttack(item)) {
     const same = site.attacksUsed[item] ?? 0;
@@ -165,7 +148,8 @@ export function priceOf(site: SiteState, item: ItemId, config: SimConfig): numbe
     return Math.round(config.items.attacks[item].price * (1 + config.attackPriceStep * same + config.attackFatigueStep * total));
   }
   if (isUtility(item)) return config.items.utilities[item].price;
-  return config.items.defences[item].price;
+  const spec = config.items.defences[item];
+  return spec.price + (item === "server" ? spec.priceStep * site.serversBought : 0);
 }
 
 // ---------- actions ----------
@@ -193,8 +177,9 @@ function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean
       const count =
         extra === "server" ? site.servers.length : site.owned[extra] + site.setups.filter((x) => x.item === extra).length;
       if (count >= spec.max) return reject("max");
-      if (!pay(spec.price)) return reject("coins");
+      if (!pay(priceOf(site, a.item, config))) return reject("coins");
       if (a.item === "server") {
+        site.serversBought++;
         site.servers.push({
           id: site.nextServerId++,
           bootTicksLeft: paused ? 0 : toTicks(config.bootSec, config),
@@ -203,34 +188,10 @@ function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean
         site.totals.peakServers = Math.max(site.totals.peakServers, site.servers.length);
       } else if (paused) {
         site.owned[a.item]++;
-        if (a.item === "shelf") site.shelfWarmth = 1;
       } else {
         site.setups.push({ item: a.item, ticksLeft: toTicks(config.setupSec, config) });
       }
       events.push({ side: a.side, type: "bought", item: a.item, by: a.by });
-      return;
-    }
-
-    case "sell": {
-      if (!isDefence(a.item)) return reject("wrongKind");
-      const spec = config.items.defences[a.item];
-      if (a.item === "server") {
-        if (site.servers.length <= config.minServers) return reject("min");
-        // Sell a starting server first, then a healthy one, melted last.
-        const order = [...site.servers.keys()].reverse();
-        const pick =
-          order.find((i) => site.servers[i]!.bootTicksLeft > 0) ??
-          order.find((i) => site.servers[i]!.meltedTicksLeft === 0) ??
-          order[0]!;
-        site.servers.splice(pick, 1);
-      } else {
-        const pending = site.setups.findIndex((x) => x.item === a.item);
-        if (pending >= 0) site.setups.splice(pending, 1);
-        else if (site.owned[a.item] > 0) site.owned[a.item]--;
-        else return reject("none");
-      }
-      site.coins += spec.price * config.sellRefund;
-      events.push({ side: a.side, type: "sold", item: a.item, by: a.by });
       return;
     }
 
@@ -267,6 +228,10 @@ function applyAction(s: DuelState, a: Action, setup: MatchSetup, paused: boolean
       events.push({ side: target, type: "attackIncoming", attack: a.item, inSec: spec.warningSec });
       return;
     }
+
+    // Not a kind the game has (selling was removed) — never trust a client.
+    default:
+      return reject("wrongKind");
   }
 }
 
@@ -304,18 +269,10 @@ function landAttack(target: SiteState, side: Side, attack: AttackId, { config }:
   switch (attack) {
     case "surge":
     case "bots":
-    case "slowDb":
-    case "slowServers":
     case "jam":
       addEffect(target, attack, ticks);
       break;
-    // These have a matching defence that cuts them to a blip (it fails over / backs up).
-    case "breakSplitter":
-      addEffect(target, attack, target.owned.splitter > 0 ? toTicks(2, config) : ticks);
-      break;
-    case "blindfold":
-      addEffect(target, attack, target.owned.backupMonitor > 0 ? toTicks(1, config) : ticks);
-      break;
+    // Has a matching defence that cuts it to a blip.
     case "wrongTurn":
       addEffect(target, attack, target.owned.lockAddress > 0 ? toTicks(1, config) : ticks);
       break;
@@ -352,7 +309,6 @@ const healthTarget = (share: number, config: SimConfig): number =>
   Math.min(1, Math.max(0, (share - config.healthZeroAt) / (config.healthFullAt - config.healthZeroAt))) * 100;
 
 function tickTimers(site: SiteState, side: Side, setup: MatchSetup, events: SimEvent[]): void {
-  const { config } = setup;
   for (const key of Object.keys(site.cooldowns) as (keyof typeof site.cooldowns)[]) {
     const left = site.cooldowns[key]!;
     if (left <= 1) delete site.cooldowns[key];
@@ -369,17 +325,12 @@ function tickTimers(site: SiteState, side: Side, setup: MatchSetup, events: SimE
   }
   if (restored) events.push({ side, type: "serversRestored" });
 
-  if (site.owned.shelf > 0) {
-    site.shelfWarmth = Math.min(1, site.shelfWarmth + 1 / (config.shelfWarmSec * config.tickRate));
-  }
   for (const x of site.setups) x.ticksLeft--;
   for (const done of site.setups.filter((x) => x.ticksLeft <= 0)) {
     site.owned[done.item]++;
-    if (done.item === "shelf") site.shelfWarmth = 0;
     events.push({ side, type: "defenceReady", item: done.item });
   }
   site.setups = site.setups.filter((x) => x.ticksLeft > 0);
-  if (site.switchOffTicks > 0) site.switchOffTicks--;
   if (site.regroupTicks > 0) site.regroupTicks--;
 
   for (const inc of site.incoming) inc.ticksUntil--;
@@ -431,42 +382,20 @@ function flowSite(site: SiteState, side: Side, peopleRate: number, comeback: boo
     return;
   }
 
-  // Front door (+ Bouncer)
+  // Gate (+ Bouncer)
   const bouncer = site.owned.bouncer > 0;
   const botsIn = bots * (bouncer ? 1 - config.bouncerBotBlock : 1);
   const peopleIn = people * (bouncer ? 1 - config.bouncerFalsePositive : 1);
 
-  // Servers (+ Traffic splitter, Overclock; attacks: splitter knocked out, servers slowed)
-  const online = onlineServers(site);
-  const free = config.splitterFreeServers;
-  const knockedOut = findEffect(site, "breakSplitter");
-  const effective = knockedOut
-    ? Math.min(online, 2) + Math.max(0, online - 2) * attacks.breakSplitter.strength
-    : site.owned.splitter > 0
-      ? online
-      : Math.min(online, free) + Math.max(0, online - free) * config.unsplitEfficiency;
-  const slowed = findEffect(site, "slowServers") ? attacks.slowServers.strength : 1;
-  const boost = (findEffect(site, "overclock") ? utilities.overclock.amount : 1) * slowed;
-  const capacity = effective * config.serverCapacity * boost * dt;
+  // Servers (+ Overclock): the only capacity limit — what they can't take gives up.
+  const boost = findEffect(site, "overclock") ? utilities.overclock.amount : 1;
+  const capacity = onlineServers(site) * config.serverCapacity * boost * dt;
   const demand = peopleIn + botsIn;
   const serverPass = demand > 0 ? Math.min(1, capacity / demand) : 1;
-  const through = peopleIn * serverPass;
 
-  // Fast shelf + database
-  const hit = site.owned.shelf > 0 ? config.shelfHitShare * site.shelfWarmth : 0;
-  const dbLoad = through * (1 - hit);
-  const slow = findEffect(site, "slowDb") ? attacks.slowDb.strength : 1;
-  const dbCapacity = (config.dbCapacity + site.owned.backupDb * config.dbPerBackup) * slow * dt;
-  const dbPass = dbLoad > 0 ? Math.min(1, dbCapacity / dbLoad) : 1;
-
-  const served = through * hit + dbLoad * dbPass;
+  const served = peopleIn * serverPass;
   const lost = people - served;
-  const losses: Record<Part, number> = {
-    door: people - peopleIn,
-    servers: peopleIn - through,
-    shelf: 0,
-    db: dbLoad * (1 - dbPass),
-  };
+  const losses: Record<Part, number> = { door: people - peopleIn, servers: peopleIn - served };
   const worst = (Object.keys(losses) as Part[]).reduce((a, b) => (losses[b] > losses[a] ? b : a));
 
   site.totals.served += served;
@@ -477,12 +406,7 @@ function flowSite(site: SiteState, side: Side, peopleRate: number, comeback: boo
     lost,
     servedShare: people > 0 ? served / people : 1,
     utilization: capacity > 0 ? Math.min(1, demand / capacity) : demand > 0 ? 1 : 0,
-    passShare: {
-      door: people > 0 ? peopleIn / people : 1,
-      servers: serverPass,
-      shelf: site.owned.shelf > 0 ? site.shelfWarmth : 1,
-      db: dbPass,
-    },
+    passShare: { door: people > 0 ? peopleIn / people : 1, servers: serverPass },
     bottleneck: losses[worst] > people * 0.03 ? worst : null,
   };
 
@@ -500,26 +424,6 @@ function flowSite(site: SiteState, side: Side, peopleRate: number, comeback: boo
   const earned = served * config.incomePerPerson * (comeback ? config.comebackBoost : 1);
   site.coins += earned;
   site.totals.coinsEarned += earned;
-}
-
-function payUpkeep(site: SiteState, side: Side, { config }: MatchSetup, events: SimEvent[]): void {
-  site.coins -= upkeepPerSec(site, config) / config.tickRate;
-  if (site.coins >= 0) return;
-  site.coins = 0;
-  if (site.switchOffTicks > 0) return;
-
-  // Can't pay: switch off the newest server, then defences.
-  site.switchOffTicks = config.tickRate;
-  const healthy = site.servers.filter((u) => u.meltedTicksLeft === 0);
-  if (healthy.length > config.minServers) {
-    const last = site.servers.lastIndexOf(healthy[healthy.length - 1]!);
-    site.servers.splice(last, 1);
-  } else {
-    const id = SWITCH_OFF_ORDER.find((d) => site.owned[d] > 0);
-    if (!id) return;
-    site.owned[id]--;
-  }
-  events.push({ side, type: "serverSwitchedOff" });
 }
 
 function updateAlerts(site: SiteState, side: Side, config: SimConfig, events: SimEvent[]): void {
@@ -571,10 +475,7 @@ export function step(prev: DuelState, actions: readonly Action[], setup: MatchSe
     flowSite(s.sites[side], side, visitors[side], comeback, setup, events);
   }
 
-  for (const side of SIDES) {
-    payUpkeep(s.sites[side], side, setup, events);
-    updateAlerts(s.sites[side], side, config, events);
-  }
+  for (const side of SIDES) updateAlerts(s.sites[side], side, config, events);
 
   for (const r of s.rushes) {
     for (const side of SIDES) {

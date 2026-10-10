@@ -28,9 +28,64 @@ Foundation from the first (co-op) version — kept and reused by the duel:
 - [x] **Testing**: unit / integration / balance / web / e2e / load, organised
       by kind; GitHub Actions for CI, E2E and nightly load (docs/TESTING.md)
 
+## Redesign queue (after playtest 1, 2026-10-10) — do these first
+
+Playtest 1 with tech-club juniors: too slow to learn (two rounds gone before
+it clicked), too much on screen, themes unfamiliar, still too technical, and
+the UI felt lifeless. Design in docs/GAME.md; reasons in DECISIONS.md. Event
+is **Fri 16 Oct**. In order; each ends playable and tested (update
+ARCHITECTURE.md as code lands).
+
+1. [x] **12 cards, simpler economy** (Sat 10–Sun 11): drop the 8 cut items
+       (engine, validators, shop, bots); traffic splitter always on;
+       database / fast shelf out of play — servers are the only capacity
+       limit; no upkeep, no selling; each extra server costs more, with a
+       max; Destroy servers → Wreck servers, Wrong Turn → Steal visitors,
+       Jam → Freeze their controls; new keys (1–3, Q–R, A–G); retune with the
+       bots and update the balance tests and BALANCE.md
+2. [x] **New themes** (Sun 11): BookMyShow, Netflix, Spotify, Google Pay —
+       words, card names, round lines, accents, music styles, logos; vote
+       cards as app icons
+3. [x] **Theme reveal** (3s) + **briefing in 5 steps** (How to play →
+       Attacks → Defences → Boosts → Demo), player-paced, no visible timer,
+       hidden 3-min cap, "Waiting for…", staff skip in `/admin` (Sun 11)
+4. [x] **The arena** (Mon 12): both sites side by side, queues, buildings per
+       theme, defences shown on the building, attacks flying across, shield /
+       overclock / wreck / steal / freeze / crash animations, top bar with
+       tug-of-war, card hand, floating alerts with the key to press,
+       full-width banners; flat poster look (Barlow Condensed, no cards).
+       Replaces the live map, Tab switching, feed, timelines and mini map
+5. [x] **Demo match** (Tue 13 morning): scripted action log through the real
+       engine → recorded timeline → played in the arena with captions;
+       Enter skips
+6. [x] **Reveal + staff pages** (Tue 13 morning): reveal decodes the 12 cards
+       and the new themes; `/live` shows the arena
+7. [ ] **Playtest 2 with the juniors** (Tue 13 evening) → log in BALANCE.md
+8. [ ] **Fixes from playtest 2** (Wed 14)
+9. [ ] **Lab setup + rehearsal + freeze** (Thu 15) — see items 16 and 19
+
+Done in one go on Sat 10 — queue items 1–6 above. Notes for playtest 2:
+Netflix, Spotify and Google Pay have no logo files yet (the vote cards show the
+name on the app-icon tile; drop transparent PNGs in `web/public/themes/` to
+replace it). The demo is recorded from the engine — re-record it with
+`pnpm --filter @overclock/server demo` after any rule change (a test fails if
+it drifts).
+
+**Visual redesign (Sat 10 Oct, after mocks approved in `docs/mocks/`):** new
+look ported to React — tokens + Barlow Condensed (self-hosted), vote poster
+wall + theme takeover, landing, the server-room arena with five attack
+animations, card hand, scoreboard, restyled room / round result / final /
+reveal / staff pages (sign-in, `/admin`, `/live`, `/leaderboard`) — every
+screen is now in the poster language; typecheck, unit, integration and all 9
+e2e green. To test next: a full match on lab-size screens, the demo step,
+`/live` on the projector.
+
+If time: the demo looping on Home and `/live` between matches.
+
 ## Build queue (duel)
 
-In order. Each item ends playable and tested.
+In order. Each item ends playable and tested. Items touched by the redesign
+are noted; the redesign queue above wins where they differ.
 
 1. [x] **Rooms**: 4 slots (auto-balanced on join), slot picking, ready
        toggles (slot change clears ready), auto-start when all ready and
@@ -66,7 +121,8 @@ In order. Each item ends playable and tested.
         featured one big in its theme, 10s rotation, click to show, pin;
         `/leaderboard` — 1v1 / 2v2 top 10 (new entries flash) and awards
 13a. [x] **Briefing** before round 1: every item in the theme's words with
-        counters; starts when all press Continue, 60s cap
+        counters; starts when all press Continue, 60s cap *(being replaced by
+        the 5-step briefing — redesign 3)*
 13b. [x] **Control panel** `/admin` (passcode, rate-limited; "Staff" link on
         Home): rooms (end), leaderboard (hide / unhide, reset), links to /live
         and /leaderboard; players see only their own place; name filter (incl.
@@ -82,20 +138,26 @@ In order. Each item ends playable and tested.
 17. [~] **Juice**: sound done — effects for every action and event, a
         signature sound per attack, attack-ready ping, heartbeat when
         critical, last-10s clock, live-round music bed that speeds up at the
-        end (M mutes, N music). Attack and crash animations still to do
-18. [ ] **Playtest with non-technical students**; tune; fix
+        end (M mutes, N music). Map rebuilt as a real map: the theme's
+        geography (world / India land dots, real cities, traffic arcs) feeding
+        a data centre seen from above; animations for incoming attacks, hits,
+        wrecked racks, botnets, Wrong Turn, shield, slowed racks, crashes
+        *(the map is being replaced by the arena — redesign 4)*
+18. [~] **Playtest with non-technical students**; tune; fix — playtest 1
+        done 2026-10-10 (led to the redesign); playtest 2 is redesign 7
 19. [ ] **Rehearsal + freeze**: full mock event, laptop fallback, bug fixes only
 
 Later, if time: play vs bot · 1v2 with a handicap · spectator view · `/admin`.
 
 ## Cut order if behind
 
-1. Sound
-2. Slow their servers or Knock out their splitter (keep seven attacks)
+1. Demo looping on Home / `/live`
+2. Per-theme buildings → one building shape, themed by colour and logo
 3. Fourth theme
 4. Fun awards
 5. Detailed reveal cards → one static card
+6. Arena animations beyond warning → hit → relief (keep those)
 
-**Never cut:** rooms + ready, at least four attacks with counters, the shop
-during live rounds, 3 rounds, saving results, the leaderboard, the big screen,
-crash/reboot.
+**Never cut:** rooms + ready, the 5 attacks with counters, the card hand
+during live rounds, both sites on one screen, the briefing steps and the demo,
+3 rounds, saving results, the leaderboard, the big screen, crash/reboot.

@@ -26,6 +26,7 @@ type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 const FAST: GameTiming = {
   voteSec: 5,
+  themePickSec: 0,
   briefingSec: 0,
   buySec: 0,
   resultSec: 0,
@@ -183,11 +184,11 @@ describe("theme vote", () => {
     expect((await voting).format).toBe("2v2");
 
     const chosen = nextRoom(cs[0]!, (r) => r.theme !== null);
-    ok(await call(cs[0]!, "vote:theme", { theme: "miniclip" }));
-    ok(await call(cs[1]!, "vote:theme", { theme: "miniclip" }));
-    ok(await call(cs[2]!, "vote:theme", { theme: "nasdaq" }));
+    ok(await call(cs[0]!, "vote:theme", { theme: "spotify" }));
+    ok(await call(cs[1]!, "vote:theme", { theme: "spotify" }));
+    ok(await call(cs[2]!, "vote:theme", { theme: "netflix" }));
     ok(await call(cs[3]!, "vote:theme", { theme: "bookmyshow" }));
-    expect((await chosen).theme).toBe("miniclip");
+    expect((await chosen).theme).toBe("spotify");
   });
 
   it("breaks a tie at random", async () => {
@@ -195,9 +196,9 @@ describe("theme vote", () => {
     const { cs } = await room(2);
     await readyAll(cs);
     const chosen = nextRoom(cs[0]!, (r) => r.theme !== null);
-    ok(await call(cs[0]!, "vote:theme", { theme: "fancode" }));
-    ok(await call(cs[1]!, "vote:theme", { theme: "nasdaq" }));
-    expect((await chosen).theme).toBe("nasdaq"); // the last of the tied themes, picked by random() = 0.99
+    ok(await call(cs[0]!, "vote:theme", { theme: "netflix" }));
+    ok(await call(cs[1]!, "vote:theme", { theme: "gpay" }));
+    expect((await chosen).theme).toBe("gpay"); // the last of the tied themes, picked by random() = 0.99
   });
 });
 

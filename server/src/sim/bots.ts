@@ -28,7 +28,7 @@ type Plan = {
   reactionSec: number;
 };
 
-type Memo = { nextScaleTick: number };
+type Memo = { nextScaleTick: number; /** Announced attacks already answered. */ handled: Set<number> };
 
 /**
  * Defence the way an attentive player does it: answer each announced attack
@@ -44,28 +44,18 @@ function defend(state: DuelState, side: Side, config: SimConfig, wallet: Wallet,
 
   const shield = () => !findEffect(site, "shield") && use("shield");
   for (const inc of site.incoming) {
-    if (inc.ticksUntil !== toTicks(2, config)) continue; // react once, 2s before it lands
+    // React once, when 2s or less remain — a slow player gets there later, not never.
+    if (memo.handled.has(inc.id) || inc.ticksUntil > toTicks(2, config)) continue;
+    memo.handled.add(inc.id);
     switch (inc.attack) {
       case "bots":
         if (!site.owned.bouncer) buy("bouncer") || shield();
-        break;
-      case "slowDb":
-        if (site.owned.backupDb < 1) buy("backupDb");
         break;
       case "surge":
         if (!use("overclock")) {
           buy("server");
           buy("server");
         }
-        break;
-      case "slowServers":
-        use("overclock") || shield();
-        break;
-      case "breakSplitter":
-        if (!site.owned.splitter) shield();
-        break;
-      case "blindfold":
-        if (!site.owned.backupMonitor) shield();
         break;
       case "wrongTurn":
         if (!site.owned.lockAddress) shield();
@@ -80,20 +70,13 @@ function defend(state: DuelState, side: Side, config: SimConfig, wallet: Wallet,
   if (site.servers.some((u) => u.meltedTicksLeft > 0)) use("instantBackup");
   if (site.health < 35) use("repair");
 
-  // Scale servers from what's visible: the red part of the map, idle servers.
+  // Scale servers from what's visible: a queue building at the counters.
   if (state.tick >= memo.nextScaleTick) {
     const booting = site.servers.filter((u) => u.bootTicksLeft > 0).length;
-    const bottleneck = site.flow.bottleneck;
-    if (bottleneck === "servers" && booting < 2 && buy("server")) {
+    if (site.flow.bottleneck === "servers" && booting < 2 && buy("server")) {
       memo.nextScaleTick = state.tick + toTicks(0.6, config);
-    } else if (bottleneck === "db" && site.owned.backupDb < 2 && buy("backupDb")) {
-      memo.nextScaleTick = state.tick + toTicks(2, config);
-    } else if (site.flow.utilization < 0.6 && onlineServers(site) > 4 && booting === 0) {
-      out.push(act(side, "sell", "server"));
-      memo.nextScaleTick = state.tick + toTicks(1, config);
     }
   }
-  if (onlineServers(site) > 5 && !site.owned.splitter) buy("splitter");
   return out;
 }
 
@@ -105,11 +88,7 @@ function chooseAttack(state: DuelState, side: Side, config: SimConfig, fund: num
   const ranked: AttackId[] = [
     ...(them.owned.lockAddress ? [] : (["wrongTurn"] as const)),
     ...(them.owned.bouncer ? [] : (["bots"] as const)),
-    ...(them.owned.backupMonitor ? [] : (["blindfold"] as const)),
-    ...(them.owned.backupDb ? [] : (["slowDb"] as const)),
-    ...(them.owned.splitter ? [] : (["breakSplitter"] as const)),
     "destroy",
-    "slowServers",
     "surge",
     "jam",
   ];
@@ -117,7 +96,7 @@ function chooseAttack(state: DuelState, side: Side, config: SimConfig, fund: num
 }
 
 function planned(config: SimConfig, plan: Plan): Policy {
-  const memo: Memo = { nextScaleTick: 0 };
+  const memo: Memo = { nextScaleTick: 0, handled: new Set() };
   let fund = 0;
   let lastEarned = 0;
   const every = Math.max(1, toTicks(plan.reactionSec, config));

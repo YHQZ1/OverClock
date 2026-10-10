@@ -19,18 +19,21 @@ the app code *and* the tests.
 ```
 server/tests/
   unit/          engine rules (engine.test.ts), rooms, phase machine (session),
-                 views (blindfold masking, hidden coins), scoring, validators
+                 views (hidden coins), scoring, validators, the demo match
+                 (every attack shown; committed demo.json matches the engine)
   integration/   a real server on a random port + Socket.IO clients:
                  rooms, ready, vote, a full duel, attacks, forfeit, rejoin,
                  leaderboard pushed after a saved match; results.db.test.ts —
                  the Postgres result store against a real database
   balance/       bots play each other across seeds: idle loses, mirror matches
-                 draw, no strategy wins > 90%, every attack has a counter that
-                 cuts its damage at least in half
+                 draw, no strategy wins > 90% against opponents that defend,
+                 every attack has a counter that cuts its damage at least in half
   load/load.ts   standalone script (not Vitest) — see below
-web/tests/unit/  alert text, feed text (never technical terms), store
-e2e/tests/       Playwright: home, form errors, a whole 1v1 match, jam + blindfold
-                 landing on the other screen, refresh mid-round, Done clears the PC
+web/tests/unit/  alert text (names the key to press), feed text (never technical
+                 terms), store (banners), card keys and names per theme, reveal
+e2e/tests/       Playwright: home, form errors, a whole 1v1 match through the
+                 5-step briefing, freeze + bots landing on the other screen,
+                 refresh mid-round, Done clears the PC
 ```
 
 Server tests are split into Vitest **projects** (`server/vitest.config.ts`), so
@@ -78,6 +81,18 @@ event-loop lag p95 2.9 ms, 0 errors.
 ## Tools for humans
 
 - `FAST_ROUNDS=1 pnpm dev` — 20-second rounds (`FAST_ROUND_SEC` to change).
+- `pnpm dev:round` — a match is **one round** (`DEV_ROUNDS=1`; any of 1–3), then
+  straight to the final and the reveal. Combine with `FAST_ROUNDS=1` for a
+  20-second match: `FAST_ROUNDS=1 pnpm dev:round`. Refused when
+  `NODE_ENV=production`.
+- `localhost:5173/dev/reveal?theme=gpay` (dev only) — "What you actually built"
+  with a made-up match (a few cards used, a few that hit you).
+- `localhost:5173/dev/briefing?theme=netflix` (dev only; themes
+  `bookmyshow` · `netflix` · `spotify` · `gpay`, add `&done=1` for the waiting
+  screen) — the whole briefing without playing a match.
+- `pnpm --filter @overclock/server demo` — re-record the briefing's demo match
+  from the engine into `web/src/game/demo.json`. Do it after any rule or
+  price change; a unit test fails while the committed file is out of date.
 - `pnpm --filter @overclock/server exec tsx src/scripts/play.ts <CODE>` — a bot
   joins your room and plays you.
 - `pnpm --filter @overclock/server balance` — the full bot balance table.

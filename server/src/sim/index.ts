@@ -4,7 +4,7 @@
 export { DEFAULT_CONFIG, toTicks, type SimConfig } from "./config.js";
 export * from "./items.js";
 export { ROUNDS, type Scenario, type RushSpec } from "./scenario.js";
-export { createDuel, step, findEffect, onlineServers, upkeepPerSec, siteScore, priceOf, type MatchSetup, type StepOptions } from "./engine.js";
+export { createDuel, step, findEffect, onlineServers, siteScore, priceOf, type MatchSetup, type StepOptions } from "./engine.js";
 export * from "./score.js";
 export { runRound, replay, type ActionLog, type RoundRun, type Policy } from "./run.js";
 export { BOTS, type BotName } from "./bots.js";

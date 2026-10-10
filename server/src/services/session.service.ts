@@ -19,11 +19,11 @@ export type SessionDeps = {
   results?: ResultService;
 };
 
-const MATCH_PHASES: readonly Phase[] = ["vote", "briefing", "buy", "live", "roundResult"];
+const MATCH_PHASES: readonly Phase[] = ["vote", "themePick", "briefing", "buy", "live", "roundResult"];
 
 /**
  * The room phase machine — the server decides which screen every PC shows:
- * room → vote → briefing → (buy → live → roundResult) × 3 → final.
+ * room → vote → themePick → briefing → (buy → live → roundResult) × 3 → final.
  */
 export class SessionService {
   private readonly timers = new Map<string, NodeJS.Timeout>();
@@ -134,16 +134,33 @@ export class SessionService {
   private finishVote(room: Room): void {
     if (room.phase !== "vote") return;
     room.theme = this.pickTheme(room);
-    this.startBriefing(room);
+    this.startThemePick(room);
+  }
+
+  /** A few seconds to see which world won before the briefing starts. */
+  private startThemePick(room: Room): void {
+    room.phase = "themePick";
+    this.schedule(room, this.timing.themePickSec, () => this.startBriefing(room));
   }
 
   // ---------- briefing ----------
 
-  /** How to play, in the chosen theme's words. Round 1 waits until everyone's read it (or time's up). */
+  /**
+   * How to play, in the chosen theme's words, at each player's own pace.
+   * Round 1 waits until everyone's finished — the timer is only a hidden cap.
+   */
   private startBriefing(room: Room): void {
     room.phase = "briefing";
     room.briefed.clear();
     this.schedule(room, this.timing.briefingSec, () => this.finishBriefing(room));
+  }
+
+  /** Admin: a briefing someone has wandered away from. */
+  skipBriefing(code: string): void {
+    const room = this.rooms.require(code);
+    if (room.phase !== "briefing") return;
+    logger.warn("briefing skipped by admin", { code });
+    this.finishBriefing(room);
   }
 
   continueBriefing(code: string, playerId: string): void {

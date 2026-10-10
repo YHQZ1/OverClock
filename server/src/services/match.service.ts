@@ -82,7 +82,7 @@ export class MatchService {
     return live ? toMatchView(live.state, side, live.setup, { round: live.round, phase: live.phase }) : null;
   }
 
-  /** Both sites for a big screen — no coins, no blindfold masking. */
+  /** Both sites for a big screen — no coins. */
   spectate(code: string): { round: number; phase: "buy" | "live"; timeLeftSec: number; sites: Record<Side, SiteView> } | null {
     const live = this.rounds.get(code);
     if (!live) return null;

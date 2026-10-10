@@ -16,6 +16,7 @@
     "test:load": "tsx tests/load/load.ts",
     "typecheck": "tsc -p . --noEmit && tsc -p tests",
     "balance": "tsx src/scripts/balance.ts",
+    "demo": "tsx src/scripts/demo.ts",
     "db:generate": "drizzle-kit generate"
   },
   "devDependencies": {

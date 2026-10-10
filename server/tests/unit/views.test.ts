@@ -27,29 +27,24 @@ describe("match views", () => {
     expect(JSON.stringify(view)).not.toMatch(/peopleRate|botRate|trafficRate/);
   });
 
-  it("black out a blindfolded side's own map and warnings — but not for the opponent", () => {
+  it("show a site's wrecked servers and frozen controls to everyone", () => {
     let s = createDuel(setup, 1);
     s = { ...s, sites: { 1: { ...s.sites[1], coins: 5000 }, 2: s.sites[2] } };
-    s = step(s, [{ side: 1, kind: "attack", item: "blindfold" }], setup).state;
-    s = step(s, [{ side: 1, kind: "attack", item: "bots" }], setup).state; // regrouping — rejected, fine
-    s = run(s, toTicks(3, DEFAULT_CONFIG));
+    s = step(s, [{ side: 1, kind: "attack", item: "destroy" }], setup).state;
+    s = run(s, toTicks(DEFAULT_CONFIG.items.attacks.destroy.warningSec, DEFAULT_CONFIG) + 1);
 
-    const victim = toMatchView(s, 2, setup, live);
-    expect(victim.me.blind).toBe(true);
-    expect(Object.values(victim.me.parts).every((p) => p === "hidden")).toBe(true);
-    expect(victim.me.servers.every((u) => u.state === "unknown")).toBe(true);
-    expect(victim.incoming).toEqual([]);
-
-    const attacker = toMatchView(s, 1, setup, live);
-    expect(attacker.them.blind).toBe(false);
-    expect(attacker.them.parts.servers).not.toBe("hidden");
+    for (const side of [1, 2] as const) {
+      const view = toMatchView(s, side, setup, live);
+      const victim = side === 2 ? view.me : view.them;
+      expect(victim.servers.filter((u) => u.state === "wrecked")).toHaveLength(2);
+    }
   });
 
   it("list every shop item with its price, cooldown and affordability", () => {
     const view = toMatchView(createDuel(setup, 1), 1, setup, { round: 1, phase: "buy" });
-    expect(view.shop.filter((i) => i.kind === "defence")).toHaveLength(7);
+    expect(view.shop.filter((i) => i.kind === "defence")).toHaveLength(3);
     expect(view.shop.filter((i) => i.kind === "utility")).toHaveLength(4);
-    expect(view.shop.filter((i) => i.kind === "attack")).toHaveLength(9);
+    expect(view.shop.filter((i) => i.kind === "attack")).toHaveLength(5);
     const server = view.shop.find((i) => i.id === "server")!;
     expect(server).toMatchObject({ owned: ROUNDS[0]!.startServers, affordable: true, cooldown: 0 });
   });

@@ -50,7 +50,7 @@ export type {
 
 export type Slot = 1 | 2 | 3 | 4;
 export type Format = "1v1" | "2v2";
-export type Phase = "room" | "vote" | "briefing" | "buy" | "live" | "roundResult" | "final";
+export type Phase = "room" | "vote" | "themePick" | "briefing" | "buy" | "live" | "roundResult" | "final";
 
 // ---------- room ----------
 
@@ -120,7 +120,7 @@ export type ScreenMatch = {
   code: string;
   format: Format;
   theme: ThemeId | null;
-  phase: "vote" | "briefing" | "buy" | "live" | "roundResult";
+  phase: "vote" | "themePick" | "briefing" | "buy" | "live" | "roundResult";
   round: number;
   totalRounds: number;
   /** Clock: the live round's time left, else the phase timer. */
@@ -158,11 +158,11 @@ export type RoomView = {
   /** playerId → theme, during and after the vote. */
   votes: Record<string, ThemeId>;
   theme: ThemeId | null;
-  /** Players who've read the briefing and pressed Continue. */
+  /** Players who've finished the briefing steps. */
   briefed: string[];
   round: number;
   totalRounds: number;
-  /** Countdown for timed phases (vote, buy, round result). */
+  /** Countdown for timed phases (vote, theme pick, buy, round result). The briefing's cap is never shown. */
   secondsLeft: number | null;
   rounds: RoundSummary[];
   final: FinalSummary | null;
@@ -170,9 +170,8 @@ export type RoomView = {
 
 // ---------- live duel ----------
 
-/** "hidden" = this side is blindfolded and can't see it. */
-export type PartStatus = "ok" | "strained" | "failing" | "none" | "hidden";
-export type ServerState = "booting" | "busy" | "idle" | "wrecked" | "down" | "unknown";
+export type PartStatus = "ok" | "strained" | "failing";
+export type ServerState = "booting" | "busy" | "idle" | "wrecked" | "down";
 export type ServerSlotView = { id: number; state: ServerState; progress: number };
 
 export type EffectView = { kind: EffectKind; secondsLeft: number; share: number };
@@ -197,15 +196,13 @@ export type SiteView = {
   /** Bots relative to real visitors (0 = none). */
   botShare: number;
   effects: EffectView[];
-  /** This side is blindfolded: its own map and alerts are dark. */
-  blind: boolean;
 };
 
 export type ShopItemView = {
   id: ItemId;
   kind: "defence" | "utility" | "attack";
   price: number;
-  /** Defences: working + setting up. */
+  /** Defences: working + setting up (servers: all of them). */
   owned: number;
   max: number;
   /** 0 → 1 of cooldown remaining (attacks include the regroup wait). */
@@ -222,13 +219,29 @@ export type MatchView = {
   phase: "buy" | "live";
   timeLeftSec: number;
   durationSec: number;
-  me: SiteView & { coins: number; incomePerSec: number; upkeepPerSec: number };
+  me: SiteView & { coins: number; incomePerSec: number };
   /** The opponent's site — their coins stay hidden. */
   them: SiteView;
   shop: ShopItemView[];
   incoming: AttackInFlight[];
   outgoing: AttackInFlight[];
 };
+
+// ---------- demo match ----------
+
+/** One moment of the scripted demo: both sites and the attacks in flight. Side 1 is drawn on the left. */
+export type DemoFrame = {
+  /** Seconds since the demo began. */
+  t: number;
+  sites: [SiteView, SiteView];
+  flights: { id: number; attack: AttackId; secondsLeft: number; /** The side it's flying at. */ side: Side }[];
+};
+
+/** A line shown while the demo plays. `{bots}` etc. are filled with the theme's card names. */
+export type DemoCaption = { at: number; text: string; focus: "left" | "right" | "both" };
+
+/** The scripted match shown in the briefing — recorded from the real engine (docs/GAME.md → The demo match). */
+export type DemoRecording = { durationSec: number; fps: number; frames: DemoFrame[]; captions: DemoCaption[] };
 
 // ---------- messages ----------
 
@@ -253,6 +266,8 @@ export interface ClientToServerEvents {
   "admin:rooms": (payload: Record<string, never>, ack: Ack<AdminRoom[]>) => void;
   /** Show the next / previous match, or a given one. */
   "admin:endRoom": (payload: { code: string }, ack: Ack<null>) => void;
+  /** Move a room stuck in the briefing on to round 1. */
+  "admin:skipBriefing": (payload: { code: string }, ack: Ack<null>) => void;
   /** Every saved entry, hidden ones included (newest scores first). */
   "admin:boards": (payload: Record<string, never>, ack: Ack<AdminBoards>) => void;
   "admin:hide": (payload: { matchId: string; side: Side; hidden: boolean }, ack: Ack<null>) => void;
