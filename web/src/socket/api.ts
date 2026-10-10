@@ -20,6 +20,7 @@ type Acked =
   | "admin:rooms"
   | "admin:boards"
   | "admin:endRoom"
+  | "admin:skipBriefing"
   | "admin:hide"
   | "admin:resetBoards";
 

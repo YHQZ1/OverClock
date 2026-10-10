@@ -12,8 +12,9 @@ describe("what you actually built", () => {
     }
   });
 
-  it("names every part of the map, and has a story and three apps to build for every theme", () => {
-    expect(PARTS_DECODED.map((p) => p.part)).toEqual(["crowd", "door", "servers", "shelf", "db"]);
+  it("names every part of the site — and says which ones aren't in the game — with a story and three apps to build per theme", () => {
+    expect(PARTS_DECODED.map((p) => p.part)).toEqual(["crowd", "door", "servers", "cache", "db"]);
+    expect(PARTS_DECODED.filter((p) => !p.played).map((p) => p.part)).toEqual(["cache", "db"]);
     for (const t of THEME_IDS) {
       expect(THEME_REVEAL[t].headline, t).toBeTruthy();
       expect(THEME_REVEAL[t].build, t).toHaveLength(3);

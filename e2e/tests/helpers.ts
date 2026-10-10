@@ -45,20 +45,32 @@ export async function duel(browser: Browser, errors: string[]) {
   await joinRoom(b, code, "Rahul");
   await a.keyboard.press("r");
   await b.keyboard.press("r");
-  await expect(a.getByRole("heading", { name: "Pick the site" })).toBeVisible();
-  await a.keyboard.press("3");
+  await expect(a.getByRole("heading", { name: "Pick the app" })).toBeVisible();
+  await a.keyboard.press("3"); // Spotify
   await b.keyboard.press("3");
-  // The briefing: round 1 starts once both have pressed Continue.
-  await expect(a.getByRole("button", { name: /Got it — continue/ })).toBeVisible();
-  await a.keyboard.press("Enter");
-  await expect(a.getByRole("button", { name: /Waiting for the others/ })).toBeVisible();
+  await expect(a.getByRole("heading", { name: "Spotify it is!" })).toBeVisible();
+  // The briefing, at each player's own pace: four steps and the demo; Enter moves on.
+  await expect(a.getByRole("heading", { name: "How to play" })).toBeVisible();
+  for (const title of ["Attacks", "Defences", "Boosts", "Watch a match"]) {
+    await a.keyboard.press("Enter");
+    await expect(a.getByRole("heading", { name: title })).toBeVisible();
+  }
+  await a.keyboard.press("Enter"); // "I'm ready"
+  await expect(a.getByText(/Waiting for Rahul/)).toBeVisible();
   await b.keyboard.press("Enter");
-  await expect(a.getByRole("status")).toContainText("Buy phase");
+  await b.keyboard.press("Enter");
+  await b.keyboard.press("Enter");
+  await b.keyboard.press("Enter");
+  await b.keyboard.press("Enter");
+  await expect(a.getByRole("status")).toContainText("Get ready");
   return { a, b, code };
 }
+
+/** The arena: both sites side by side. */
+export const arena = (page: Page) => page.getByRole("img", { name: /versus/ });
 
 export const alertBar = (page: Page) => page.getByRole("status");
 
 export async function waitForLive(page: Page): Promise<void> {
-  await expect(alertBar(page)).not.toContainText("Buy phase", { timeout: 15_000 });
+  await expect(alertBar(page)).not.toContainText("Get ready", { timeout: 15_000 });
 }

@@ -1,14 +1,14 @@
 import type { PlayerView, RoomView, Side, Slot } from "@server/types/contracts.js";
 import { useState, type FormEvent } from "react";
-import { TopBar } from "../../components/TopBar";
-import { Button, Frame, Label, SPLIT, SPLIT_SIDE, cx } from "../../components/ui";
+import { Button, cx } from "../../components/ui";
+import { StageHeader } from "../../components/StageHeader";
 import { useShortcut, useShortcuts } from "../../hooks/useShortcut";
 import { pickSlot, setReady, setTeamName } from "../../socket/api";
 
-const HOW_TO_PLAY = [
-  { title: "Keep your site alive", text: "Every visitor you let in earns coins. The red part of the map is what’s struggling." },
-  { title: "Flood theirs", text: "Spend coins on attacks — they get a warning, so pick your moment." },
-  { title: "Win 3 rounds", text: "Most visitors served wins. Defend, attack, or both — your call, any time." },
+const TIPS = [
+  { title: "Keep your site alive", text: "Every request you let in earns coins." },
+  { title: "Flood theirs", text: "Attacks show a warning first — pick your moment." },
+  { title: "Win 3 rounds", text: "Most people served wins. Defend, attack, or both." },
 ];
 
 const sideOf = (slot: Slot): Side => (slot <= 2 ? 1 : 2);
@@ -34,104 +34,102 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
   useShortcut("l", onLeave);
 
   return (
-    <Frame>
-      <TopBar right="Room" />
+    <div className="grid h-full min-h-[37.5rem] grid-rows-[auto_minmax(0,1fr)] bg-bg">
+      <StageHeader title="The room" right={room.format ?? "waiting for players"} />
 
-      <main className={SPLIT}>
-        <section className="flex min-w-0 flex-col">
-          <div className="flex flex-col gap-4 px-4 pt-[clamp(1.25rem,4vh,2.5rem)] pb-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-10">
+      <main className="grid min-h-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+          {/* the code everyone types in */}
+          <div className="flex flex-col gap-3 px-6 pt-[clamp(0.75rem,2.4vh,1.75rem)] pb-[clamp(0.75rem,2.4vh,1.75rem)] sm:flex-row sm:items-end sm:justify-between sm:px-8">
             <div>
-              <Label>Room code — share it with everyone playing</Label>
-              <div className="mt-2 flex" aria-label={`Room code ${room.code.split("").join(" ")}`}>
+              <span className="font-display text-[0.9375rem] font-bold tracking-[0.14em] text-ink/60 uppercase">Room code — share it with everyone playing</span>
+              <div className="mt-2 flex gap-1.5" aria-label={`Room code ${room.code.split("").join(" ")}`}>
                 {room.code.split("").map((ch, i) => (
                   <span
                     key={i}
-                    className="grid h-[clamp(4rem,11vh,6rem)] w-[clamp(3.5rem,9.5vh,5.25rem)] place-items-center border border-line-strong text-[clamp(2.375rem,7vh,3.75rem)] font-semibold tracking-[-0.04em] not-first:border-l-0"
+                    className="grid h-[clamp(4.25rem,12vh,6.5rem)] w-[clamp(3.5rem,9.5vh,5.25rem)] place-items-center bg-accent font-display text-[clamp(3rem,9vh,5rem)] leading-none font-extrabold text-on-accent"
                   >
                     {ch}
                   </span>
                 ))}
               </div>
             </div>
-            <p className="max-w-[30ch] pb-1 text-sm text-muted sm:text-right">
+            <p className="max-w-[30ch] text-sm text-ink/70 sm:text-right">
               Pick a slot (<kbd>1</kbd>–<kbd>4</kbd>), then press Ready. Two players = 1v1, four = 2v2.
             </p>
           </div>
 
-          <div className="grid flex-1 border-t border-line sm:grid-cols-[1fr_auto_1fr]">
+          {/* the two sides */}
+          <div className="relative grid min-h-0 sm:grid-cols-2">
             <Team side={1} room={room} playerId={playerId} mine={mySide === 1} onTake={take} />
-            <div className="grid place-items-center border-y border-line py-2 text-sm font-semibold text-faint sm:border-x sm:border-y-0 sm:px-5 sm:py-0">
-              vs
-            </div>
             <Team side={2} room={room} playerId={playerId} mine={mySide === 2} onTake={take} />
+            <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 border-4 border-black bg-bg px-3 py-0.5 font-display text-3xl font-extrabold uppercase sm:block">
+              vs
+            </span>
+          </div>
+        </section>
+
+        <aside className="flex min-h-0 flex-col gap-5 px-6 py-5 sm:px-8">
+          <div>
+            <span className="font-display text-[0.9375rem] font-bold tracking-[0.14em] text-ink/60 uppercase">You</span>
+            <p className="font-display text-[clamp(2.25rem,6vh,3.5rem)] leading-none font-extrabold uppercase">{me?.name}</p>
+            <p className="mt-1 text-sm text-ink/70">{me?.slot ? `Slot ${me.slot} · ${room.teamNames[sideOf(me.slot)]}` : "Pick a slot to join a team"}</p>
           </div>
 
-          <div className="border-t border-line">
-            <ol className="grid gap-px bg-line md:grid-cols-3">
-              {HOW_TO_PLAY.map((h, i) => (
-                <li key={h.title} className="bg-bg px-4 py-4 sm:px-6 md:pr-7 lg:first:pl-10">
-                  <h3 className="mb-1 flex gap-2.5 text-[0.9375rem] font-semibold tracking-[-0.01em]">
-                    <span className="text-accent">{i + 1}</span>
-                    {h.title}
-                  </h3>
-                  <p className="text-sm text-muted">{h.text}</p>
+          <div className="min-h-0 flex-1 border-t-[3px] border-ink pt-4">
+            <p className={cx("font-display text-[clamp(1.25rem,2.8vh,1.75rem)] leading-tight font-extrabold uppercase", room.canStart.ok ? "text-ok" : "text-ink")}>
+              {room.canStart.ok ? `Everyone’s ready — ${room.canStart.format}!` : room.canStart.reason}
+            </p>
+            <ul className="mt-3 grid gap-1.5">
+              {room.players.map((p) => (
+                <li key={p.id} className="flex items-center gap-3 font-display text-xl font-bold tracking-[0.02em] uppercase">
+                  <span className={cx("size-3.5 border-[3px]", p.ready ? "border-ok bg-ok" : "border-ink/50")} aria-hidden />
+                  <span className={p.ready ? "text-ink" : "text-ink/60"}>{p.name}</span>
+                  <span className="text-base text-ink/50">{p.ready ? "ready" : p.connected ? "not ready" : "reconnecting…"}</span>
+                </li>
+              ))}
+            </ul>
+            {error && <p className="mt-3 text-sm font-bold text-bad">× {error}</p>}
+
+            <ol className="mt-5 grid gap-2 border-t-[3px] border-ink/25 pt-4">
+              {TIPS.map((t, i) => (
+                <li key={t.title} className="flex items-baseline gap-3">
+                  <b className="font-display text-2xl leading-none font-extrabold text-accent">0{i + 1}</b>
+                  <span className="text-sm leading-snug text-ink/80">
+                    <span className="font-display text-lg font-bold tracking-[0.02em] text-ink uppercase">{t.title}. </span>
+                    {t.text}
+                  </span>
                 </li>
               ))}
             </ol>
           </div>
-        </section>
 
-        <aside className={cx("flex flex-col", SPLIT_SIDE)}>
-          <div className="border-b border-line px-4 sm:px-6 lg:px-8 py-6">
-            <Label>You</Label>
-            <p className="mt-1 text-2xl font-semibold tracking-[-0.03em]">{me?.name}</p>
-            <p className="mt-1 text-sm text-muted">
-              {me?.slot ? `Slot ${me.slot} · ${room.teamNames[sideOf(me.slot)]}` : "Pick a slot to join a team"}
-            </p>
-          </div>
-
-          <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
-            <Label>Starting</Label>
-            <p className={cx("mt-2 text-[0.9375rem]", room.canStart.ok ? "text-ok" : "text-ink")}>
-              {room.canStart.ok ? `Everyone’s ready — ${room.canStart.format}!` : room.canStart.reason}
-            </p>
-            <ul className="mt-4 grid gap-1.5 text-sm">
-              {room.players.map((p) => (
-                <li key={p.id} className="flex items-center gap-2.5">
-                  <span className={cx("size-2", p.ready ? "bg-ok" : "border border-line-strong")} aria-hidden />
-                  <span className={p.ready ? "text-ink" : "text-muted"}>{p.name}</span>
-                  <span className="text-faint">{p.ready ? "ready" : p.connected ? "not ready" : "reconnecting…"}</span>
-                </li>
-              ))}
-            </ul>
-            {error && <p className="mt-4 text-[0.8125rem] text-bad">{error}</p>}
-          </div>
-
-          <div className="grid gap-3 px-4 sm:px-6 lg:px-8 pt-2 pb-7">
+          <div className="grid gap-3">
             <Button variant={me?.ready ? "default" : "primary"} block onClick={toggleReady} disabled={!me?.slot}>
               {me?.ready ? "Not ready" : "Ready"} <kbd>R</kbd>
             </Button>
             <div className="flex justify-between">
               <Button variant="ghost" onClick={toggleFullscreen}>
-                <kbd>F</kbd> Fullscreen
+                Fullscreen <kbd>F</kbd>
               </Button>
               <Button variant="ghost" onClick={onLeave}>
-                <kbd>L</kbd> Leave room
+                Leave room <kbd>L</kbd>
               </Button>
             </div>
           </div>
         </aside>
       </main>
-    </Frame>
+    </div>
   );
 }
 
 type TeamProps = { side: Side; room: RoomView; playerId: string; mine: boolean; onTake: (slot: Slot) => void };
 
+/** One side: a flat block of colour — violet for team 1, paper for team 2 — with its two slots. */
 function Team({ side, room, playerId, mine, onTake }: TeamProps) {
   const slots: Slot[] = side === 1 ? [1, 2] : [3, 4];
   return (
-    <div className="flex min-w-0 flex-col px-4 sm:px-6 lg:px-8 py-6">
+    <div className={cx("flex min-w-0 flex-col px-6 py-5 sm:px-8", side === 1 ? "bg-accent text-on-accent" : "bg-paper text-bg")}>
       <TeamName side={side} name={room.teamNames[side]} editable={mine} />
       <div className="mt-4 grid gap-3">
         {slots.map((slot) => (
@@ -155,7 +153,7 @@ function TeamName({ side, name, editable }: { side: Side; name: string; editable
 
   if (editing) {
     return (
-      <form onSubmit={save} className="flex gap-2">
+      <form onSubmit={save}>
         <input
           autoFocus
           value={value}
@@ -163,21 +161,21 @@ function TeamName({ side, name, editable }: { side: Side; name: string; editable
           onChange={(e) => setValue(e.target.value)}
           onBlur={() => setEditing(false)}
           onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
-          className="h-10 min-w-0 flex-1 border border-accent bg-bg px-3 text-lg font-semibold outline-none"
+          className="w-full border-0 border-b-4 border-current bg-transparent pb-1 font-display text-[clamp(2rem,5.4vh,3.25rem)] leading-none font-extrabold uppercase outline-none"
         />
       </form>
     );
   }
   return (
-    <div className="flex items-baseline justify-between gap-3">
+    <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <Label>Team {side}</Label>
-        <h2 className="truncate text-2xl font-semibold tracking-[-0.03em]">{name}</h2>
+        <span className="font-display text-[0.9375rem] font-bold tracking-[0.16em] uppercase opacity-70">Team {side}</span>
+        <h2 className="truncate font-display text-[clamp(2rem,5.4vh,3.25rem)] leading-none font-extrabold uppercase">{name}</h2>
       </div>
       {editable && (
         <button
           type="button"
-          className="shrink-0 cursor-pointer text-[0.8125rem] text-muted hover:text-ink"
+          className="mt-1 shrink-0 cursor-pointer font-display text-base font-bold tracking-[0.1em] uppercase opacity-70 hover:opacity-100"
           onClick={() => (setValue(name), setEditing(true))}
         >
           Rename
@@ -193,7 +191,7 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
       <button
         type="button"
         onClick={() => onTake(slot)}
-        className="flex h-[4.25rem] cursor-pointer items-center justify-between border border-dashed border-line-strong px-4 text-left text-muted transition-colors hover:border-accent hover:text-ink"
+        className="flex h-[4.5rem] cursor-pointer items-center justify-between border-[3px] border-dashed border-current/60 px-4 text-left font-display text-2xl font-bold tracking-[0.02em] uppercase opacity-80 transition-opacity hover:opacity-100"
       >
         <span>Take slot {slot}</span>
         <kbd>{slot}</kbd>
@@ -202,16 +200,17 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
   }
   const isYou = player.id === you;
   return (
-    <div className={cx("flex h-[4.25rem] items-center gap-3 border px-4", isYou ? "border-accent" : "border-line-strong", !player.connected && "opacity-50")}>
-      <span className="grid size-8 place-items-center border border-line-strong text-sm font-semibold">{player.name.charAt(0).toUpperCase()}</span>
+    <div className={cx("flex h-[4.5rem] items-center gap-3 border-[3px] border-current px-4", isYou ? "bg-black/20" : "bg-black/10", !player.connected && "opacity-50")}>
+      <span className="grid size-10 place-items-center bg-bg font-display text-xl font-extrabold text-ink">{player.name.charAt(0).toUpperCase()}</span>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">
+        <p className="truncate font-display text-[1.625rem] leading-none font-extrabold uppercase">
           {player.name}
-          {isYou && <span className="font-normal text-faint"> (you)</span>}
+          {isYou && <span className="ml-2 text-base font-bold opacity-70">you</span>}
         </p>
-        <p className="text-xs text-faint">Slot {slot}</p>
+        <p className="font-display text-sm font-bold tracking-[0.1em] uppercase opacity-70">Slot {slot}</p>
       </div>
-      <span className={cx("text-[0.8125rem] font-medium", player.ready ? "text-ok" : "text-faint")}>
+      <span className="flex items-center gap-2 font-display text-lg font-extrabold tracking-[0.06em] uppercase">
+        <span className={cx("size-3.5 border-[3px] border-current", player.ready && "bg-current")} aria-hidden />
         {player.ready ? "Ready" : player.connected ? "Not ready" : "Away"}
       </span>
     </div>

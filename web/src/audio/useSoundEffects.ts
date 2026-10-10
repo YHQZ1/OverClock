@@ -10,11 +10,7 @@ type SoundName = keyof typeof sfx;
 const HIT_BY: Record<AttackId, SoundName> = {
   surge: "hitSurge",
   bots: "hitBots",
-  slowDb: "hitSlow",
   destroy: "hitDestroy",
-  slowServers: "hitSlowServers",
-  breakSplitter: "hitSplitter",
-  blindfold: "hitBlind",
   wrongTurn: "hitWrongTurn",
   jam: "hitJam",
 };
@@ -42,9 +38,6 @@ export function useSoundEffects(): void {
         switch (e.type) {
           case "bought":
             if (mine) play("buy");
-            break;
-          case "sold":
-            if (mine) play("sell");
             break;
           case "used":
             if (mine) play("boost");

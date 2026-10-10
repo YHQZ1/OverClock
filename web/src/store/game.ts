@@ -1,9 +1,12 @@
 import { create } from "zustand";
 import type { AttackId, ItemId, MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
-import { describe, type FeedItem } from "../game/feed";
+import { describe, type FeedItem, type Tone } from "../game/feed";
 import { wordsFor } from "../themes/themes";
 
 const FEED_SIZE = 3;
+
+/** A full-width callout for a big moment: "BLOCKED!", "You crashed their site!". */
+export type Banner = { id: number; text: string; tone: Tone };
 
 /** What this team did this match — the reveal highlights these. */
 export type Usage = { used: ItemId[]; hitBy: AttackId[] };
@@ -18,8 +21,8 @@ type GameStore = {
   match: MatchView | null;
   /** Latest feedback lines, newest first. */
   feed: FeedItem[];
-  /** Health once per second of the current round, for both sites. */
-  history: Record<"me" | "them", number[]>;
+  /** The latest big moment; the screen shows it for a couple of seconds. */
+  banner: Banner | null;
   /** Items this team bought, used or sent, and attacks that hit it, across the match. */
   usage: Usage;
 
@@ -33,7 +36,24 @@ type GameStore = {
 };
 
 let nextFeedId = 1;
-const EMPTY_HISTORY = { me: [], them: [] };
+let nextBannerId = 1;
+
+/** The big-moment callout for one event, from this team's point of view. */
+function bannerFor(e: SimEvent, mySide: Side, words: ReturnType<typeof wordsFor>): Omit<Banner, "id"> | null {
+  const mine = e.side === mySide;
+  switch (e.type) {
+    case "crashed":
+      return mine ? { text: "Your site is down!", tone: "bad" } : { text: "You crashed their site!", tone: "good" };
+    case "attackBlocked":
+      return mine ? { text: "BLOCKED!", tone: "good" } : { text: "They blocked it", tone: "warn" };
+    case "attackLanded":
+      return mine ? { text: `${words.names[e.attack]} hit you!`, tone: "bad" } : { text: "Direct hit!", tone: "good" };
+    case "rebooted":
+      return mine ? { text: "Back online!", tone: "good" } : null;
+    default:
+      return null;
+  }
+}
 
 /** Latest server snapshot. The web app never simulates — it only displays this. */
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -43,28 +63,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   room: null,
   match: null,
   feed: [],
-  history: EMPTY_HISTORY,
+  banner: null,
   usage: NO_USAGE,
 
   setConnected: (connected) => set({ connected }),
   setRestoring: (restoring) => set({ restoring }),
-  seat: (playerId, room) => set({ playerId, room, match: null, feed: [], history: EMPTY_HISTORY, usage: NO_USAGE }),
+  seat: (playerId, room) => set({ playerId, room, match: null, feed: [], banner: null, usage: NO_USAGE }),
   setRoom: (room) => set((s) => (s.room && s.room.code !== room.code ? s : { room })),
 
   setMatch: (match) =>
     set((s) => {
-      // A new round starts from an empty history and feed.
+      // A new round starts from an empty feed.
       const fresh = !s.match || match.round !== s.match.round;
-      const second = Math.floor(match.durationSec - match.timeLeftSec);
-      const base = fresh ? EMPTY_HISTORY : s.history;
-      if (match.phase === "buy" || base.me.length > second) return fresh ? { match, history: base, feed: [] } : { match };
-
-      const history = { me: [...base.me], them: [...base.them] };
-      while (history.me.length <= second) {
-        history.me.push(match.me.health);
-        history.them.push(match.them.health);
-      }
-      return fresh ? { match, history, feed: [] } : { match, history };
+      return fresh ? { match, feed: [], banner: null } : { match };
     }),
 
   pushEvents: (events) => {
@@ -84,11 +95,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     if (used.size !== get().usage.used.length || hitBy.size !== get().usage.hitBy.length) set({ usage: { used: [...used], hitBy: [...hitBy] } });
 
+    const big = events.map((e) => bannerFor(e, side, words)).filter((x): x is Omit<Banner, "id"> => x !== null);
+    if (big.length > 0) set({ banner: { ...big[big.length - 1]!, id: nextBannerId++ } });
+
     const lines = events.map((e) => describe(e, side, me, words)).filter((x): x is Omit<FeedItem, "id"> => x !== null);
     if (lines.length === 0) return;
     const items = lines.map((l) => ({ ...l, id: nextFeedId++ })).reverse();
     set((s) => ({ feed: [...items, ...s.feed].slice(0, FEED_SIZE) }));
   },
 
-  clear: () => set({ playerId: null, room: null, match: null, feed: [], history: EMPTY_HISTORY, usage: NO_USAGE, restoring: false }),
+  clear: () => set({ playerId: null, room: null, match: null, feed: [], banner: null, usage: NO_USAGE, restoring: false }),
 }));

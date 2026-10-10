@@ -1,79 +1,110 @@
 import type { RoomView, ThemeId } from "@server/types/contracts.js";
-import { TopBar } from "../../components/TopBar";
-import { Frame, Label, cx } from "../../components/ui";
+import { SoundToggle } from "../../audio/SoundToggle";
+import { cx } from "../../components/ui";
 import { useShortcuts } from "../../hooks/useShortcut";
 import { voteTheme } from "../../socket/api";
 import { ThemeLogo } from "../../themes/ThemeLogo";
-import { THEME_IDS, THEME_INFO, accentVars } from "../../themes/themes";
+import { THEME_IDS, THEME_INFO } from "../../themes/themes";
+import type { CSSProperties } from "react";
 
+/**
+ * Pick the app: a wall of four posters, each in the app's own colours, with the
+ * moment everyone opened it at once as the hero. Votes raise the panel from the
+ * bottom; yours is stamped.
+ */
 export function VoteScreen({ room, playerId }: { room: RoomView; playerId: string }) {
   const mine = room.votes[playerId];
   const vote = (theme: ThemeId) => void voteTheme(theme);
   useShortcuts(Object.fromEntries(THEME_IDS.map((id) => [THEME_INFO[id].key, () => vote(id)])));
 
-  const counts = new Map<ThemeId, string[]>();
+  const voters = new Map<ThemeId, string[]>();
   for (const [pid, theme] of Object.entries(room.votes)) {
     const name = room.players.find((p) => p.id === pid)?.name ?? "?";
-    counts.set(theme, [...(counts.get(theme) ?? []), name]);
+    voters.set(theme, [...(voters.get(theme) ?? []), name]);
   }
   const voted = Object.keys(room.votes).length;
 
   return (
-    <Frame>
-      <TopBar right={`${room.teamNames[1]} vs ${room.teamNames[2]}`} />
-      <main className="flex flex-col lg:min-h-0">
-        <div className="flex items-end justify-between border-b border-line px-4 sm:px-6 lg:px-10 pt-[clamp(1.25rem,5vh,3rem)] pb-6">
-          <div>
-            <Label>Everyone votes · most votes wins · ties are random</Label>
-            <h1 className="mt-2 text-[clamp(2.5rem,7vh,4rem)] leading-none font-semibold tracking-[-0.045em]">Pick the site</h1>
-          </div>
-          <div className="text-right">
-            <p className="text-[clamp(2.5rem,7vh,4rem)] leading-none font-semibold tabular-nums">{room.secondsLeft ?? 0}</p>
-            <Label>
-              {voted} of {room.players.length} voted
-            </Label>
-          </div>
+    <div className="grid h-full min-h-[37.5rem] grid-rows-[auto_minmax(0,1fr)] bg-bg">
+      <header className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-6 px-6 pt-4 pb-3.5 sm:px-8">
+        <div className="flex items-center gap-3 font-display text-xl font-extrabold tracking-[0.06em] uppercase">
+          <span className="size-3.5 bg-accent" aria-hidden />
+          Overclock
         </div>
+        <h1 className="font-display text-[clamp(1.75rem,3.8vh,2.5rem)] leading-none font-extrabold tracking-[0.01em] uppercase">
+          Pick the app
+          <span className="ml-3.5 hidden text-[0.45em] font-medium tracking-normal text-ink/45 normal-case md:inline">most votes wins · ties are random</span>
+        </h1>
+        <div className="flex items-baseline justify-end gap-5">
+          <span className="hidden text-[0.8125rem] text-muted sm:inline">
+            {voted} of {room.players.length} voted
+          </span>
+          <b className="font-display text-[clamp(1.75rem,3.8vh,2.5rem)] leading-none font-extrabold tabular-nums">0:{String(room.secondsLeft ?? 0).padStart(2, "0")}</b>
+          <SoundToggle />
+        </div>
+      </header>
 
-        <div className="grid flex-1 gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
-          {THEME_IDS.map((id) => {
-            const info = THEME_INFO[id];
-            const voters = counts.get(id) ?? [];
-            const chosen = mine === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => vote(id)}
-                style={accentVars(id)}
-                className={cx(
-                  "group relative flex cursor-pointer flex-col justify-between gap-6 px-4 py-8 text-left transition-colors sm:px-6 lg:px-8",
-                  chosen ? "bg-bg" : "bg-bg hover:bg-surface",
-                )}
-              >
-                {chosen && <span className="absolute inset-0 bg-accent-dim" aria-hidden />}
-                <span className={cx("absolute inset-x-0 top-0 bg-accent transition-[height]", chosen ? "h-1" : "h-0.5 opacity-60")} aria-hidden />
-                <div className="relative">
-                  <div className="flex items-center justify-between">
-                    <kbd>{info.key}</kbd>
-                    {chosen && <span className="text-[0.8125rem] font-medium text-accent">Your vote</span>}
-                  </div>
-                  <div className="mt-8 flex h-12 items-center">
-                    <ThemeLogo theme={id} className="h-full max-w-full" fallback="none" />
-                  </div>
-                  <h2 className="mt-5 text-[clamp(1.625rem,4.4vh,2.25rem)] leading-tight font-semibold tracking-[-0.03em]">{info.name}</h2>
-                  <p className="mt-2 max-w-[34ch] text-[0.9375rem] leading-snug text-muted">{info.about}</p>
-                  <p className="mt-4 text-[0.9375rem] font-medium text-accent">{info.blurb}</p>
-                </div>
-                <div className="relative">
-                  <p className="text-[clamp(2rem,6vh,3.25rem)] leading-none font-semibold tabular-nums">{voters.length}</p>
-                  <p className="mt-2 min-h-5 truncate text-sm text-faint">{voters.join(", ") || "No votes yet"}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <main className="poster-wall flex min-h-0">
+        {THEME_IDS.map((id) => {
+          const info = THEME_INFO[id];
+          const p = info.poster;
+          const who = voters.get(id) ?? [];
+          const style = {
+            "--c": p.bg,
+            "--fg": p.fg,
+            "--deep": p.deep,
+            "--timec": p.timeColor ?? p.fg,
+            "--share": voted ? who.length / Math.max(1, room.players.length) : 0,
+          } as CSSProperties;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => vote(id)}
+              style={style}
+              data-mine={mine === id ? "" : undefined}
+              className={cx("poster", `motif-${p.motif}`)}
+              aria-pressed={mine === id}
+            >
+              <span className="poster-fill" />
+              <span className="poster-top">
+                <span className="poster-key">{info.key}</span>
+                <span className="poster-cat">{info.category}</span>
+              </span>
+              <span className="poster-body">
+                <span className="poster-time">
+                  <span>{p.time[0]}</span>
+                  <span className={p.time[1].length > 2 ? "sub" : undefined}>{p.time[1]}</span>
+                </span>
+                <span className="poster-rush">
+                  <small>People arriving</small>
+                  <svg viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden>
+                    <polyline points={p.rush} />
+                  </svg>
+                </span>
+                <span className="poster-who">
+                  <span className={cx("poster-tag", info.logoStyle === "tile" && "tile")}>
+                    <ThemeLogo theme={id} className="max-h-full max-w-full" textColor={p.bg} textClassName="font-display text-center text-[1.25rem] font-extrabold" />
+                  </span>
+                  <span className="poster-name">{info.name}</span>
+                </span>
+                <span className="poster-moment">{p.moment}</span>
+              </span>
+              <span className="poster-bottom">
+                <span className="poster-count">{who.length}</span>
+                <span className="poster-voters">
+                  {who.map((n) => (
+                    <span key={n} className="block">
+                      {n}
+                    </span>
+                  ))}
+                </span>
+              </span>
+              <span className="poster-stamp">Your vote</span>
+            </button>
+          );
+        })}
       </main>
-    </Frame>
+    </div>
   );
 }

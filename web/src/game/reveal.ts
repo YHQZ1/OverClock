@@ -22,35 +22,15 @@ export const DECODED: Record<ItemId, Decoded> = {
     what: "Adding more identical app servers so more requests are handled in parallel. Cloud platforms do it automatically when traffic climbs.",
     example: "AWS Auto Scaling, Kubernetes, Google Cloud Run",
   },
-  splitter: {
-    real: "Load balancer",
-    what: "Spreads incoming requests evenly across servers, and stops sending traffic to a server that has died.",
-    example: "NGINX, HAProxy, AWS Elastic Load Balancing",
-  },
   bouncer: {
     real: "Rate limiter / Web application firewall",
     what: "Caps how many requests one source can make and blocks bot-like traffic before it ever reaches your servers. It can also block a few real users by mistake.",
     example: "Cloudflare WAF, AWS WAF, NGINX rate limiting",
   },
-  shelf: {
-    real: "Cache",
-    what: "Keeps the most-requested answers in fast memory, so most requests never touch the database. It starts cold and warms up.",
-    example: "Redis, Memcached, CDNs like Cloudflare and Akamai",
-  },
-  backupDb: {
-    real: "Read replica",
-    what: "A live copy of the database that answers read requests, sharing the load with the main one.",
-    example: "PostgreSQL replication, Amazon RDS read replicas, MongoDB replica sets",
-  },
   lockAddress: {
     real: "DNS security / registrar lock",
     what: "Protects the record that maps your web address to your servers, so nobody can quietly point your users somewhere else.",
     example: "DNSSEC, registry lock, Cloudflare DNS",
-  },
-  backupMonitor: {
-    real: "Redundant monitoring",
-    what: "A second, independent way of watching your system — so if one dashboard dies, you still see what's happening.",
-    example: "Prometheus + Grafana, Datadog, external uptime checks",
   },
   // ---- boosts ----
   repair: {
@@ -84,30 +64,10 @@ export const DECODED: Record<ItemId, Decoded> = {
     what: "Distributed denial of service: thousands of hijacked machines flood a site with fake requests so real users can't get in.",
     example: "Mirai botnet, 2016 — took Twitter, Netflix and Reddit offline for hours",
   },
-  slowDb: {
-    real: "Database degradation",
-    what: "Slow queries or locked tables make the database the bottleneck, and every request waiting on it slows down.",
-    example: "Missing indexes, N+1 queries, long-running locks",
-  },
   destroy: {
     real: "Server failure",
     what: "Machines crash, or a whole data-centre zone goes down, taking its servers with it.",
     example: "AWS us-east-1 outages (2017, 2021) knocked out thousands of sites",
-  },
-  slowServers: {
-    real: "CPU throttling / noisy neighbour",
-    what: "Your servers slow down because something else is eating their processing power.",
-    example: "Shared cloud hosts, runaway background jobs",
-  },
-  breakSplitter: {
-    real: "Load balancer failure",
-    what: "With the balancer down, traffic piles onto a few servers and they buckle while others sit idle.",
-    example: "Misconfigured health checks, balancer outages",
-  },
-  blindfold: {
-    real: "Monitoring outage",
-    what: "Dashboards and alerts go dark, so problems grow before anyone notices.",
-    example: "Status pages that stay green during an outage",
   },
   wrongTurn: {
     real: "DNS hijacking",
@@ -121,44 +81,27 @@ export const DECODED: Record<ItemId, Decoded> = {
   },
 };
 
-/** The map they played on, part by part. */
-export const PARTS_DECODED: { part: Part | "crowd"; real: string; what: string }[] = [
-  { part: "crowd", real: "Users & requests", what: "Every visitor's click is a request your system has to answer." },
-  { part: "door", real: "API gateway + firewall", what: "The front door every request passes through: checked, routed, or blocked." },
-  { part: "servers", real: "Application servers", what: "Run your app's code — behind a load balancer, scaled out as traffic grows." },
-  { part: "shelf", real: "Cache", what: "Answers popular requests from memory, in microseconds." },
-  { part: "db", real: "Database", what: "The source of truth — accounts, tickets, prices. Usually the hardest part to scale." },
+/**
+ * The site they played, part by part — plus what a real one also has.
+ * `played: false` parts aren't in the game; the reveal says so.
+ */
+export type DecodedPart = { part: Part | "crowd" | "cache" | "db"; played: boolean; real: string; what: string };
+
+export const PARTS_DECODED: DecodedPart[] = [
+  { part: "crowd", played: true, real: "Users & requests", what: "Every visitor's click is a request your system has to answer." },
+  { part: "door", played: true, real: "API gateway + firewall", what: "The front door every request passes through: checked, routed, or blocked." },
+  {
+    part: "servers",
+    played: true,
+    real: "Load balancer + application servers",
+    what: "A load balancer spreads requests evenly across servers that run your app's code — and skips any that have died. Add servers as traffic grows.",
+  },
+  { part: "cache", played: false, real: "Cache", what: "Answers popular requests from memory, in microseconds, so most never reach the database." },
+  { part: "db", played: false, real: "Database", what: "The source of truth — accounts, tickets, prices. Usually the hardest part to scale." },
 ];
 
 /** Per theme: the headline, and real apps built from the same blocks. */
 export const THEME_REVEAL: Record<ThemeId, { headline: string; really: string; build: { name: string; why: string }[] }> = {
-  nasdaq: {
-    headline: "You just kept a stock exchange trading through a market rush.",
-    really: "an order system that has to answer millions of traders without slowing down",
-    build: [
-      { name: "A trading app like Zerodha or Groww", why: "Same spikes at the opening bell; caches for live prices." },
-      { name: "A UPI payments backend", why: "Huge bursts of requests that must never be lost — replicas and failover." },
-      { name: "A crypto exchange", why: "Bot traffic and DDoS attacks are everyday problems." },
-    ],
-  },
-  fancode: {
-    headline: "You just kept a sports stream alive through the final lap.",
-    really: "a live streaming site with millions of fans arriving in the same minute",
-    build: [
-      { name: "A live score app like Cricbuzz", why: "Everyone refreshes on the last ball — caching is everything." },
-      { name: "A match-day streaming site", why: "Load balancers and CDNs carry the video to millions." },
-      { name: "Live polls during a broadcast", why: "Sudden write spikes — rate limiting keeps bots out." },
-    ],
-  },
-  miniclip: {
-    headline: "You just kept a games site online through a new game drop.",
-    really: "a game server fleet that has to scale the moment a launch goes viral",
-    build: [
-      { name: "A multiplayer game like 8 Ball Pool", why: "Matchmaking is a load balancer; servers scale per region." },
-      { name: "A live quiz app like Kahoot", why: "A whole class joins in the same second." },
-      { name: "A college e-sports lobby", why: "Rate limits stop bots, caches serve the leaderboard." },
-    ],
-  },
   bookmyshow: {
     headline: "You just kept a ticketing site selling through a concert ticket drop.",
     really: "a booking system where every fan wants the same seats in the same second",
@@ -166,6 +109,33 @@ export const THEME_REVEAL: Record<ThemeId, { headline: string; really: string; b
       { name: "IRCTC-style Tatkal booking", why: "The classic traffic spike — queues, rate limits and a database that mustn't double-book." },
       { name: "Your college fest's registration site", why: "Everyone registers the night before the deadline." },
       { name: "A vaccine or exam slot-booking portal", why: "Millions of users, one moment — scaling and caching decide if it survives." },
+    ],
+  },
+  netflix: {
+    headline: "You just kept a streaming service playing through a season finale.",
+    really: "a streaming platform with millions of viewers pressing play in the same minute",
+    build: [
+      { name: "A live cricket stream for a final", why: "Everyone joins at the toss — load balancers and CDNs carry the video." },
+      { name: "A college lecture-recording portal", why: "The night before exams, the whole batch hits play at once." },
+      { name: "A video-call app", why: "Every extra participant is more load; servers scale per meeting." },
+    ],
+  },
+  spotify: {
+    headline: "You just kept a music app playing through Wrapped day.",
+    really: "a listening service where everyone asks for their year in review at once",
+    build: [
+      { name: "A podcast app", why: "A new episode drops and the whole audience downloads it together." },
+      { name: "A college radio or event playlist app", why: "Everyone votes for the next song in the same second." },
+      { name: "A year-in-review feature for any app", why: "One heavy request per user, all on the same day — caching and queues." },
+    ],
+  },
+  gpay: {
+    headline: "You just kept a payments app working through a midnight sale.",
+    really: "a payments system where every request must succeed exactly once, at the busiest moment",
+    build: [
+      { name: "A UPI payments backend", why: "Huge bursts of requests that must never be lost or doubled — replicas and failover." },
+      { name: "A fest ticket-and-food-coupon app", why: "Everyone pays at the same stall at the same time." },
+      { name: "A flash-sale shopping site", why: "Bots and real shoppers race for the same stock — rate limiting keeps it fair." },
     ],
   },
 };

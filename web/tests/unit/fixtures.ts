@@ -1,4 +1,4 @@
-import type { MatchView, SiteView } from "@server/types/contracts.js";
+import type { ItemId, MatchView, ShopItemView, SiteView } from "@server/types/contracts.js";
 
 /** A calm, healthy site; override what a test cares about. */
 export function site(overrides: Partial<SiteView> = {}): SiteView {
@@ -10,17 +10,45 @@ export function site(overrides: Partial<SiteView> = {}): SiteView {
     critical: false,
     downSecondsLeft: null,
     servers: [0, 1, 2, 3].map((id) => ({ id, state: "busy" as const, progress: 1 })),
-    owned: { splitter: 0, bouncer: 0, shelf: 0, backupDb: 0, lockAddress: 0, backupMonitor: 0 },
+    owned: { bouncer: 0, lockAddress: 0 },
     settingUp: [],
-    parts: { door: "ok", servers: "ok", shelf: "none", db: "ok" },
+    parts: { door: "ok", servers: "ok" },
     bottleneck: null,
     crowd: 1,
     servedShare: 1,
     botShare: 0,
     effects: [],
-    blind: false,
     ...overrides,
   };
+}
+
+const KIND: Record<ItemId, ShopItemView["kind"]> = {
+  server: "defence",
+  bouncer: "defence",
+  lockAddress: "defence",
+  repair: "utility",
+  shield: "utility",
+  overclock: "utility",
+  instantBackup: "utility",
+  surge: "attack",
+  bots: "attack",
+  destroy: "attack",
+  wrongTurn: "attack",
+  jam: "attack",
+};
+
+/** All 12 cards, affordable and ready; `patch` overrides single cards by id. */
+export function shop(patch: Partial<Record<ItemId, Partial<ShopItemView>>> = {}): ShopItemView[] {
+  return (Object.keys(KIND) as ItemId[]).map((id) => ({
+    id,
+    kind: KIND[id],
+    price: 100,
+    owned: id === "server" ? 4 : 0,
+    max: id === "server" ? 12 : 1,
+    cooldown: 0,
+    affordable: true,
+    ...patch[id],
+  }));
 }
 
 export function match(overrides: Partial<Omit<MatchView, "me">> & { me?: Partial<MatchView["me"]> } = {}): MatchView {
@@ -32,10 +60,10 @@ export function match(overrides: Partial<Omit<MatchView, "me">> & { me?: Partial
     timeLeftSec: 60,
     durationSec: 90,
     them: site(),
-    shop: [],
+    shop: shop(),
     incoming: [],
     outgoing: [],
     ...rest,
-    me: { ...site(), coins: 500, incomePerSec: 12, upkeepPerSec: 4, ...me },
+    me: { ...site(), coins: 500, incomePerSec: 12, ...me },
   };
 }

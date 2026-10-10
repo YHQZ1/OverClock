@@ -1,8 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
-import { AppMap } from "../../components/AppMap";
 import { TopBar } from "../../components/TopBar";
-import { Button, Field, Frame, SPLIT, SPLIT_SIDE, cx } from "../../components/ui";
+import { Button, Field, Frame, cx } from "../../components/ui";
 import { useShortcut } from "../../hooks/useShortcut";
 import { CODE_LENGTH } from "./constants";
 
@@ -15,7 +14,7 @@ type Props = {
 };
 
 const PLAYER_NAME_MAX = 16;
-const HOW_IT_WORKS = ["Make a room and share the code", "Pick sides and ready up", "Win three rounds"];
+const STEPS = ["Make a room and share the code", "Pick sides and ready up", "Win three rounds"];
 
 export function HomeScreen({ onCreate, onJoin }: Props) {
   const [mode, setMode] = useState<Mode>(null);
@@ -35,175 +34,123 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
         }
       />
 
-      <main className={SPLIT}>
-        <section className="flex min-w-0 flex-col justify-between">
-          <div className="px-4 sm:px-6 lg:px-10 pt-[clamp(1.75rem,6vh,4rem)] pb-8">
-            <h1 className="text-[clamp(3.25rem,10vh,6rem)] leading-[0.98] font-semibold tracking-[-0.05em]">
-              Flood theirs.
-              <br />
-              Keep yours <span className="text-accent">alive.</span>
-            </h1>
-            <p className="mt-6 max-w-[52ch] text-base text-muted">
-              Two teams, two websites, one crowd. Every visitor you serve earns coins — spend them defending your site or
-              knocking theirs over. Three rounds. One winner.
-            </p>
+      <main className="grid min-h-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <section className="relative grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden px-6 pt-[2.4vh] pb-[3vh] sm:px-8">
+          <h1 className="font-display text-[min(16.5vh,11vw)] leading-[0.84] font-extrabold tracking-[-0.005em] uppercase">
+            <span className="block">Flood</span> <span className="block">theirs.</span> <span className="block">Keep yours</span>{" "}
+            <span className="block text-accent">alive.</span>
+          </h1>
+          <p className="mt-[2.2vh] max-w-[50ch] text-[clamp(0.875rem,2.1vh,1.1875rem)] leading-[1.45] text-ink/80">
+            Two teams run the same app. Everyone who gets in earns you coins — spend them protecting yours, or knocking theirs over. Three
+            rounds, one winner.
+          </p>
+
+          {/* the rush: the line the whole game is about */}
+          <div className="relative mt-[1.4vh] min-h-10 self-end" style={{ height: "100%", maxHeight: "13vh" }} aria-hidden>
+            <svg className="absolute inset-0 size-full overflow-visible" viewBox="0 0 1000 100" preserveAspectRatio="none">
+              <polyline
+                className="rush-line stroke-accent"
+                pathLength={1}
+                fill="none"
+                strokeWidth={5}
+                strokeLinejoin="miter"
+                vectorEffect="non-scaling-stroke"
+                points="0,94 560,92 604,4 640,34 720,62 830,78 1000,84"
+              />
+            </svg>
+            <small className="rush-label absolute top-[-2px] left-[61%] translate-x-3.5 font-display text-[0.8125rem] font-bold tracking-[0.16em] text-accent uppercase">
+              Everyone, at once
+            </small>
           </div>
-          <div className="grid place-items-center border-t border-line px-4 sm:px-6 lg:px-10 py-[clamp(0.75rem,3vh,1.75rem)]">
-            <AppMap />
-          </div>
+
+          <ol className="mt-[1.6vh] grid grid-cols-3 border-t-2 border-ink">
+            {STEPS.map((step, i) => (
+              <li key={step} className="pt-3.5 pr-4 text-sm leading-snug text-ink/80">
+                <b className="mb-0.5 block font-display text-[clamp(1.375rem,4vh,2rem)] leading-none font-extrabold text-accent">0{i + 1}</b>
+                {step}
+              </li>
+            ))}
+          </ol>
         </section>
 
-        <section className={cx("flex min-h-[34rem] flex-col lg:min-h-0", SPLIT_SIDE)}>
-          <MenuItem
-            title="Create a room"
-            blurb="Start a room and share the code with the other players."
-            facts={["You get a 4-letter room code", "1v1 or 2v2 — pick sides inside", "Starts when everyone’s ready"]}
-            art={<CodeArt />}
+        <section className="flex min-h-[34rem] flex-col lg:min-h-0">
+          <Panel
+            kind="create"
+            title={["Create", "a room"]}
+            kicker="Start here"
+            blurb="You get a 4-letter code. Starts when everyone’s ready."
             open={mode === "create"}
             collapsed={mode === "join"}
             onOpen={() => setMode("create")}
           >
             <CreateForm onSubmit={onCreate} onBack={() => setMode(null)} />
-          </MenuItem>
-          <MenuItem
-            title="Join a room"
-            blurb="Got a code? Jump into the room and choose your side."
-            facts={["Ask for the 4-letter code", "Up to 4 players per room", "Teammates share one wallet"]}
-            art={<SeatsArt />}
+          </Panel>
+          <Panel
+            kind="join"
+            title={["Join", "a room"]}
+            kicker="Got a code?"
+            blurb="Ask for the 4-letter code and pick your side."
             open={mode === "join"}
             collapsed={mode === "create"}
             onOpen={() => setMode("join")}
           >
             <JoinForm onSubmit={onJoin} onBack={() => setMode(null)} />
-          </MenuItem>
-
-          <ol className="grid gap-1.5 px-4 sm:px-6 lg:px-8 pt-5 pb-6 text-sm text-muted">
-            {HOW_IT_WORKS.map((step, i) => (
-              <li key={step} className="flex gap-3.5">
-                <span className="w-3 font-semibold text-accent">{i + 1}</span>
-                {step}
-              </li>
-            ))}
-          </ol>
+          </Panel>
         </section>
       </main>
     </Frame>
   );
 }
 
-type MenuItemProps = {
-  title: string;
+type PanelProps = {
+  kind: "create" | "join";
+  title: [string, string];
+  kicker: string;
   blurb: string;
-  facts: string[];
-  art: ReactNode;
   open: boolean;
   collapsed: boolean;
   onOpen: () => void;
   children: ReactNode;
 };
 
-function MenuItem({ title, blurb, facts, art, open, collapsed, onOpen, children }: MenuItemProps) {
-  const titleEl = (
-    <h2
-      className={cx(
-        "font-semibold tracking-[-0.03em] transition-[font-size] duration-500 ease-move",
-        collapsed ? "text-lg" : "text-[1.625rem]",
-      )}
-    >
-      {title}
-    </h2>
-  );
-
-  // One element for every state so size changes can animate.
+/** One of the two ways in: a flat block of colour that opens into its form. */
+function Panel({ kind, title, kicker, blurb, open, collapsed, onOpen, children }: PanelProps) {
+  const inline = open || collapsed;
   return (
     <div
+      role={open ? undefined : "button"}
+      tabIndex={open ? undefined : 0}
       onClick={open ? undefined : onOpen}
+      onKeyDown={(e) => {
+        if (!open && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
       className={cx(
-        "group relative flex min-h-[4.375rem] shrink basis-0 flex-col overflow-hidden border-b border-line px-4 sm:px-6 lg:px-8",
-        "transition-[flex-grow,padding,background-color,color] duration-500 ease-move",
-        // Accent edge that draws down from the top when a tile opens
-        "before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:origin-top before:bg-accent",
-        "before:transition-transform before:duration-500 before:ease-move",
-        open && "grow-[3] bg-surface py-7 before:scale-y-100",
-        collapsed && "grow-0 cursor-pointer py-5 text-muted hover:bg-surface before:scale-y-0",
-        !open && !collapsed && "grow cursor-pointer py-7 hover:bg-surface before:scale-y-0",
+        "group relative flex min-h-0 flex-col overflow-hidden px-8 text-left transition-[flex-grow,padding] duration-500 ease-snap",
+        kind === "create" ? "bg-accent text-on-accent" : "bg-paper text-bg",
+        open ? "grow-[3] cursor-default py-6" : collapsed ? "grow-[0.35] cursor-pointer justify-center py-3.5" : "grow cursor-pointer py-6 hover:grow-[1.15]",
       )}
     >
-      {open ? (
-        <div className="flex w-full items-center justify-between gap-4">{titleEl}</div>
-      ) : (
-        <button type="button" className="flex w-full cursor-pointer items-center justify-between gap-4 text-left">
-          {titleEl}
-          <span
-            className="text-xl text-faint transition duration-200 group-hover:translate-x-1 group-hover:text-accent"
-            aria-hidden
-          >
-            →
-          </span>
-        </button>
+      {!collapsed && (
+        <span className="flex justify-between font-display text-[0.9375rem] font-extrabold tracking-[0.14em] uppercase">
+          <span>{open ? "" : kicker}</span>
+          {!open && <span className="text-[2.125rem] leading-[0.8] transition-transform duration-200 group-hover:translate-x-2">→</span>}
+        </span>
       )}
-
-      {/* Body folds open/closed from its top edge */}
-      <div
+      <h2
         className={cx(
-          "grid min-h-0 flex-1 transition-[grid-template-rows,opacity] duration-500 ease-move",
-          collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr]",
+          "font-display font-extrabold tracking-[-0.005em] uppercase",
+          open ? "mt-[1.2vh] text-[min(7.4vh,4.6vw)] leading-[0.84]" : collapsed ? "text-[min(6.4vh,3.4vw)] leading-none" : "mt-auto text-[min(14vh,8vw)] leading-[0.84]",
         )}
       >
-        <div className="flex min-h-0 flex-col overflow-hidden">
-          {open ? (
-            children
-          ) : (
-            <>
-              <p className="mt-2 max-w-[34ch] text-muted">{blurb}</p>
-              <div className="mt-auto flex items-end justify-between gap-4 pt-4">
-                <ul className="grid gap-1 text-[0.8125rem] text-faint group-hover:text-muted">
-                  {facts.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 before:size-1 before:bg-accent">
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <div aria-hidden>{art}</div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const ART_BOX = "h-[1.875rem] w-6 border border-line-strong";
-
-/** Four code boxes, one with a blinking cursor. */
-function CodeArt() {
-  return (
-    <div className="flex">
-      {[0, 1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className={cx(
-            "relative not-first:border-l-0",
-            ART_BOX,
-            i === 0 &&
-              "after:absolute after:inset-y-[0.4375rem] after:left-1/2 after:w-[1.5px] after:animate-blink after:bg-accent",
-          )}
-        />
-      ))}
-    </div>
-  );
-}
-
-/** Two seats a side: you and a teammate vs two opponents. */
-function SeatsArt() {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className={cx(ART_BOX, "border-accent bg-accent-dim")} />
-      <span className={cx(ART_BOX, "bg-line-strong")} />
-      <span className="px-1 text-[0.6875rem] font-semibold text-faint">vs</span>
-      <span className={cx(ART_BOX, "bg-line-strong")} />
-      <span className={cx(ART_BOX, "border-dashed")} />
+        <span className={inline ? "inline" : "block"}>{title[0]}</span>
+        {inline && " "}
+        <span className={inline ? "inline" : "block"}>{title[1]}</span>
+      </h2>
+      {!inline && <p className="mt-[1.6vh] text-[clamp(0.875rem,1.9vh,1.0625rem)] font-medium opacity-80">{blurb}</p>}
+      {open && children}
     </div>
   );
 }
@@ -237,16 +184,16 @@ type FormShellProps = {
 /** Fields, then the error line, then Back / submit pinned to the bottom. */
 function FormShell({ onSubmit, onBack, error, pending, submitLabel, children }: FormShellProps) {
   return (
-    <form className="mt-[1.375rem] flex flex-1 animate-rise-in flex-col gap-3.5" onSubmit={onSubmit} noValidate>
+    <form className="mt-[4vh] flex flex-1 animate-rise-in flex-col gap-[3vh]" onSubmit={onSubmit} noValidate>
       {children}
-      <p className="-mt-1 min-h-5 text-[0.8125rem] text-bad" role="alert">
+      <p className="-mt-1 min-h-6 text-sm font-bold [&:not(:empty)]:before:content-['×_']" role="alert">
         {error}
       </p>
-      <div className="mt-auto flex justify-between">
-        <Button variant="ghost" onClick={onBack} disabled={pending}>
-          <kbd>Esc</kbd> Back
+      <div className="mt-auto flex items-center justify-between">
+        <Button variant="ghost" onClick={onBack} disabled={pending} className="px-0 text-current opacity-70 hover:enabled:opacity-100">
+          Back <kbd>Esc</kbd>
         </Button>
-        <Button type="submit" variant="primary" disabled={pending}>
+        <Button type="submit" variant="ink" disabled={pending}>
           {pending ? "One moment…" : submitLabel} <kbd>Enter</kbd>
         </Button>
       </div>
@@ -271,7 +218,8 @@ function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack:
         autoFocus
         value={playerName}
         maxLength={PLAYER_NAME_MAX}
-        placeholder="Enter Your Name"
+        placeholder="e.g. Priya"
+        className="border-current focus:border-current placeholder:text-current/30"
         onChange={(e) => (setPlayerName(e.target.value), setError(null))}
       />
     </FormShell>
@@ -296,7 +244,7 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
       <Field
         label="Room code"
         autoFocus
-        className="text-lg font-semibold tracking-[0.35em] uppercase"
+        className="border-current tracking-[0.3em] focus:border-current placeholder:text-current/30"
         value={code}
         placeholder="ABCD"
         autoComplete="off"
@@ -315,7 +263,8 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
         label="Your name"
         value={playerName}
         maxLength={PLAYER_NAME_MAX}
-        placeholder="Enter Your Name"
+        placeholder="e.g. Priya"
+        className="border-current focus:border-current placeholder:text-current/30"
         onChange={(e) => (setPlayerName(e.target.value), setError(null))}
       />
     </FormShell>

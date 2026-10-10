@@ -290,7 +290,6 @@ export const sfx = {
     bell(N.E6, { dur: 0.25, gain: 0.16, ratio: 2, index: 1.2, reverb: 0.15 });
     bell(N.A5 * 2, { at: 0.05, dur: 0.3, gain: 0.14, ratio: 2, index: 1.2, reverb: 0.15 });
   },
-  sell: () => voice({ freq: N.A5, to: N.A4, type: "triangle", dur: 0.16, gain: 0.2, cutoff: 3000 }),
   denied: () => {
     voice({ freq: 98, type: "square", dur: 0.14, gain: 0.16, cutoff: 700 });
     voice({ freq: 92, type: "square", dur: 0.14, gain: 0.12, cutoff: 700, at: 0.02 });
@@ -354,22 +353,12 @@ export const sfx = {
       voice({ freq: 400 + ((i * 337) % 900), type: "square", dur: 0.04, at: i * 0.035, gain: 0.07, cutoff: 3000, reverb: 0.05 });
     }
   },
-  hitSlow: () => voice({ freq: N.A4, to: N.A2, type: "sawtooth", dur: 0.9, gain: 0.14, cutoff: 2000, cutoffTo: 300, detune: 25 }),
   hitSurge: () => noise({ dur: 1.4, from: 300, to: 1400, gain: 0.3, q: 0.5, attack: 0.5, reverb: 0.5 }),
   hitDestroy: () => {
     kick(0, 0.8, 120, 35);
     noise({ dur: 0.5, from: 2500, to: 300, gain: 0.45, q: 0.7, reverb: 0.3 });
     for (let i = 0; i < 4; i++) noise({ dur: 0.08, from: 4000 + i * 900, gain: 0.15, type: "highpass", at: 0.1 + i * 0.06, reverb: 0.2 });
   },
-  hitSlowServers: () => {
-    voice({ freq: 520, to: 140, type: "square", dur: 0.7, gain: 0.08, cutoff: 1800, cutoffTo: 300, detune: 20 });
-    voice({ freq: 260, to: 70, type: "sine", dur: 0.7, gain: 0.15 });
-  },
-  hitSplitter: () => {
-    bell(180, { dur: 0.5, gain: 0.3, ratio: 1.41, index: 6, reverb: 0.3 });
-    noise({ dur: 0.15, from: 1200, gain: 0.25, at: 0.02, reverb: 0.2 });
-  },
-  hitBlind: () => noise({ dur: 1.3, from: 6000, to: 800, gain: 0.22, type: "highpass", attack: 0.05, reverb: 0.4 }),
   hitWrongTurn: () => {
     noise({ dur: 0.7, from: 3500, to: 250, gain: 0.3, q: 2, reverb: 0.4 });
     voice({ freq: 660, to: 165, type: "triangle", dur: 0.6, gain: 0.12, cutoff: 3000 });
@@ -418,7 +407,7 @@ export const sfx = {
  * of a round. Notes are scheduled ahead on the audio clock so timing stays tight.
  */
 export type MusicMode = "off" | "menu" | "live";
-/** arcade: menus · ticker: Nasdaq · race: FanCode · chip: Miniclip · trailer: BookMyShow */
+/** arcade: menus · race: BookMyShow · trailer: Netflix · chip: Spotify · ticker: Google Pay */
 export type MusicStyle = "arcade" | "ticker" | "race" | "chip" | "trailer";
 
 /** MIDI note → Hz. */

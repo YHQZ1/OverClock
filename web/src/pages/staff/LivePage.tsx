@@ -42,15 +42,15 @@ function Live({ feed }: { feed: StaffFeed }) {
   const sorted = [...feed.matches].sort((a, b) => a.code.localeCompare(b.code));
 
   return (
-    <div className="grid h-screen min-h-[600px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+    <div className="grid h-screen min-h-[600px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-bg">
       <ProjectorHeader title="Live" connected={feed.connected} />
       <div className="grid md:min-h-0 md:grid-cols-[minmax(16rem,23vw)_minmax(0,1fr)]">
-        <aside className="flex max-h-[40vh] flex-col border-b border-line md:max-h-none md:min-h-0 md:border-r md:border-b-0">
+        <aside className="flex max-h-[40vh] flex-col border-t-4 border-black md:max-h-none md:min-h-0 md:border-r-4">
           <div className="flex items-baseline justify-between px-[1.4vw] pt-[2vh] pb-[1.2vh]">
-            <h2 className="text-[2.2vh] font-semibold tracking-[-0.02em]">Matches</h2>
-            <span className="text-[1.6vh] text-faint">{feed.matches.length} live</span>
+            <h2 className="font-display text-[3vh] leading-none font-extrabold tracking-[0.04em] uppercase">Matches</h2>
+            <span className="font-display text-[2.2vh] font-bold tracking-[0.1em] text-muted uppercase">{feed.matches.length} live</span>
           </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto border-t border-line">
+          <ul className="min-h-0 flex-1 overflow-y-auto border-t-4 border-black">
             {sorted.map((m) => (
               <SidebarMatch
                 key={m.code}
@@ -61,9 +61,9 @@ function Live({ feed }: { feed: StaffFeed }) {
                 onClick={() => rot.show(m.code)}
               />
             ))}
-            {sorted.length === 0 && <li className="px-[1.4vw] py-[2vh] text-[1.8vh] text-faint">Waiting for the first match…</li>}
+            {sorted.length === 0 && <li className="px-[1.4vw] py-[2vh] font-display text-[2.4vh] font-bold tracking-[0.04em] text-muted uppercase">Waiting for the first match…</li>}
           </ul>
-          <p className="border-t border-line px-[1.4vw] py-[1.4vh] text-[1.5vh] leading-snug text-faint">
+          <p className="border-t-4 border-black px-[1.4vw] py-[1.4vh] font-display text-[1.9vh] font-bold tracking-[0.06em] text-muted uppercase">
             Every 10s · click to show · <kbd>P</kbd> pin
           </p>
         </aside>
@@ -77,10 +77,10 @@ function Live({ feed }: { feed: StaffFeed }) {
                   type="button"
                   onClick={rot.togglePin}
                   className={cx(
-                    "cursor-pointer border px-[1vw] py-[0.8vh] text-[1.7vh] font-medium transition-colors",
+                    "cursor-pointer border-[3px] px-[1vw] py-[0.6vh] font-display text-[2.2vh] font-extrabold tracking-[0.06em] uppercase transition-colors",
                     rot.pinned
                       ? "border-accent bg-accent text-on-accent"
-                      : "border-line-strong text-muted hover:border-accent hover:text-ink",
+                      : "border-line-strong text-muted hover:border-ink hover:text-ink",
                   )}
                 >
                   {rot.pinned ? "Pinned · unpin" : "Pin"}
@@ -120,33 +120,32 @@ function SidebarMatch({
     .join(" · ");
   const [a, b] = [match.teams[1], match.teams[2]];
   return (
-    <li className="border-b border-line">
+    <li className="border-b-4 border-black">
       <button
         type="button"
         onClick={onClick}
         className={cx(
           "relative block w-full cursor-pointer px-[1.4vw] py-[1.6vh] text-left transition-colors",
-          active ? "bg-accent-dim" : "hover:bg-surface",
+          active ? "bg-accent text-on-accent" : "hover:bg-surface",
           !playing && !active && "opacity-60",
         )}
       >
-        {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-accent" aria-hidden />}
         <div className="flex items-center gap-[0.8vw]">
-          {match.theme && <ThemeLogo theme={match.theme} className="h-[2.4vh]" fallback="none" />}
-          <span className="min-w-0 flex-1 truncate text-[2vh] font-semibold">
-            {a.name} <span className="font-normal text-faint">vs</span> {b.name}
+          {match.theme && <ThemeLogo theme={match.theme} className="h-[2.6vh]" fallback="none" />}
+          <span className="min-w-0 flex-1 truncate font-display text-[2.8vh] leading-none font-extrabold tracking-[0.02em] uppercase">
+            {a.name} <span className="font-bold opacity-60">vs</span> {b.name}
           </span>
-          {pinned && <span className="text-[1.4vh] font-semibold text-accent">PINNED</span>}
+          {pinned && <span className="bg-bg px-[0.4vw] font-display text-[1.7vh] font-extrabold tracking-[0.1em] text-ink">PINNED</span>}
         </div>
         <div className="mt-[0.6vh] flex items-baseline justify-between gap-2">
-          <span className="truncate text-[1.55vh] text-muted">{status}</span>
-          <span className="shrink-0 text-[1.7vh] font-semibold tabular-nums">
+          <span className={cx("truncate font-display text-[2vh] font-bold tracking-[0.04em] uppercase", active ? "opacity-80" : "text-muted")}>{status}</span>
+          <span className="shrink-0 font-display text-[2.6vh] font-extrabold tabular-nums">
             {n(a.total)} – {n(b.total)}
           </span>
         </div>
         {active && !pinned && (
           <span
-            className="absolute bottom-0 left-0 h-[2px] bg-accent transition-[width] duration-300 ease-linear"
+            className="absolute bottom-0 left-0 h-[0.6vh] bg-bg transition-[width] duration-300 ease-linear"
             style={{ width: `${left * 100}%` }}
           />
         )}

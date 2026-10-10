@@ -8,7 +8,6 @@ const REJECTED: Partial<Record<string, string>> = {
   coins: "Not enough coins",
   cooldown: "Still recharging",
   max: "You already have the most you can",
-  min: "You need at least one server",
   none: "Nothing to do that to",
   paused: "Wait for the round to start",
   jammed: "Your controls are jammed",
@@ -28,8 +27,6 @@ export function describe(event: SimEvent, mySide: Side, me: string, words: Theme
   switch (event.type) {
     case "bought":
       return mine ? { text: `${who(event.by)} bought ${n[event.item]}`, tone: "neutral" } : null;
-    case "sold":
-      return mine ? { text: `${who(event.by)} sold ${n[event.item]}`, tone: "neutral" } : null;
     case "used":
       return mine ? { text: `${who(event.by)} used ${n[event.item]}`, tone: "good" } : null;
     case "attackSent":
@@ -51,8 +48,6 @@ export function describe(event: SimEvent, mySide: Side, me: string, words: Theme
     }
     case "defenceReady":
       return mine ? { text: `${n[event.item]} is ready`, tone: "good" } : null;
-    case "serverSwitchedOff":
-      return mine ? { text: "Out of coins — something switched off", tone: "bad" } : null;
     case "serversMelted":
       return mine ? { text: `${event.count} ${servers} wrecked`, tone: "bad" } : { text: `Wrecked ${event.count} of their ${servers}`, tone: "good" };
     case "serversRestored":

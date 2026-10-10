@@ -6,14 +6,13 @@ import { THEME_INFO } from "../themes/themes";
 
 export function TopBar({ right, theme }: { right?: ReactNode; theme?: ThemeId | null }) {
   return (
-    <header className="flex h-14 items-center justify-between gap-4 border-b border-line px-4 sm:px-6 lg:px-10">
-      <div className="flex min-w-0 items-center gap-2.5 text-[0.9375rem] font-semibold tracking-[-0.01em]">
-        <span className="size-2.5 bg-accent" aria-hidden />
+    <header className="flex h-14 items-center justify-between gap-4 bg-bg px-4 sm:px-6 lg:px-8">
+      <div className="flex min-w-0 items-center gap-3 font-display text-xl font-extrabold tracking-[0.06em] uppercase">
+        <span className="size-3.5 bg-accent" aria-hidden />
         Overclock
         {theme && (
           <>
-            <span className="mx-2 h-5 w-px bg-line-strong" aria-hidden />
-            <ThemeLogo theme={theme} className="h-5 max-w-[7.5rem]" fallback="none" />
+            <span className="mx-1 h-5 w-0.5 bg-line-strong" aria-hidden />
             <span className="hidden truncate text-accent sm:inline">{THEME_INFO[theme].name}</span>
           </>
         )}

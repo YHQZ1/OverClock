@@ -1,32 +1,45 @@
 @import "@fontsource-variable/inter";
+@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow-condensed/800.css";
+@import "@fontsource/barlow-condensed/900.css";
 @import "tailwindcss";
 
-/* Design tokens → Tailwind theme. Sharp, minimal, monochrome dark with one
-   accent. ok / warn / bad are reserved for game signals only. */
+/* Design tokens → Tailwind theme. The look is flat poster colour: a near-black
+   night, paper-white text, one violet brand colour (replaced by an app's own
+   colour once a theme is picked). No gradients, no rounded boxes. ok / warn /
+   bad are reserved for game signals; defend / boost / attack are the card kinds. */
 @theme {
   --color-*: initial;
-  --color-bg: #0b0b0c;
-  --color-surface: #111113;
-  --color-raised: #17171a;
-  --color-ink: #ececee;
-  --color-muted: #9b9ba3;
-  --color-faint: #5c5c64;
-  --color-line: #222226;
-  --color-line-strong: #34343a;
-  --color-accent: #a594f9;
-  --color-accent-hover: #b6a8fb;
-  --color-accent-dim: rgb(165 148 249 / 0.12);
-  --color-on-accent: #0b0b0c;
-  /* The crowd on the live map; follows the accent unless a theme says otherwise. */
-  --color-crowd: #a594f9;
+  --color-bg: #0d0d0d;
+  --color-surface: #151517;
+  --color-raised: #1d1d20;
+  --color-ink: #f3efe6;
+  --color-paper: #f3efe6;
+  --color-muted: #a3a09a;
+  --color-faint: #66635e;
+  --color-line: #262629;
+  --color-line-strong: #3a3a3f;
+  --color-accent: #8b6cff;
+  --color-accent-hover: #a28aff;
+  --color-accent-dim: rgb(139 108 255 / 0.14);
+  --color-on-accent: #ffffff;
+  /* The crowd; follows the app's colour unless a theme says otherwise. */
+  --color-crowd: #f3efe6;
+  /* The three card kinds — never used for health. */
+  --color-defend: #4cc9f0;
+  --color-boost: #ffb020;
+  --color-attack: #ff6b4a;
   --color-ok: #4ade80;
-  --color-warn: #facc15;
-  --color-bad: #f87171;
+  --color-warn: #ff9f1c;
+  --color-bad: #ff4d4d;
   --color-black: #000;
   --color-white: #fff;
   --color-transparent: transparent;
 
   --font-sans: "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  /* Headlines, names, numerals, card titles: a condensed, scoreboard face. */
+  --font-display: "Barlow Condensed", "Arial Narrow", "Inter Variable", system-ui, sans-serif;
 
   --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* size changes: visible, not snappy */
@@ -42,6 +55,22 @@
   --animate-slide-in: slide-in 0.3s var(--ease-snap) both;
   --animate-flash: flash 0.7s ease-out both;
   --animate-coin-pop: coin-pop 0.95s ease-out both;
+  /* Map: hits, crashes, wrecked servers, slowed racks, a crowd surge. */
+  --animate-shake: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  --animate-impact: impact 0.7s ease-out both;
+  --animate-spark: spark 0.8s ease-out both;
+  --animate-flicker: flicker 1.3s steps(1) infinite;
+  --animate-ripple: ripple 1.8s ease-out infinite;
+  /* Arena: people queuing, giving up, walking over; banners; cards. */
+  --animate-bob: bob 1.2s ease-in-out infinite;
+  --animate-give-up: give-up 2.4s ease-in infinite;
+  --animate-walk-over: walk-over 2.2s linear infinite;
+  --animate-banner: banner 1.9s var(--ease-snap) both;
+  --animate-slash: slash 1.7s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  --animate-glow: glow 0.9s ease-in-out infinite;
+  --animate-smoke: smoke 1.6s ease-out infinite;
+  --animate-dome: dome 1.6s ease-in-out infinite;
+  --animate-title-in: title-in 0.7s var(--ease-snap) both;
 
   @keyframes rise-in {
     from {
@@ -90,6 +119,167 @@
     from {
       opacity: 0.2;
       transform: translateY(-6px);
+    }
+  }
+  @keyframes shake {
+    10%,
+    90% {
+      transform: translateX(-1.5px);
+    }
+    20%,
+    80% {
+      transform: translateX(3px);
+    }
+    30%,
+    50%,
+    70% {
+      transform: translateX(-5px);
+    }
+    40%,
+    60% {
+      transform: translateX(5px);
+    }
+  }
+  @keyframes impact {
+    from {
+      opacity: 0.35;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes spark {
+    from {
+      opacity: 0.9;
+      transform: scale(0.2);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.4);
+    }
+  }
+  @keyframes flicker {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    18% {
+      opacity: 0.45;
+    }
+    22% {
+      opacity: 0.9;
+    }
+    56% {
+      opacity: 0.55;
+    }
+    61% {
+      opacity: 1;
+    }
+  }
+  @keyframes ripple {
+    from {
+      opacity: 0.6;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 0;
+      transform: scale(4);
+    }
+  }
+  @keyframes bob {
+    50% {
+      transform: translateY(-2px);
+    }
+  }
+  /* A person who gave up drifts away from the line and fades. --dx sets the direction. */
+  @keyframes give-up {
+    from {
+      opacity: 0.95;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(var(--dx, -46px));
+    }
+  }
+  /* Visitors walking across the lane to the other site. */
+  @keyframes walk-over {
+    from {
+      opacity: 0;
+      transform: translateX(0);
+    }
+    12%,
+    88% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: translateX(var(--dx, 240px));
+    }
+  }
+  @keyframes banner {
+    0% {
+      opacity: 0;
+      transform: scale(0.7) translateY(12px);
+    }
+    14% {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+    22% {
+      transform: scale(1);
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.02);
+    }
+  }
+  @keyframes slash {
+    0% {
+      opacity: 0;
+      transform: scaleY(0);
+    }
+    12% {
+      opacity: 1;
+      transform: scaleY(1.08);
+    }
+    20% {
+      transform: scaleY(1);
+    }
+    78% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes glow {
+    50% {
+      box-shadow: 0 0 0 4px var(--glow, var(--color-accent));
+    }
+  }
+  @keyframes smoke {
+    from {
+      opacity: 0.7;
+      transform: translateY(0) scale(0.6);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-26px) scale(1.5);
+    }
+  }
+  @keyframes dome {
+    50% {
+      opacity: 0.45;
+    }
+  }
+  @keyframes title-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
     }
   }
   @keyframes coin-pop {
@@ -146,7 +336,7 @@
   }
 
   kbd {
-    @apply inline-grid h-5 min-w-5 place-items-center border border-line-strong px-[0.3125rem] font-sans text-[0.6875rem] leading-none font-medium text-muted;
+    @apply inline-grid h-5 min-w-5 place-items-center border-2 border-current px-[0.3125rem] font-display text-[0.8125rem] leading-none font-extrabold opacity-75;
   }
 
   input::placeholder {
@@ -160,5 +350,466 @@
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- poster wall: the vote, and the theme pick ----------
+   One full-height panel per app, in that app's own colours. The hero is the
+   moment everyone opened it at once, stacked like a scoreboard. Sizes use
+   container units, so a panel scales with its width as it widens on hover. */
+.poster {
+  --c: #000;
+  --fg: #fff;
+  --deep: #000;
+  --timec: var(--fg);
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  container-type: inline-size;
+  background: var(--c);
+  color: var(--fg);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 1.25rem clamp(1rem, 7cqw, 2.125rem) 0;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  transition: flex-grow 0.55s var(--ease-snap);
+}
+.poster:hover,
+.poster:focus-visible {
+  flex-grow: 1.28;
+  outline: none;
+}
+.poster-wall:hover .poster:not(:hover) {
+  flex-grow: 0.94;
+}
+.poster-fill {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: calc(var(--share, 0) * 46%);
+  background: var(--deep);
+  opacity: 0.16;
+  transition: height 0.6s var(--ease-snap);
+  pointer-events: none;
+}
+.poster-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.poster-key {
+  display: grid;
+  place-items: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border: 2px solid currentColor;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9375rem;
+  line-height: 1;
+}
+.poster-cat {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.poster-body {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding-top: 5cqw;
+  min-height: 0;
+}
+.poster-time {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--timec);
+  font-size: min(46cqw, 24vh);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.poster-time span {
+  display: block;
+}
+.poster-time .sub {
+  font-size: 0.62em;
+  letter-spacing: 0;
+  margin-top: 0.06em;
+}
+.poster-rush {
+  align-self: end;
+  padding: 4cqw 0;
+  min-height: 0;
+}
+.poster-rush small {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  margin-bottom: 0.375rem;
+}
+.poster-rush svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 15vh;
+  overflow: visible;
+}
+.poster-rush polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.5;
+  stroke-linejoin: miter;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+}
+.poster-who {
+  display: flex;
+  align-items: center;
+  gap: 3.6cqw;
+  margin-top: 3cqw;
+}
+.poster-tag {
+  background: #fff;
+  padding: 2.2cqw 2.6cqw;
+  transform: rotate(-2.5deg);
+  box-shadow: 1.2cqw 1.2cqw 0 var(--deep);
+  display: grid;
+  place-items: center;
+}
+.poster-tag.tile {
+  padding: 0;
+  background: none;
+}
+.poster-tag img {
+  display: block;
+  height: 15cqw;
+  width: auto;
+  max-width: 40cqw;
+  object-fit: contain;
+}
+.poster-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 14cqw;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+}
+.poster-moment {
+  margin-top: 2.4cqw;
+  font-size: clamp(0.875rem, 5.6cqw, 1.1875rem);
+  line-height: 1.25;
+  font-weight: 500;
+  max-width: 22ch;
+  opacity: 0.92;
+}
+.poster-bottom {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 4cqw 0 1.375rem;
+  border-top: 2px solid currentColor;
+  margin-top: 5cqw;
+}
+.poster-count {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17cqw;
+  line-height: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+.poster-voters {
+  font-size: clamp(0.8125rem, 5cqw, 1.0625rem);
+  font-weight: 600;
+  text-align: right;
+  line-height: 1.3;
+  min-height: 1.3em;
+}
+.poster-voters:empty::before {
+  content: "no votes yet";
+  opacity: 0.5;
+  font-weight: 500;
+}
+.poster-stamp {
+  position: absolute;
+  right: 8cqw;
+  top: 15%;
+  transform: rotate(-7deg) scale(1.15);
+  border: 3px solid currentColor;
+  padding: 0.375rem 0.75rem 0.3125rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1rem, 6.4cqw, 1.5rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--c);
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    transform 0.25s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.poster[data-mine] .poster-stamp {
+  opacity: 1;
+  transform: rotate(-7deg) scale(1);
+}
+.poster[data-mine]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 7px var(--fg);
+}
+/* a quiet motif per app */
+.motif-ticket::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  border-right: 4px dotted rgb(255 255 255 / 0.55);
+  transform: translateX(-12px);
+}
+.motif-curtain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 22px, rgb(229 9 20 / 0.16) 22px 26px);
+  mask-image: linear-gradient(to bottom, #000, transparent 70%);
+}
+.motif-rings::before {
+  content: "";
+  position: absolute;
+  width: 150cqw;
+  height: 150cqw;
+  right: -75cqw;
+  top: -52cqw;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 7cqw, rgb(0 0 0 / 0.13) 7cqw 8.4cqw);
+}
+.motif-dots::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(26 115 232 / 0.28) 1.4px, transparent 1.6px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, #000, transparent 60%);
+}
+@media (max-width: 880px) {
+  .poster-wall {
+    flex-direction: column;
+  }
+  .poster {
+    display: flex;
+    align-items: center;
+    gap: 4vw;
+    padding: 0 5vw;
+    min-height: 5.5rem;
+  }
+  .poster:hover,
+  .poster-wall:hover .poster:not(:hover) {
+    flex-grow: 1;
+  }
+  .poster-cat,
+  .poster-rush,
+  .poster-moment,
+  .poster-stamp {
+    display: none;
+  }
+  .poster-body {
+    display: flex;
+    align-items: center;
+    gap: 4vw;
+    padding: 0;
+    flex: 1;
+  }
+  .poster-time {
+    display: flex;
+    gap: 0.12em;
+    font-size: min(15vw, 9vh);
+  }
+  .poster-time .sub {
+    font-size: 1em;
+    margin: 0;
+  }
+  .poster-who {
+    margin: 0;
+  }
+  .poster-name {
+    font-size: 6.4vw;
+  }
+  .poster-tag img {
+    height: 9vw;
+  }
+  .poster-bottom {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .poster-count {
+    font-size: 9vw;
+  }
+}
+
+/* ---------- landing: the rush line draws itself ---------- */
+.rush-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: rush-draw 2.4s 0.3s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+}
+.rush-label {
+  opacity: 0;
+  animation: rush-fade 0.6s 2.4s forwards;
+}
+@keyframes rush-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes rush-fade {
+  to {
+    opacity: 0.95;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rush-line {
+    stroke-dashoffset: 0;
+  }
+  .rush-label {
+    opacity: 0.95;
+  }
+}
+
+/* ---------- arena: LEDs, shakes, flashes ---------- */
+@keyframes led {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes activity {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.35);
+  }
+}
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+@keyframes arena-shake {
+  20% {
+    transform: translate(-5px, 2px);
+  }
+  40% {
+    transform: translate(5px, -2px);
+  }
+  60% {
+    transform: translate(-3px, 1px);
+  }
+  80% {
+    transform: translate(2px, 0);
+  }
+}
+@keyframes arena-shake-strong {
+  10% {
+    transform: translate(-12px, 6px);
+  }
+  25% {
+    transform: translate(11px, -7px);
+  }
+  40% {
+    transform: translate(-9px, 5px);
+  }
+  55% {
+    transform: translate(7px, -3px);
+  }
+  75% {
+    transform: translate(-4px, 2px);
+  }
+}
+@keyframes arena-flash {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes frost-in {
+  from {
+    opacity: 0;
+  }
+}
+.led {
+  animation: led 0.9s steps(2) infinite;
+}
+.activity {
+  animation: activity 1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+.chip-in {
+  animation: chip-in 0.3s ease-out;
+}
+.arena-shake {
+  animation: arena-shake 0.35s linear;
+}
+.arena-shake-strong {
+  animation: arena-shake-strong 0.6s linear;
+}
+.arena-flash {
+  animation: arena-flash 0.4s ease-out;
+}
+.frost-in {
+  animation: frost-in 0.45s ease-out;
+}
+.chip-move {
+  transition: transform 0.4s linear;
+}
+
+/* ---------- briefing: a wall of full-height card panels ---------- */
+.wall-panel {
+  container-type: inline-size;
+  transition: flex-grow 0.55s var(--ease-snap);
+}
+.wall-panel:hover {
+  flex-grow: 1.18;
+}
+.card-wall:hover .wall-panel:not(:hover) {
+  flex-grow: 0.96;
+}
+@media (max-width: 880px) {
+  .card-wall {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .wall-panel {
+    min-height: 11rem;
+    flex: none;
   }
 }

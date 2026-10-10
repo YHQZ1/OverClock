@@ -1,15 +1,15 @@
-import { alertBar, duel, expect, test, waitForLive } from "./helpers";
+import { alertBar, arena, duel, expect, test, waitForLive } from "./helpers";
 
 test.describe("the duel", () => {
   test("two players play a whole match, and Done clears the PC", async ({ browser, errors }) => {
     const { a, b } = await duel(browser, errors);
 
-    // Buy phase: the shop works and the feed says who bought what.
+    // Buy phase: the cards work and a toast says who bought what.
     await a.keyboard.press("1");
-    await expect(a.getByText("You bought Game server")).toBeVisible(); // Miniclip's words: duel() votes 3
+    await expect(a.getByText("You bought DJ booth")).toBeVisible(); // Spotify's words: duel() votes 3
 
     await waitForLive(a);
-    await expect(a.getByRole("img", { name: "Live map of the site" }).first()).toBeVisible();
+    await expect(arena(a)).toBeVisible();
 
     // Three rounds play out to the final screen on both PCs.
     for (const page of [a, b]) {
@@ -70,21 +70,22 @@ test.describe("the duel", () => {
     expect(errors).toEqual([]);
   });
 
-  test("attacks are announced, then land: jam freezes their shop, blindfold darkens their map", async ({ browser, errors }) => {
+  test("attacks are announced with the key to press, then land: freeze locks the hand, bots clog the line", async ({ browser, errors }) => {
     const { a, b } = await duel(browser, errors);
     await waitForLive(a);
 
-    // Priya jams Rahul: he gets a warning, then his shop locks.
-    await a.keyboard.press("l");
-    await expect(alertBar(b)).toContainText("Freeze their controller incoming");
-    await expect(b.getByText("Controls jammed", { exact: true })).toBeVisible();
-    await expect(alertBar(b)).toContainText("Your controls are jammed!");
+    // Priya freezes Rahul: he gets a warning that says which key to press, then his cards lock.
+    await a.keyboard.press("g");
+    await expect(alertBar(b)).toContainText("Freeze their player incoming");
+    await expect(alertBar(b)).toContainText("Press W — Noise cancelling");
+    await expect(b.getByText(/Frozen ·/)).toBeVisible();
+    await expect(alertBar(b)).toContainText("Your cards are frozen!");
 
-    // Rahul (500 coins) blindfolds Priya once his shop is back.
-    await expect(b.getByText("Controls jammed", { exact: true })).toBeHidden({ timeout: 10_000 });
-    await b.keyboard.press("j");
-    await expect(alertBar(a)).toContainText("You’re blindfolded!");
-    await expect(a.getByText("Your map and alerts are dark for a few seconds")).toBeVisible();
+    // Rahul (500 coins) sends bots at Priya once his cards thaw.
+    await expect(b.getByText(/Frozen ·/)).toBeHidden({ timeout: 10_000 });
+    await b.keyboard.press("s");
+    await expect(alertBar(a)).toContainText("Fake streams incoming");
+    await expect(alertBar(a)).toContainText("Press 2 — Stream check");
     expect(errors).toEqual([]);
   });
 
@@ -92,9 +93,9 @@ test.describe("the duel", () => {
     const { a, b } = await duel(browser, errors);
     await waitForLive(b);
     await b.reload();
-    await expect(b.getByRole("img", { name: "Live map of the site" }).first()).toBeVisible();
-    await expect(b.getByText("Their score")).toBeVisible();
-    await expect(a.getByText("Their score")).toBeVisible();
+    await expect(arena(b)).toBeVisible();
+    await expect(a.getByRole("heading", { name: "How to play" })).toBeHidden();
+    await expect(arena(a)).toBeVisible();
     expect(errors).toEqual([]);
   });
 });

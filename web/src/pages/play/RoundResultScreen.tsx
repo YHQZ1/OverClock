@@ -1,63 +1,53 @@
 import type { RoomView, Side, SiteScore } from "@server/types/contracts.js";
-import { TopBar } from "../../components/TopBar";
-import { Frame, Label, cx } from "../../components/ui";
-import { capitalise, wordsFor } from "../../themes/themes";
+import { StageHeader } from "../../components/StageHeader";
+import { cx } from "../../components/ui";
+import { THEME_INFO, capitalise, posterVars, wordsFor } from "../../themes/themes";
 
 const n = (x: number) => x.toLocaleString();
 
+/** Between rounds: who won it, in the app's colour, with what each team did. */
 export function RoundResultScreen({ room, mySide }: { room: RoomView; mySide: Side | null }) {
   const last = room.rounds.at(-1);
   if (!last) return null;
   const isLast = last.round >= room.totalRounds;
   const headline =
     last.winner === null ? "It’s a draw" : last.winner === mySide ? "You won the round!" : `${room.teamNames[last.winner]} won the round`;
+  const motif = THEME_INFO[room.theme ?? "bookmyshow"].poster.motif;
 
   return (
-    <Frame>
-      <TopBar theme={room.theme} right={`Round ${last.round} of ${room.totalRounds}`} />
-      <main className="flex flex-col lg:min-h-0">
-        <div className="flex flex-col gap-3 border-b border-line px-4 pt-[clamp(1.25rem,5vh,3rem)] pb-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-10">
-          <div>
-            <Label>Round {last.round} result</Label>
-            <h1
-              className={cx(
-                "mt-2 text-[clamp(2.5rem,8vh,4.5rem)] leading-none font-semibold tracking-[-0.045em]",
-                last.winner === mySide && "text-accent",
-              )}
-            >
-              {headline}
-            </h1>
-          </div>
-          <p className="pb-1 text-muted">
-            {isLast ? "Final results" : `Round ${last.round + 1}`} in <span className="font-semibold text-ink tabular-nums">{room.secondsLeft ?? 0}s</span>
-          </p>
-        </div>
+    <div className="grid h-full min-h-[37.5rem] grid-rows-[auto_minmax(0,1fr)_auto] bg-bg">
+      <StageHeader title={`Round ${last.round} of ${room.totalRounds}`} right={`${isLast ? "Final results" : `Round ${last.round + 1}`} in ${room.secondsLeft ?? 0}s`} />
 
-        <div className="grid flex-1 gap-px bg-line sm:grid-cols-2">
+      <main style={posterVars(room.theme)} className={cx("relative grid min-h-0 content-center overflow-hidden px-6 py-[2vh] sm:px-[6vw]", `motif-${motif}`)}>
+        <h2 className="relative font-display text-[clamp(3rem,11vh,7rem)] leading-[0.86] font-extrabold uppercase">{headline}</h2>
+        <div className="relative mt-[3vh] grid gap-x-[4vw] gap-y-6 sm:grid-cols-2">
           {([1, 2] as const).map((side) => (
             <TeamResult
               key={side}
               name={room.teamNames[side]}
               score={last.scores[side]}
               won={last.winner === side}
+              lost={last.winner !== null && last.winner !== side}
               you={side === mySide}
               visitors={capitalise(wordsFor(room.theme).visitors)}
             />
           ))}
         </div>
+      </main>
 
-        <div className="border-t border-line px-4 sm:px-6 lg:px-10 py-4 text-sm text-muted">
+      <footer className="flex flex-wrap items-center justify-between gap-3 bg-bg px-6 py-3 sm:px-8">
+        <p className="font-display text-xl font-bold tracking-[0.04em] uppercase">
           Scores so far —{" "}
           {([1, 2] as const)
             .map((side) => `${room.teamNames[side]}: ${n(room.rounds.reduce((sum, r) => sum + r.scores[side].total, 0))}`)
             .join(" · ")}
-        </div>
-      </main>
-    </Frame>
+        </p>
+      </footer>
+    </div>
   );
 }
 
-function TeamResult({ name, score, won, you, visitors }: { name: string; score: SiteScore; won: boolean; you: boolean; visitors: string }) {
+function TeamResult({ name, score, won, lost, you, visitors }: { name: string; score: SiteScore; won: boolean; lost: boolean; you: boolean; visitors: string }) {
   const rows: [string, string][] = [
     [`${visitors} served`, `+${n(score.served)}`],
     ["Turned away", `−${n(score.lostPenalty)}`],
@@ -66,19 +56,18 @@ function TeamResult({ name, score, won, you, visitors }: { name: string; score: 
     ["Times the site went down", String(score.crashes)],
   ];
   return (
-    <section className="bg-bg px-4 py-8 sm:px-6 lg:px-10">
-      <Label>
+    <section className={cx(lost && "opacity-65")}>
+      <p className="flex items-center gap-3 font-display text-[1.375rem] font-extrabold tracking-[0.1em] uppercase">
         {name}
-        {you && " (you)"}
-      </Label>
-      <p className={cx("mt-2 text-[clamp(3rem,10vh,5.5rem)] leading-none font-semibold tracking-[-0.05em] tabular-nums", won ? "text-accent" : "text-muted")}>
-        {n(score.total)}
+        {you && <span className="opacity-70">(you)</span>}
+        {won && <span className="bg-bg px-2 py-0.5 text-base tracking-[0.12em] text-ink">Won</span>}
       </p>
-      <dl className="mt-6 grid max-w-[27.5rem] border-t border-line">
+      <p className="font-display text-[clamp(3.5rem,13vh,8rem)] leading-[0.85] font-extrabold tabular-nums">{n(score.total)}</p>
+      <dl className="mt-3 grid border-t-[3px] border-current">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between border-b border-line py-2.5">
-            <dt className="text-muted">{label}</dt>
-            <dd className="font-semibold tabular-nums">{value}</dd>
+          <div key={label} className="flex justify-between border-b-[3px] border-current/30 py-1.5 font-display text-xl font-bold tracking-[0.02em] uppercase">
+            <dt className="opacity-80">{label}</dt>
+            <dd className="tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>

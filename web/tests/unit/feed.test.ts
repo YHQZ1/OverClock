@@ -17,8 +17,8 @@ describe("feed lines", () => {
   });
 
   it("explain your own failed presses, not your teammate's", () => {
-    expect(line({ side: 1, type: "rejected", kind: "buy", item: "splitter", reason: "coins", by: "Priya" }, 1, "Priya")?.text).toBe(
-      "Not enough coins — Traffic splitter",
+    expect(line({ side: 1, type: "rejected", kind: "buy", item: "bouncer", reason: "coins", by: "Priya" }, 1, "Priya")?.text).toBe(
+      "Not enough coins — Bouncer",
     );
     expect(line({ side: 1, type: "rejected", kind: "use", item: "shield", reason: "jammed", by: "Priya" }, 1, "Priya")?.text).toBe(
       "Your controls are jammed — Shield",
@@ -29,18 +29,18 @@ describe("feed lines", () => {
   it("never use technical terms", () => {
     const texts = [
       line({ side: 1, type: "attackIncoming", attack: "bots", inSec: 3 }, 1, "P"),
-      line({ side: 1, type: "attackLanded", attack: "breakSplitter" }, 1, "P"),
+      line({ side: 1, type: "attackLanded", attack: "wrongTurn" }, 1, "P"),
       line({ side: 1, type: "serversMelted", count: 2 }, 1, "P"),
-      line({ side: 1, type: "defenceReady", item: "backupMonitor" }, 1, "P"),
+      line({ side: 1, type: "defenceReady", item: "lockAddress" }, 1, "P"),
     ].map((l) => l?.text ?? "");
     for (const t of texts) expect(t).not.toMatch(/ddos|load balancer|dns|cache|cpu|latency/i);
   });
 
   it("use the theme's names", () => {
-    const w = THEME_INFO.fancode.words;
-    expect(line({ side: 2, type: "attackLanded", attack: "wrongTurn" }, 1, "P", w)?.text).toBe("Pirate stream hit them");
-    expect(line({ side: 1, type: "bought", item: "splitter", by: "P" }, 1, "P", w)?.text).toBe("You bought Pit crew");
-    expect(line({ side: 1, type: "serversMelted", count: 2 }, 1, "P", w)?.text).toBe("2 stream servers wrecked");
+    const w = THEME_INFO.gpay.words;
+    expect(line({ side: 2, type: "attackLanded", attack: "wrongTurn" }, 1, "P", w)?.text).toBe("Fake QR code hit them");
+    expect(line({ side: 1, type: "bought", item: "bouncer", by: "P" }, 1, "P", w)?.text).toBe("You bought Fraud check");
+    expect(line({ side: 1, type: "serversMelted", count: 2 }, 1, "P", w)?.text).toBe("2 payment lanes wrecked");
   });
 
   it("give every theme a name for every item, and fill every hint", () => {
@@ -51,6 +51,15 @@ describe("feed lines", () => {
         expect(itemHint(w, item)).not.toMatch(/[{}]/);
         expect(`${w.names[item]} ${itemHint(w, item)}`).not.toMatch(/ddos|load balancer|dns|cache|cpu|latency|rate limit/i);
       }
+    }
+  });
+
+  it("keeps each card's key the same in every theme — only the name changes", () => {
+    const keys = Object.entries(ITEM_INFO).map(([id, info]) => `${id}:${info.key}`);
+    expect(new Set(keys.map((k) => k.split(":")[1])).size).toBe(keys.length); // no two cards share a key
+    for (const id of THEME_IDS) {
+      const names = Object.values(THEME_INFO[id].words.names);
+      expect(new Set(names).size, `${id} has duplicate card names`).toBe(names.length);
     }
   });
 });

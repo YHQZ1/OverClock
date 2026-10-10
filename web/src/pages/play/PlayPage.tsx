@@ -14,6 +14,7 @@ import { MessageScreen } from "./MessageScreen";
 import { RoomScreen } from "./RoomScreen";
 import { RoundResultScreen } from "./RoundResultScreen";
 import { RevealScreen } from "./RevealScreen";
+import { ThemePickScreen } from "./ThemePickScreen";
 import { VoteScreen } from "./VoteScreen";
 import { accentVars } from "../../themes/themes";
 
@@ -50,6 +51,9 @@ export function PlayPage() {
         break;
       case "vote":
         screen = <VoteScreen room={room} playerId={playerId} />;
+        break;
+      case "themePick":
+        screen = <ThemePickScreen room={room} />;
         break;
       case "briefing":
         screen = <BriefingScreen room={room} playerId={playerId} />;
@@ -95,7 +99,9 @@ function tabTitle(room: RoomView): string {
     case "room":
       return `Room ${room.code}`;
     case "vote":
-      return "Pick the site";
+      return "Pick the app";
+    case "themePick":
+      return site ? `${site} it is!` : "Theme picked";
     case "briefing":
       return site ? `How to play ${site}` : "How to play";
     case "buy":

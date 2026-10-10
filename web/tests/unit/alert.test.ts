@@ -1,70 +1,84 @@
 import { describe, expect, it } from "vitest";
 import { currentAlert } from "../../src/game/alert";
 import { THEME_INFO } from "../../src/themes/themes";
-import { match, site } from "./fixtures";
+import { match, shop, site } from "./fixtures";
 
 const effect = (kind: string) => [{ kind, secondsLeft: 5, share: 0.5 }] as never;
 
-describe("alert bar", () => {
+describe("alert", () => {
   it("is calm when nothing is wrong", () => {
     expect(currentAlert(match())).toMatchObject({ level: "calm", title: "All calm" });
   });
 
   it("explains the buy phase", () => {
-    expect(currentAlert(match({ phase: "buy" })).title).toBe("Buy phase · Round 1");
+    expect(currentAlert(match({ phase: "buy" })).title).toBe("Get ready · Round 1");
   });
 
   it("puts a crash above everything", () => {
-    const a = currentAlert(match({ me: { downSecondsLeft: 5, blind: true }, incoming: [{ id: 1, attack: "bots", secondsLeft: 2 }] }));
+    const a = currentAlert(match({ me: { downSecondsLeft: 5 }, incoming: [{ id: 1, attack: "bots", secondsLeft: 2 }] }));
     expect(a).toMatchObject({ id: "down", level: "bad", hint: "Back in 5s — nobody can get in" });
   });
 
-  it("names the counter for an incoming attack", () => {
-    const a = currentAlert(match({ incoming: [{ id: 7, attack: "wrongTurn", secondsLeft: 2.2 }] }));
-    expect(a.title).toBe("Wrong Turn incoming in 3s");
-    expect(a.hint).toBe("Counter: Lock your address or Shield");
-  });
+  describe("an incoming attack", () => {
+    it("names the card to press, and its key", () => {
+      const a = currentAlert(match({ incoming: [{ id: 7, attack: "wrongTurn", secondsLeft: 2.2 }] }));
+      expect(a.title).toBe("Steal visitors incoming in 3s");
+      expect(a.hint).toBe("Press 3 — Verified link");
+      expect(a.press).toBe("lockAddress");
+    });
 
-  it("warns about the nearest of several incoming attacks", () => {
-    const a = currentAlert(
-      match({
-        incoming: [
-          { id: 1, attack: "surge", secondsLeft: 2.5 },
-          { id: 2, attack: "jam", secondsLeft: 0.8 },
-        ],
-      }),
-    );
-    expect(a.title).toBe("Jam their controls incoming in 1s");
-  });
+    it("says you're ready when a kept defence already cuts it down", () => {
+      const a = currentAlert(match({ shop: shop({ lockAddress: { owned: 1 } }), incoming: [{ id: 7, attack: "wrongTurn", secondsLeft: 2 }] }));
+      expect(a).toMatchObject({ level: "warn", hint: "You’re ready — Verified link will cut it down" });
+      expect(a.press).toBeUndefined();
+    });
 
-  it("covers the attacks you can't see coming", () => {
-    expect(currentAlert(match({ me: { blind: true } })).title).toBe("You’re blindfolded!");
-    expect(currentAlert(match({ me: { effects: effect("jam") } })).title).toBe("Your controls are jammed!");
-    expect(currentAlert(match({ me: { effects: effect("wrongTurn") } })).title).toBe("Your visitors are going to them!");
-  });
+    it("falls back to the next counter when the first can't be afforded", () => {
+      const a = currentAlert(match({ shop: shop({ bouncer: { affordable: false } }), incoming: [{ id: 1, attack: "bots", secondsLeft: 2 }] }));
+      expect(a.press).toBe("shield");
+      expect(a.hint).toBe("Press W — Shield");
+    });
 
-  it("says why servers are struggling — and what fixes it", () => {
-    const struggling = { parts: { door: "ok", servers: "failing", shelf: "none", db: "ok" } } as const;
-    const wrecked = site().servers.map((s, i) => ({ ...s, state: i < 2 ? ("wrecked" as const) : s.state }));
-    expect(currentAlert(match({ me: { ...struggling, servers: wrecked } })).hint).toMatch(/Instant backup/);
-    expect(currentAlert(match({ me: { ...struggling, effects: effect("slowServers") } })).hint).toMatch(/Overclock/);
-    expect(currentAlert(match({ me: { ...struggling, effects: effect("breakSplitter") } })).hint).toMatch(/splitter/);
-    expect(currentAlert(match({ me: struggling })).title).toBe("People can’t get in!");
-  });
+    it("prefers a new server for a surge, then Overclock when servers are maxed", () => {
+      const surge = { id: 1, attack: "surge" as const, secondsLeft: 2 };
+      expect(currentAlert(match({ incoming: [surge] })).press).toBe("server");
+      expect(currentAlert(match({ shop: shop({ server: { owned: 12 } }), incoming: [surge] })).press).toBe("overclock");
+    });
 
-  it("points at bots and a slow database", () => {
-    expect(currentAlert(match({ me: { botShare: 0.8, parts: { door: "failing", servers: "ok", shelf: "none", db: "ok" } } })).title).toBe(
-      "Bots are flooding in!",
-    );
-    expect(currentAlert(match({ me: { parts: { door: "ok", servers: "ok", shelf: "none", db: "strained" } } }))).toMatchObject({
-      level: "warn",
-      title: "Database can’t keep up!",
+    it("warns about the nearest of several", () => {
+      const a = currentAlert(
+        match({
+          incoming: [
+            { id: 1, attack: "surge", secondsLeft: 2.5 },
+            { id: 2, attack: "jam", secondsLeft: 0.8 },
+          ],
+        }),
+      );
+      expect(a.title).toBe("Freeze their controls incoming in 1s");
+      expect(a.press).toBe("shield");
     });
   });
 
-  it("nudges you to sell idle servers when calm", () => {
-    const idle = site().servers.map((s, i) => ({ ...s, state: i < 3 ? ("idle" as const) : s.state }));
-    expect(currentAlert(match({ me: { servers: idle } })).hint).toBe("3 servers idle — sell them to save coins (Shift+1)");
+  it("covers what's already happening to you", () => {
+    expect(currentAlert(match({ me: { effects: effect("jam") } })).title).toBe("Your cards are frozen!");
+    expect(currentAlert(match({ me: { effects: effect("wrongTurn") } })).title).toBe("Your visitors are walking to them!");
+  });
+
+  it("says why servers are struggling — and which key fixes it", () => {
+    const struggling = { parts: { door: "ok", servers: "failing" } } as const;
+    const wrecked = site().servers.map((s, i) => ({ ...s, state: i < 2 ? ("wrecked" as const) : s.state }));
+    expect(currentAlert(match({ me: { ...struggling, servers: wrecked } }))).toMatchObject({ hint: "Press R — Instant backup", press: "instantBackup" });
+    const crowded = currentAlert(match({ me: struggling }));
+    expect(crowded).toMatchObject({ title: "People can’t get in!", hint: "Press 1 — Server", press: "server" });
+  });
+
+  it("points at bots", () => {
+    const a = currentAlert(match({ me: { botShare: 0.8, parts: { door: "failing", servers: "ok" } } }));
+    expect(a).toMatchObject({ title: "Bots are flooding the line!", hint: "Press 2 — Bouncer", press: "bouncer" });
+  });
+
+  it("points at repair when health is critical", () => {
+    expect(currentAlert(match({ me: { critical: true } }))).toMatchObject({ title: "Health critical!", press: "repair" });
   });
 
   it("tells you when they're down", () => {
@@ -72,20 +86,20 @@ describe("alert bar", () => {
   });
 
   it("speaks the theme's words", () => {
-    const words = THEME_INFO.fancode.words;
-    const failing = { parts: { door: "ok", servers: "failing", shelf: "none", db: "ok" } } as const;
-    expect(currentAlert(match({ phase: "buy", round: 3 }), words).title).toBe("Buy phase · Final laps");
-    expect(currentAlert(match({ me: failing }), words).title).toBe("Fans can’t load the stream!");
-    expect(currentAlert(match({ me: { effects: effect("wrongTurn") } }), words).title).toBe("Your fans are going to them!");
-    expect(currentAlert(match({ me: { downSecondsLeft: 3 } }), words).hint).toBe("Back in 3s — the race is going dark");
-  });
+    const failing = { parts: { door: "ok", servers: "failing" } } as const;
 
-  it("names items the theme's way", () => {
-    const words = THEME_INFO.bookmyshow.words;
-    const a = currentAlert(match({ incoming: [{ id: 1, attack: "bots", secondsLeft: 2 }] }), words);
-    expect(a.title).toBe("Scalper bots incoming in 2s");
-    expect(a.hint).toBe("Counter: Robot check or Security");
-    const db = { parts: { door: "ok", servers: "ok", shelf: "none", db: "strained" } } as const;
-    expect(currentAlert(match({ me: db }), THEME_INFO.nasdaq.words).title).toBe("Ledger can’t keep up!");
+    const bms = THEME_INFO.bookmyshow.words;
+    expect(currentAlert(match({ phase: "buy", round: 3 }), bms).title).toBe("Get ready · Last tickets");
+    expect(currentAlert(match({ me: failing }), bms).title).toBe("Fans are stuck in the queue!");
+    expect(currentAlert(match({ me: { effects: effect("wrongTurn") } }), bms).title).toBe("Your fans are walking to them!");
+    expect(currentAlert(match({ me: { downSecondsLeft: 3 } }), bms).hint).toBe("Back in 3s — no one’s getting tickets");
+    const bots = currentAlert(match({ incoming: [{ id: 1, attack: "bots", secondsLeft: 2 }] }), bms);
+    expect(bots.title).toBe("Scalper bots incoming in 2s");
+    expect(bots.hint).toBe("Press 2 — Robot check");
+
+    expect(currentAlert(match({ me: failing }), THEME_INFO.gpay.words).title).toBe("Payments are stuck on “processing”!");
+    expect(currentAlert(match({ incoming: [{ id: 1, attack: "wrongTurn", secondsLeft: 2 }] }), THEME_INFO.gpay.words).title).toBe(
+      "Fake QR code incoming in 2s",
+    );
   });
 });

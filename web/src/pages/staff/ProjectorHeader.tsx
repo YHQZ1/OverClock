@@ -1,28 +1,28 @@
 import { Link } from "react-router";
 
-/** The top strip of the projector pages (/live, /leaderboard): back · page name · Overclock. */
+/** The top strip of the projector pages (/live, /leaderboard): back · page name · Overclock. Sized in vh. */
 export function ProjectorHeader({ title, connected }: { title: string; connected: boolean }) {
   return (
-    <header className="grid h-[7vh] min-h-12 grid-cols-[1fr_auto_1fr] items-center border-b border-line px-[2.5vw]">
+    <header className="grid h-[8vh] min-h-12 grid-cols-[1fr_auto_1fr] items-center bg-bg px-[2.5vw]">
       <div>
         <Link
           to="/admin"
           title="Back to the control panel"
-          className="border border-line px-[0.8vw] py-[0.4vh] text-[1.6vh] font-medium text-faint transition-colors hover:border-line-strong hover:text-ink"
+          className="border-2 border-line-strong px-[0.8vw] py-[0.4vh] font-display text-[1.9vh] font-bold tracking-[0.08em] text-muted uppercase transition-colors hover:border-ink hover:text-ink"
         >
           ← Control panel
         </Link>
       </div>
-      <h1 className="text-[2.6vh] font-semibold tracking-[-0.02em]">{title}</h1>
+      <h1 className="font-display text-[3.4vh] leading-none font-extrabold tracking-[0.02em] uppercase">{title}</h1>
       <div className="flex items-center justify-end gap-[1.5vw]">
         {!connected && (
-          <span className="flex items-center gap-2 text-[1.8vh] text-bad">
+          <span className="flex items-center gap-2 font-display text-[2vh] font-bold tracking-[0.06em] text-bad uppercase">
             <span className="size-[1vh] animate-blink bg-bad" aria-hidden />
             Reconnecting…
           </span>
         )}
-        <span className="flex items-center gap-3 text-[2.4vh] font-semibold tracking-[-0.01em]">
-          <span className="size-[1.4vh] bg-accent" aria-hidden />
+        <span className="flex items-center gap-3 font-display text-[3vh] font-extrabold tracking-[0.06em] uppercase">
+          <span className="size-[1.6vh] bg-accent" aria-hidden />
           Overclock
         </span>
       </div>

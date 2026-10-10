@@ -4,12 +4,13 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react
 export const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(" ");
 
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2.5 border text-sm font-medium cursor-pointer transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex items-center justify-center gap-3 border-[3px] font-display text-[1.3125rem] leading-none font-extrabold tracking-[0.03em] uppercase cursor-pointer transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40";
 
 const BUTTON_VARIANTS = {
-  default: "border-line-strong bg-transparent hover:enabled:border-faint hover:enabled:bg-raised",
-  primary:
-    "border-accent bg-accent font-semibold text-on-accent hover:enabled:border-accent-hover hover:enabled:bg-accent-hover [&_kbd]:border-on-accent/25 [&_kbd]:text-on-accent/65",
+  default: "border-ink bg-transparent text-ink hover:enabled:bg-ink hover:enabled:text-bg",
+  primary: "border-accent bg-accent text-on-accent hover:enabled:border-accent-hover hover:enabled:bg-accent-hover [&_kbd]:border-on-accent/50 [&_kbd]:text-on-accent",
+  /** Solid ink on a coloured panel. */
+  ink: "border-bg bg-bg text-ink hover:enabled:bg-transparent hover:enabled:text-bg",
   ghost: "border-transparent bg-transparent text-muted hover:enabled:text-ink",
 } as const;
 
@@ -22,25 +23,27 @@ export function Button({ variant = "default", block = false, className, type = "
   return (
     <button
       type={type}
-      className={cx(BUTTON_BASE, BUTTON_VARIANTS[variant], block ? "h-[3.25rem] w-full text-[0.9375rem]" : "h-11 px-[1.125rem]", className)}
+      className={cx(BUTTON_BASE, BUTTON_VARIANTS[variant], block ? "h-14 w-full text-2xl" : "h-12 px-5", className)}
       {...props}
     />
   );
 }
 
+/** A small uppercase caption. */
 export function Label({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cx("text-[0.8125rem] font-medium text-muted", className)}>{children}</span>;
+  return <span className={cx("font-display text-[0.9375rem] font-bold tracking-[0.12em] text-muted uppercase", className)}>{children}</span>;
 }
 
-type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string };
+type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string; labelClassName?: string };
 
-export function Field({ label, className, ...input }: FieldProps) {
+/** Big underlined type — no input box. */
+export function Field({ label, labelClassName, className, ...input }: FieldProps) {
   return (
-    <label className="grid gap-2">
-      <Label>{label}</Label>
+    <label className="grid gap-1.5">
+      <Label className={labelClassName}>{label}</Label>
       <input
         className={cx(
-          "h-[2.875rem] border border-line-strong bg-bg px-3.5 outline-none transition-colors duration-150 focus:border-accent",
+          "w-full border-0 border-b-4 border-ink bg-transparent px-0 pt-0 pb-1 font-display text-[2.25rem] leading-[1.1] font-extrabold tracking-[0.01em] uppercase outline-none transition-colors duration-150 placeholder:text-ink/25 focus:border-accent",
           className,
         )}
         {...input}
@@ -56,7 +59,7 @@ export function Frame({ children }: { children: ReactNode }) {
 }
 
 /** The two-column split used across screens: content left, action column right. */
-export const SPLIT = "grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(26.25rem,34%)]";
+export const SPLIT = "grid lg:min-h-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]";
 
 /** The right-hand column of SPLIT: below it on narrow screens, beside it on desktop. */
-export const SPLIT_SIDE = "border-t border-line lg:border-t-0 lg:border-l";
+export const SPLIT_SIDE = "border-t-4 border-bg lg:border-t-0 lg:border-l-0";
