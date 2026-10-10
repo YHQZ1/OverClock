@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { AttackId, ItemId, MatchView, RoomView, Side, SimEvent } from "@server/types/contracts.js";
 import { describe, type FeedItem, type Tone } from "../game/feed";
+import { loadSeat } from "../socket/seat";
 import { wordsFor } from "../themes/themes";
 
 const FEED_SIZE = 3;
@@ -58,7 +59,8 @@ function bannerFor(e: SimEvent, mySide: Side, words: ReturnType<typeof wordsFor>
 /** Latest server snapshot. The web app never simulates — it only displays this. */
 export const useGameStore = create<GameStore>((set, get) => ({
   connected: false,
-  restoring: false,
+  // A saved seat means a refresh mid-room: start in "restoring" so the landing page never flashes first.
+  restoring: loadSeat() !== null,
   playerId: null,
   room: null,
   match: null,

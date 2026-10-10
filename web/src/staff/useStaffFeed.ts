@@ -6,8 +6,10 @@ import { clearToken, getToken } from "./auth";
 
 export type StaffFeed = {
   connected: boolean;
-  /** False once the server rejects the sign-in (expired, or the server restarted). */
+  /** False when there is no sign-in, or once the server rejects it (expired, or the server restarted). */
   signedIn: boolean;
+  /** True once the first snapshot has arrived — before that there is nothing real to show. */
+  ready: boolean;
   boards: Leaderboards | null;
   awards: Awards | null;
   /** Every match in progress, a few times a second. */
@@ -16,14 +18,14 @@ export type StaffFeed = {
 
 /** Subscribes this tab as staff; re-subscribes after every reconnect. */
 export function useStaffFeed(): StaffFeed {
-  const [feed, setFeed] = useState<StaffFeed>({ connected: false, signedIn: true, boards: null, awards: null, matches: [] });
+  const [feed, setFeed] = useState<StaffFeed>({ connected: false, signedIn: getToken() !== null, ready: false, boards: null, awards: null, matches: [] });
 
   useEffect(() => {
     const watch = async () => {
       setFeed((f) => ({ ...f, connected: true }));
       const token = getToken();
       const res = token ? await request<ScreenSnapshot>("screen:watch", { token }) : null;
-      if (res?.ok) setFeed({ connected: true, signedIn: true, ...res.data });
+      if (res?.ok) setFeed({ connected: true, signedIn: true, ready: true, ...res.data });
       else if (!res || res.error === "Please sign in again.") {
         clearToken();
         setFeed((f) => ({ ...f, signedIn: false }));
