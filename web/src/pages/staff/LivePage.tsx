@@ -1,5 +1,6 @@
 import type { ScreenMatch } from "@server/types/contracts.js";
 import { useEffect, useState } from "react";
+import { ClubFooter } from "../../components/ClubFooter";
 import { cx } from "../../components/ui";
 import { useShortcut } from "../../hooks/useShortcut";
 import { ThemeLogo } from "../../themes/ThemeLogo";
@@ -42,18 +43,19 @@ function Live({ feed }: { feed: StaffFeed }) {
   const sorted = [...feed.matches].sort((a, b) => a.code.localeCompare(b.code));
 
   return (
-    <div className="grid h-screen min-h-[600px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-bg">
+    <div className="grid h-screen min-h-[600px] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-bg">
       <ProjectorHeader title="Live" connected={feed.connected} />
       <div className="grid md:min-h-0 md:grid-cols-[minmax(16rem,23vw)_minmax(0,1fr)]">
-        <aside className="flex max-h-[40vh] flex-col border-t-4 border-black md:max-h-none md:min-h-0 md:border-r-4">
+        <aside className="flex max-h-[40vh] flex-col border-t-2 border-night-line md:max-h-none md:min-h-0 md:border-r-2">
           <div className="flex items-baseline justify-between px-[1.4vw] pt-[2vh] pb-[1.2vh]">
             <h2 className="font-display text-[3vh] leading-none font-extrabold tracking-[0.04em] uppercase">Matches</h2>
             <span className="font-display text-[2.2vh] font-bold tracking-[0.1em] text-muted uppercase">{feed.matches.length} live</span>
           </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto border-t-4 border-black">
-            {sorted.map((m) => (
+          <ul className="min-h-0 flex-1 overflow-y-auto border-t-2 border-night-line">
+            {sorted.map((m, i) => (
               <SidebarMatch
                 key={m.code}
+                stripe={STRIPES[i % STRIPES.length] ?? ""}
                 match={m}
                 active={m.code === rot.featured}
                 pinned={m.code === rot.pinned}
@@ -63,7 +65,7 @@ function Live({ feed }: { feed: StaffFeed }) {
             ))}
             {sorted.length === 0 && <li className="px-[1.4vw] py-[2vh] font-display text-[2.4vh] font-bold tracking-[0.04em] text-muted uppercase">Waiting for the first match…</li>}
           </ul>
-          <p className="border-t-4 border-black px-[1.4vw] py-[1.4vh] font-display text-[1.9vh] font-bold tracking-[0.06em] text-muted uppercase">
+          <p className="border-t-2 border-night-line px-[1.4vw] py-[1.4vh] font-display text-[1.9vh] font-bold tracking-[0.06em] text-muted uppercase">
             Every 10s · click to show · <kbd>P</kbd> pin
           </p>
         </aside>
@@ -92,18 +94,24 @@ function Live({ feed }: { feed: StaffFeed }) {
           )}
         </main>
       </div>
+      <ClubFooter />
     </div>
   );
 }
 
+/** The coloured edge of each match in the sidebar — one GDSC colour in turn. */
+const STRIPES = ["border-l-gdsc-blue", "border-l-gdsc-red", "border-l-gdsc-yellow", "border-l-gdsc-green"];
+
 function SidebarMatch({
   match,
+  stripe,
   active,
   pinned,
   left,
   onClick,
 }: {
   match: ScreenMatch;
+  stripe: string;
   active: boolean;
   pinned: boolean;
   left: number;
@@ -120,12 +128,13 @@ function SidebarMatch({
     .join(" · ");
   const [a, b] = [match.teams[1], match.teams[2]];
   return (
-    <li className="border-b-4 border-black">
+    <li className="border-b-2 border-night-line">
       <button
         type="button"
         onClick={onClick}
         className={cx(
-          "relative block w-full cursor-pointer px-[1.4vw] py-[1.6vh] text-left transition-colors",
+          "relative block w-full cursor-pointer border-l-[0.7vh] py-[1.6vh] pr-[1.4vw] pl-[1vw] text-left transition-colors",
+          active ? "border-l-bg" : stripe,
           active ? "bg-accent text-on-accent" : "hover:bg-surface",
           !playing && !active && "opacity-60",
         )}

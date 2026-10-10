@@ -46,10 +46,10 @@ test.describe("the duel", () => {
     const { a, code } = await duel(browser, errors);
     await waitForLive(a);
     await expect(live.getByText(`1v1 · room ${code}`)).toBeVisible(); // featured, in its theme
-    await expect(live.getByRole("button", { name: /Priya\s+vs\s+Rahul/ })).toBeVisible(); // in the sidebar
+    await expect(live.getByRole("button", { name: /Alpha\s+vs\s+Bravo/ })).toBeVisible(); // in the sidebar
 
     await expect(a.getByText("Match over")).toBeVisible({ timeout: 120_000 });
-    await expect(board.getByText("vs Rahul").first()).toBeVisible({ timeout: 10_000 });
+    await expect(board.getByText("vs Bravo").first()).toBeVisible({ timeout: 10_000 });
     await expect(a.getByText(/Your place on the 1v1 leaderboard/)).toBeVisible();
     await expect(a.getByText(/^#\d+$/).first()).toBeVisible();
     expect(errors).toEqual([]);
@@ -74,14 +74,14 @@ test.describe("the duel", () => {
     const { a, b } = await duel(browser, errors);
     await waitForLive(a);
 
-    // Priya freezes Rahul: he gets a warning that says which key to press, then his cards lock.
+    // Alpha freezes Bravo: he gets a warning that says which key to press, then his cards lock.
     await a.keyboard.press("g");
     await expect(alertBar(b)).toContainText("Freeze their player incoming");
     await expect(alertBar(b)).toContainText("Press W — Noise cancelling");
     await expect(b.getByText(/Frozen ·/)).toBeVisible();
     await expect(alertBar(b)).toContainText("Your cards are frozen!");
 
-    // Rahul (500 coins) sends bots at Priya once his cards thaw.
+    // Bravo (500 coins) sends bots at Alpha once his cards thaw.
     await expect(b.getByText(/Frozen ·/)).toBeHidden({ timeout: 10_000 });
     await b.keyboard.press("s");
     await expect(alertBar(a)).toContainText("Fake streams incoming");

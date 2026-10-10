@@ -75,7 +75,7 @@ export function PlayPage() {
     }
   }
 
-  // Once the vote has picked a world, its colour replaces the lavender accent.
+  // Once the vote has picked a world, its colour replaces the neutral accent.
   const themed = room?.theme && room.phase !== "room" && room.phase !== "vote" ? accentVars(room.theme) : undefined;
 
   return (

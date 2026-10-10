@@ -41,8 +41,8 @@ export async function joinRoom(page: Page, code: string, name: string): Promise<
 export async function duel(browser: Browser, errors: string[]) {
   const a = await player(browser, errors);
   const b = await player(browser, errors);
-  const code = await createRoom(a, "Priya");
-  await joinRoom(b, code, "Rahul");
+  const code = await createRoom(a, "Alpha");
+  await joinRoom(b, code, "Bravo");
   await a.keyboard.press("r");
   await b.keyboard.press("r");
   await expect(a.getByRole("heading", { name: "Pick the app" })).toBeVisible();
@@ -56,7 +56,7 @@ export async function duel(browser: Browser, errors: string[]) {
     await expect(a.getByRole("heading", { name: title })).toBeVisible();
   }
   await a.keyboard.press("Enter"); // "I'm ready"
-  await expect(a.getByText(/Waiting for Rahul/)).toBeVisible();
+  await expect(a.getByText(/Waiting for Bravo/)).toBeVisible();
   await b.keyboard.press("Enter");
   await b.keyboard.press("Enter");
   await b.keyboard.press("Enter");

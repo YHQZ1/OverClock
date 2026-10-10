@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
+import { ClubFooter } from "../../components/ClubFooter";
 import { TopBar } from "../../components/TopBar";
 import { Button, Field, Frame, cx } from "../../components/ui";
 import { useShortcut } from "../../hooks/useShortcut";
@@ -15,6 +16,14 @@ type Props = {
 
 const PLAYER_NAME_MAX = 16;
 const STEPS = ["Make a room and share the code", "Pick sides and ready up", "Win three rounds"];
+/** Four people, same moment: one line each, rising together. */
+const RUSH = [
+  { stroke: "stroke-gdsc-blue", points: "0,70 560,68 600,4 640,30 720,50 830,60 1000,64" },
+  { stroke: "stroke-gdsc-red", points: "0,78 560,76 612,16 648,40 728,58 838,68 1000,72" },
+  { stroke: "stroke-gdsc-yellow", points: "0,86 560,84 622,30 656,50 736,66 846,76 1000,80" },
+  { stroke: "stroke-gdsc-green", points: "0,94 560,92 632,46 666,62 744,74 854,84 1000,88" },
+];
+const STEP_COLOURS = ["text-gdsc-blue", "text-gdsc-red", "text-gdsc-yellow"];
 
 export function HomeScreen({ onCreate, onJoin }: Props) {
   const [mode, setMode] = useState<Mode>(null);
@@ -22,8 +31,9 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
   useShortcut("Escape", () => setMode(null), { enabled: mode !== null, inInputs: true });
 
   return (
-    <Frame>
+    <Frame className="bg-night">
       <TopBar
+        className="border-b-2 border-night-line bg-night"
         right={
           <span className="flex items-center gap-6">
             <span className="hidden lg:inline">1v1 or 2v2 · one PC each</span>
@@ -36,9 +46,15 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
 
       <main className="grid min-h-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <section className="relative grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden px-6 pt-[2.4vh] pb-[3vh] sm:px-8">
-          <h1 className="font-display text-[min(16.5vh,11vw)] leading-[0.84] font-extrabold tracking-[-0.005em] uppercase">
-            <span className="block">Flood</span> <span className="block">theirs.</span> <span className="block">Keep yours</span>{" "}
-            <span className="block text-accent">alive.</span>
+          <h1 className="font-display text-[min(13.2vh,8.6vw)] leading-[0.84] font-extrabold tracking-[-0.005em] uppercase">
+            <span className="block">Flood</span>{" "}
+            <span className="block">
+              theirs<span className="sr-only">.</span>
+            </span>{" "}
+            <span className="block">Keep yours</span>{" "}
+            <span className="block">
+              alive<span className="sr-only">.</span>
+            </span>
           </h1>
           <p className="mt-[2.2vh] max-w-[50ch] text-[clamp(0.875rem,2.1vh,1.1875rem)] leading-[1.45] text-ink/80">
             Two teams run the same app. Everyone who gets in earns you coins — spend them protecting yours, or knocking theirs over. Three
@@ -48,17 +64,21 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
           {/* the rush: the line the whole game is about */}
           <div className="relative mt-[1.4vh] min-h-10 self-end" style={{ height: "100%", maxHeight: "13vh" }} aria-hidden>
             <svg className="absolute inset-0 size-full overflow-visible" viewBox="0 0 1000 100" preserveAspectRatio="none">
-              <polyline
-                className="rush-line stroke-accent"
-                pathLength={1}
-                fill="none"
-                strokeWidth={5}
-                strokeLinejoin="miter"
-                vectorEffect="non-scaling-stroke"
-                points="0,94 560,92 604,4 640,34 720,62 830,78 1000,84"
-              />
-            </svg>
-            <small className="rush-label absolute top-[-2px] left-[61%] translate-x-3.5 font-display text-[0.8125rem] font-bold tracking-[0.16em] text-accent uppercase">
+              {RUSH.map((r, i) => (
+                <polyline
+                  key={r.stroke}
+                  className={cx("rush-line", r.stroke)}
+                  style={{ animationDelay: `${0.3 + i * 0.12}s` }}
+                  pathLength={1}
+                  fill="none"
+                  strokeWidth={5}
+                  strokeLinejoin="miter"
+                  vectorEffect="non-scaling-stroke"
+                  points={r.points}
+                />
+              ))}
+              </svg>
+            <small className="rush-label absolute top-[-2px] left-[61%] translate-x-3.5 font-display text-[0.8125rem] font-bold tracking-[0.16em] text-muted uppercase">
               Everyone, at once
             </small>
           </div>
@@ -66,7 +86,7 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
           <ol className="mt-[1.6vh] grid grid-cols-3 border-t-2 border-ink">
             {STEPS.map((step, i) => (
               <li key={step} className="pt-3.5 pr-4 text-sm leading-snug text-ink/80">
-                <b className="mb-0.5 block font-display text-[clamp(1.375rem,4vh,2rem)] leading-none font-extrabold text-accent">0{i + 1}</b>
+                <b className={cx("mb-0.5 block font-display text-[clamp(1.375rem,4vh,2rem)] leading-none font-extrabold", STEP_COLOURS[i])}>0{i + 1}</b>
                 {step}
               </li>
             ))}
@@ -98,6 +118,7 @@ export function HomeScreen({ onCreate, onJoin }: Props) {
           </Panel>
         </section>
       </main>
+      <ClubFooter />
     </Frame>
   );
 }
@@ -129,7 +150,7 @@ function Panel({ kind, title, kicker, blurb, open, collapsed, onOpen, children }
       }}
       className={cx(
         "group relative flex min-h-0 flex-col overflow-hidden px-8 text-left transition-[flex-grow,padding] duration-500 ease-snap",
-        kind === "create" ? "bg-accent text-on-accent" : "bg-paper text-bg",
+        kind === "create" ? "bg-paper text-bg" : "border-t-2 border-night-line bg-night-2 text-ink",
         open ? "grow-[3] cursor-default py-6" : collapsed ? "grow-[0.35] cursor-pointer justify-center py-3.5" : "grow cursor-pointer py-6 hover:grow-[1.15]",
       )}
     >
@@ -178,11 +199,13 @@ type FormShellProps = {
   error: string | null;
   pending: boolean;
   submitLabel: string;
+  /** The panel colour: the solid button suits the light panel; the outlined one the dark. */
+  tone: "light" | "dark";
   children: ReactNode;
 };
 
 /** Fields, then the error line, then Back / submit pinned to the bottom. */
-function FormShell({ onSubmit, onBack, error, pending, submitLabel, children }: FormShellProps) {
+function FormShell({ onSubmit, onBack, error, pending, submitLabel, tone, children }: FormShellProps) {
   return (
     <form className="mt-[4vh] flex flex-1 animate-rise-in flex-col gap-[3vh]" onSubmit={onSubmit} noValidate>
       {children}
@@ -193,7 +216,7 @@ function FormShell({ onSubmit, onBack, error, pending, submitLabel, children }: 
         <Button variant="ghost" onClick={onBack} disabled={pending} className="px-0 text-current opacity-70 hover:enabled:opacity-100">
           Back <kbd>Esc</kbd>
         </Button>
-        <Button type="submit" variant="ink" disabled={pending}>
+        <Button type="submit" variant={tone === "light" ? "ink" : "default"} disabled={pending}>
           {pending ? "One moment…" : submitLabel} <kbd>Enter</kbd>
         </Button>
       </div>
@@ -212,13 +235,13 @@ function CreateForm({ onSubmit, onBack }: { onSubmit: Props["onCreate"]; onBack:
   };
 
   return (
-    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Create room">
+    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Create room" tone="light">
       <Field
         label="Your name"
         autoFocus
         value={playerName}
         maxLength={PLAYER_NAME_MAX}
-        placeholder="e.g. Priya"
+        placeholder="Type your name"
         className="border-current focus:border-current placeholder:text-current/30"
         onChange={(e) => (setPlayerName(e.target.value), setError(null))}
       />
@@ -240,7 +263,7 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
   };
 
   return (
-    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Join room">
+    <FormShell onSubmit={submit} onBack={onBack} error={error} pending={pending} submitLabel="Join room" tone="dark">
       <Field
         label="Room code"
         autoFocus
@@ -263,7 +286,7 @@ function JoinForm({ onSubmit, onBack }: { onSubmit: Props["onJoin"]; onBack: () 
         label="Your name"
         value={playerName}
         maxLength={PLAYER_NAME_MAX}
-        placeholder="e.g. Priya"
+        placeholder="Type your name"
         className="border-current focus:border-current placeholder:text-current/30"
         onChange={(e) => (setPlayerName(e.target.value), setError(null))}
       />

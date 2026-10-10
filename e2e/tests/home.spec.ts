@@ -30,7 +30,7 @@ test.describe("home", () => {
     await page.keyboard.press("Escape");
     await page.getByRole("heading", { name: "Join a room" }).click();
     await page.getByLabel("Room code").fill("ZQZQ");
-    await page.getByLabel("Your name").fill("Rahul");
+    await page.getByLabel("Your name").fill("Bravo");
     await page.keyboard.press("Enter");
     await expect(page.getByRole("alert")).toHaveText("No room with that code.");
     expect(errors).toEqual([]);
@@ -38,7 +38,7 @@ test.describe("home", () => {
 
   test("a room explains why it can't start yet", async ({ browser, errors }) => {
     const page = await player(browser, errors);
-    await createRoom(page, "Priya");
+    await createRoom(page, "Alpha");
     await expect(page.getByText("Waiting for an opponent — share the code.")).toBeVisible();
     expect(errors).toEqual([]);
   });

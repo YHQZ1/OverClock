@@ -53,9 +53,10 @@ export function Field({ label, labelClassName, className, ...input }: FieldProps
 }
 
 /** Full-height page: top bar + content. */
-export function Frame({ children }: { children: ReactNode }) {
+export function Frame({ children, className }: { children: ReactNode; className?: string }) {
   // Desktop: exactly one screen tall. Narrower: content stacks and the page scrolls.
-  return <div className="grid min-h-full grid-rows-[auto_1fr] lg:h-full lg:min-h-[37.5rem]">{children}</div>;
+  // A third child (a footer) gets the last row.
+  return <div className={cx("grid min-h-full grid-rows-[auto_1fr_auto] lg:h-full lg:min-h-[37.5rem]", className)}>{children}</div>;
 }
 
 /** The two-column split used across screens: content left, action column right. */

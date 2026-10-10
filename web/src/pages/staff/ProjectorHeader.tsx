@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { ClubMark } from "../../components/ClubMark";
 
 /** The top strip of the projector pages (/live, /leaderboard): back · page name · Overclock. Sized in vh. */
 export function ProjectorHeader({ title, connected }: { title: string; connected: boolean }) {
@@ -22,7 +23,7 @@ export function ProjectorHeader({ title, connected }: { title: string; connected
           </span>
         )}
         <span className="flex items-center gap-3 font-display text-[3vh] font-extrabold tracking-[0.06em] uppercase">
-          <span className="size-[1.6vh] bg-accent" aria-hidden />
+          <ClubMark className="h-[3.4vh]" />
           Overclock
         </span>
       </div>

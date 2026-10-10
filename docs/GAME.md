@@ -83,8 +83,8 @@ no opponent is around.
   sides form a valid format: **1v1** (one player per side) or **2v2** (two per
   side). With 3 players, or an uneven split, the room explains why it can't
   start.
-- Each side can name its team (default: the players' names, e.g. "Priya &
-  Rahul").
+- Each side can name its team (default: the players' names, e.g. "Alpha &
+  Bravo").
 - Nobody is "host" — the ready checks replace a start button.
 
 ### Theme vote and reveal
@@ -121,7 +121,7 @@ middle.
    reading.
 
 - **No visible timer** — reading shouldn't feel like a race.
-- When you've finished: "**Waiting for Rahul…**" with a tick per player.
+- When you've finished: "**Waiting for Bravo…**" with a tick per player.
 - Round 1 starts when every connected player has finished. Safety nets so one
   absent player can't freeze the room: a **hidden 3-minute cap** *(tune)*, and
   a **Skip briefing** button for staff in `/admin`.
@@ -323,7 +323,8 @@ views. Mocks: `docs/mocks/arena.html` (playable), built in
 ### Look
 
 **Flat poster colour, not a dashboard.** One near-black "night", paper-white
-text, one violet brand colour — replaced by the app's own colour the moment a
+text, paper as the neutral accent, GDSC's four colours as small accents on the
+club's pages — replaced by the app's own colour the moment a
 theme is picked. No gradients, no rounded boxes, square edges, thick black
 outlines, hard offset shadows. **Barlow Condensed** (self-hosted, uppercase,
 heavy) for headlines, names, numerals and card titles; **Inter** for small
@@ -331,9 +332,9 @@ text. Big numbers and moments are the picture (the vote posters' stacked
 clock times, the "FLOOD THEIRS" headline); quiet motifs (ticket perforation,
 curtain stripes, sound rings, receipt dots) instead of illustration.
 The same language runs through every screen: room (team 1 the app colour,
-team 2 paper, a VS badge, huge room code), round result and final (headline
+team 2 a quiet dark panel, neutral seat chips, a VS badge between the teams, a huge room code in GDSC's four colours), round result and final (headline
 and numbers on the app's poster, the loser dimmed, nobody on a draw), reveal,
-and the staff pages (near-black with violet for the selected / leading row,
+and the staff pages (soft black with paper for the selected / leading row,
 display type sized in `vh` for the projector).
 Cheap to render: SVG + CSS transforms/opacity, a capped particle pool,
 smooth at 1366×768.

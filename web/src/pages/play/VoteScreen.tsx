@@ -1,3 +1,4 @@
+import { ClubMark } from "../../components/ClubMark";
 import type { RoomView, ThemeId } from "@server/types/contracts.js";
 import { SoundToggle } from "../../audio/SoundToggle";
 import { cx } from "../../components/ui";
@@ -28,7 +29,7 @@ export function VoteScreen({ room, playerId }: { room: RoomView; playerId: strin
     <div className="grid h-full min-h-[37.5rem] grid-rows-[auto_minmax(0,1fr)] bg-bg">
       <header className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-6 px-6 pt-4 pb-3.5 sm:px-8">
         <div className="flex items-center gap-3 font-display text-xl font-extrabold tracking-[0.06em] uppercase">
-          <span className="size-3.5 bg-accent" aria-hidden />
+          <ClubMark />
           Overclock
         </div>
         <h1 className="font-display text-[clamp(1.75rem,3.8vh,2.5rem)] leading-none font-extrabold tracking-[0.01em] uppercase">

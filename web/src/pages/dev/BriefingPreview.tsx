@@ -13,10 +13,10 @@ export function BriefingPreview() {
     phase: "briefing",
     format: "1v1",
     players: [
-      { id: "p1", name: "Priya", slot: 1, ready: true, connected: true },
-      { id: "p2", name: "Rahul", slot: 3, ready: true, connected: true },
+      { id: "p1", name: "Alpha", slot: 1, ready: true, connected: true },
+      { id: "p2", name: "Bravo", slot: 3, ready: true, connected: true },
     ],
-    teamNames: { 1: "Priya", 2: "Rahul" },
+    teamNames: { 1: "Alpha", 2: "Bravo" },
     canStart: { ok: true, format: "1v1" },
     votes: {},
     theme,

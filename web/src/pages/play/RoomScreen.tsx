@@ -1,5 +1,6 @@
 import type { PlayerView, RoomView, Side, Slot } from "@server/types/contracts.js";
 import { useState, type FormEvent } from "react";
+import { ClubFooter } from "../../components/ClubFooter";
 import { Button, cx } from "../../components/ui";
 import { StageHeader } from "../../components/StageHeader";
 import { useShortcut, useShortcuts } from "../../hooks/useShortcut";
@@ -12,6 +13,10 @@ const TIPS = [
 ];
 
 const sideOf = (slot: Slot): Side => (slot <= 2 ? 1 : 2);
+
+/** GDSC's four colours: one per letter of the room code, and the numbers on the tips. Seats stay neutral. */
+const GDSC = ["bg-gdsc-blue", "bg-gdsc-red", "bg-gdsc-yellow", "bg-gdsc-green"];
+const GDSC_TEXT = ["text-gdsc-blue", "text-gdsc-red", "text-gdsc-yellow"];
 
 type Props = { room: RoomView; playerId: string; onLeave: () => void };
 
@@ -34,7 +39,7 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
   useShortcut("l", onLeave);
 
   return (
-    <div className="grid h-full min-h-[37.5rem] grid-rows-[auto_minmax(0,1fr)] bg-bg">
+    <div className="grid h-full min-h-[37.5rem] grid-rows-[auto_minmax(0,1fr)_auto] bg-bg">
       <StageHeader title="The room" right={room.format ?? "waiting for players"} />
 
       <main className="grid min-h-0 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -47,7 +52,7 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
                 {room.code.split("").map((ch, i) => (
                   <span
                     key={i}
-                    className="grid h-[clamp(4.25rem,12vh,6.5rem)] w-[clamp(3.5rem,9.5vh,5.25rem)] place-items-center bg-accent font-display text-[clamp(3rem,9vh,5rem)] leading-none font-extrabold text-on-accent"
+                    className={cx("grid h-[clamp(4.25rem,12vh,6.5rem)] w-[clamp(3.5rem,9.5vh,5.25rem)] place-items-center font-display text-[clamp(3rem,9vh,5rem)] leading-none font-extrabold text-bg", GDSC[i % 4])}
                   >
                     {ch}
                   </span>
@@ -63,7 +68,7 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
           <div className="relative grid min-h-0 sm:grid-cols-2">
             <Team side={1} room={room} playerId={playerId} mine={mySide === 1} onTake={take} />
             <Team side={2} room={room} playerId={playerId} mine={mySide === 2} onTake={take} />
-            <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 border-4 border-black bg-bg px-3 py-0.5 font-display text-3xl font-extrabold uppercase sm:block">
+            <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 border-[3px] border-line-strong bg-bg px-3 py-0.5 font-display text-3xl font-extrabold uppercase sm:block">
               vs
             </span>
           </div>
@@ -77,13 +82,13 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
           </div>
 
           <div className="min-h-0 flex-1 border-t-[3px] border-ink pt-4">
-            <p className={cx("font-display text-[clamp(1.25rem,2.8vh,1.75rem)] leading-tight font-extrabold uppercase", room.canStart.ok ? "text-ok" : "text-ink")}>
+            <p className={cx("font-display text-[clamp(1.25rem,2.8vh,1.75rem)] leading-tight font-extrabold uppercase", room.canStart.ok ? "text-gdsc-green" : "text-ink")}>
               {room.canStart.ok ? `Everyone’s ready — ${room.canStart.format}!` : room.canStart.reason}
             </p>
             <ul className="mt-3 grid gap-1.5">
               {room.players.map((p) => (
                 <li key={p.id} className="flex items-center gap-3 font-display text-xl font-bold tracking-[0.02em] uppercase">
-                  <span className={cx("size-3.5 border-[3px]", p.ready ? "border-ok bg-ok" : "border-ink/50")} aria-hidden />
+                  <span className={cx("size-3.5 border-[3px]", p.ready ? "border-gdsc-green bg-gdsc-green" : "border-ink/50")} aria-hidden />
                   <span className={p.ready ? "text-ink" : "text-ink/60"}>{p.name}</span>
                   <span className="text-base text-ink/50">{p.ready ? "ready" : p.connected ? "not ready" : "reconnecting…"}</span>
                 </li>
@@ -94,7 +99,7 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
             <ol className="mt-5 grid gap-2 border-t-[3px] border-ink/25 pt-4">
               {TIPS.map((t, i) => (
                 <li key={t.title} className="flex items-baseline gap-3">
-                  <b className="font-display text-2xl leading-none font-extrabold text-accent">0{i + 1}</b>
+                  <b className={cx("font-display text-2xl leading-none font-extrabold", GDSC_TEXT[i])}>0{i + 1}</b>
                   <span className="text-sm leading-snug text-ink/80">
                     <span className="font-display text-lg font-bold tracking-[0.02em] text-ink uppercase">{t.title}. </span>
                     {t.text}
@@ -119,19 +124,20 @@ export function RoomScreen({ room, playerId, onLeave }: Props) {
           </div>
         </aside>
       </main>
+      <ClubFooter />
     </div>
   );
 }
 
 type TeamProps = { side: Side; room: RoomView; playerId: string; mine: boolean; onTake: (slot: Slot) => void };
 
-/** One side: a flat block of colour — violet for team 1, paper for team 2 — with its two slots. */
+/** One side: a flat block of colour — paper for team 1, a quiet dark panel for team 2 — with its two slots. */
 function Team({ side, room, playerId, mine, onTake }: TeamProps) {
   const slots: Slot[] = side === 1 ? [1, 2] : [3, 4];
   return (
-    <div className={cx("flex min-w-0 flex-col px-6 py-5 sm:px-8", side === 1 ? "bg-accent text-on-accent" : "bg-paper text-bg")}>
+    <div className={cx("flex min-w-0 flex-col justify-center px-6 py-5 sm:px-8", side === 1 ? "bg-paper text-bg" : "bg-night-2 text-ink")}>
       <TeamName side={side} name={room.teamNames[side]} editable={mine} />
-      <div className="mt-4 grid gap-3">
+      <div className="mt-[2vh] grid gap-[1.6vh]">
         {slots.map((slot) => (
           <SlotCard key={slot} slot={slot} player={room.players.find((p) => p.slot === slot)} you={playerId} onTake={onTake} />
         ))}
@@ -191,7 +197,7 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
       <button
         type="button"
         onClick={() => onTake(slot)}
-        className="flex h-[4.5rem] cursor-pointer items-center justify-between border-[3px] border-dashed border-current/60 px-4 text-left font-display text-2xl font-bold tracking-[0.02em] uppercase opacity-80 transition-opacity hover:opacity-100"
+        className="flex h-[clamp(4.5rem,13vh,7.5rem)] cursor-pointer items-center justify-between border-[3px] border-dashed border-current/60 px-4 text-left font-display text-2xl font-bold tracking-[0.02em] uppercase opacity-80 transition-opacity hover:opacity-100"
       >
         <span>Take slot {slot}</span>
         <kbd>{slot}</kbd>
@@ -200,10 +206,10 @@ function SlotCard({ slot, player, you, onTake }: { slot: Slot; player?: PlayerVi
   }
   const isYou = player.id === you;
   return (
-    <div className={cx("flex h-[4.5rem] items-center gap-3 border-[3px] border-current px-4", isYou ? "bg-black/20" : "bg-black/10", !player.connected && "opacity-50")}>
-      <span className="grid size-10 place-items-center bg-bg font-display text-xl font-extrabold text-ink">{player.name.charAt(0).toUpperCase()}</span>
+    <div className={cx("flex h-[clamp(4.5rem,13vh,7.5rem)] items-center gap-4 border-[3px] border-current px-4", isYou ? "bg-black/20" : "bg-black/10", !player.connected && "opacity-50")}>
+      <span className={cx("grid size-[clamp(2.5rem,6.4vh,3.75rem)] place-items-center font-display text-[clamp(1.25rem,3vh,1.875rem)] font-extrabold", sideOf(slot) === 1 ? "bg-bg text-ink" : "bg-ink text-bg")}>{player.name.charAt(0).toUpperCase()}</span>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-display text-[1.625rem] leading-none font-extrabold uppercase">
+        <p className="truncate font-display text-[clamp(1.625rem,3.6vh,2.5rem)] leading-none font-extrabold uppercase">
           {player.name}
           {isYou && <span className="ml-2 text-base font-bold opacity-70">you</span>}
         </p>

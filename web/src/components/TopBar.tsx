@@ -1,14 +1,17 @@
 import type { ThemeId } from "@server/types/contracts.js";
 import type { ReactNode } from "react";
+import { ClubMark } from "./ClubMark";
+import { cx } from "./ui";
 import { SoundToggle } from "../audio/SoundToggle";
 import { ThemeLogo } from "../themes/ThemeLogo";
 import { THEME_INFO } from "../themes/themes";
 
-export function TopBar({ right, theme }: { right?: ReactNode; theme?: ThemeId | null }) {
+export function TopBar({ right, theme, className }: { right?: ReactNode; theme?: ThemeId | null; className?: string }) {
   return (
-    <header className="flex h-14 items-center justify-between gap-4 bg-bg px-4 sm:px-6 lg:px-8">
+    <header className={cx("flex h-14 items-center justify-between gap-4 bg-bg px-4 sm:px-6 lg:px-8", className)}>
       <div className="flex min-w-0 items-center gap-3 font-display text-xl font-extrabold tracking-[0.06em] uppercase">
-        <span className="size-3.5 bg-accent" aria-hidden />
+        <ClubMark />
+        <span className="h-5 w-0.5 bg-line-strong" aria-hidden />
         Overclock
         {theme && (
           <>

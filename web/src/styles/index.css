@@ -11,19 +11,28 @@
    bad are reserved for game signals; defend / boost / attack are the card kinds. */
 @theme {
   --color-*: initial;
-  --color-bg: #0d0d0d;
-  --color-surface: #151517;
-  --color-raised: #1d1d20;
+  --color-bg: #17181b;
+  /* the club look: soft black, paper white, and GDSC's four colours as small accents */
+  --color-night: #17181b;
+  --color-night-2: #202126;
+  --color-night-line: #34363c;
+  --color-gdsc-blue: #4285f4;
+  --color-gdsc-red: #ea4335;
+  --color-gdsc-yellow: #fbbc04;
+  --color-gdsc-green: #34a853;
+  --color-surface: #1d1e22;
+  --color-raised: #25262b;
   --color-ink: #f3efe6;
   --color-paper: #f3efe6;
   --color-muted: #a3a09a;
   --color-faint: #66635e;
-  --color-line: #262629;
-  --color-line-strong: #3a3a3f;
-  --color-accent: #8b6cff;
-  --color-accent-hover: #a28aff;
-  --color-accent-dim: rgb(139 108 255 / 0.14);
-  --color-on-accent: #ffffff;
+  --color-line: #2c2e33;
+  --color-line-strong: #3d3f45;
+  /* the default accent is paper; once a theme is picked its own colour replaces it */
+  --color-accent: #f3efe6;
+  --color-accent-hover: #e2ddd0;
+  --color-accent-dim: rgb(243 239 230 / 0.12);
+  --color-on-accent: #17181b;
   /* The crowd; follows the app's colour unless a theme says otherwise. */
   --color-crowd: #f3efe6;
   /* The three card kinds — never used for health. */

@@ -7,8 +7,8 @@ const room = (code: string, overrides: Partial<RoomView> = {}): RoomView => ({
   code,
   phase: "live",
   format: "1v1",
-  players: [{ id: "p1", name: "Priya", slot: 1, ready: true, connected: true }],
-  teamNames: { 1: "Priya", 2: "Rahul" },
+  players: [{ id: "p1", name: "Alpha", slot: 1, ready: true, connected: true }],
+  teamNames: { 1: "Alpha", 2: "Bravo" },
   canStart: { ok: true, format: "1v1" },
   votes: {},
   theme: "bookmyshow",
@@ -83,11 +83,11 @@ describe("game store", () => {
     store.seat("p1", room("ABCD"));
     store.setMatch(match()); // side 1
     store.pushEvents([
-      { side: 1, type: "bought", item: "bouncer", by: "Priya" },
-      { side: 1, type: "attackSent", attack: "bots", by: "Priya" },
+      { side: 1, type: "bought", item: "bouncer", by: "Alpha" },
+      { side: 1, type: "attackSent", attack: "bots", by: "Alpha" },
       { side: 1, type: "attackLanded", attack: "wrongTurn" },
-      { side: 2, type: "bought", item: "lockAddress", by: "Rahul" }, // theirs: not ours
-      { side: 1, type: "bought", item: "bouncer", by: "Priya" },
+      { side: 2, type: "bought", item: "lockAddress", by: "Bravo" }, // theirs: not ours
+      { side: 1, type: "bought", item: "bouncer", by: "Alpha" },
     ]);
     expect(useGameStore.getState().usage).toEqual({ used: ["bouncer", "bots"], hitBy: ["wrongTurn"] });
     store.clear();

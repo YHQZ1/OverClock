@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { ClubFooter } from "../components/ClubFooter";
+import { ClubMark } from "../components/ClubMark";
 import { Button, Field } from "../components/ui";
 import { signIn } from "./auth";
 
@@ -21,11 +23,12 @@ export function StaffSignIn({ title, onSignedIn }: { title: string; onSignedIn: 
   };
 
   return (
-    <div className="grid h-full min-h-[37.5rem] place-items-center bg-bg px-6">
-      <form onSubmit={submit} className="grid w-full max-w-[26rem] gap-6 bg-accent p-8 text-on-accent shadow-[8px_8px_0_#000]">
+    <div className="grid h-full min-h-[37.5rem] grid-rows-[1fr_auto] bg-bg">
+      <div className="grid place-items-center px-6">
+      <form onSubmit={submit} className="grid w-full max-w-[26rem] gap-6 bg-accent p-8 text-on-accent">
         <div>
           <div className="flex items-center gap-3 font-display text-lg font-extrabold tracking-[0.1em] uppercase opacity-80">
-            <span className="size-3 bg-current" aria-hidden />
+            <ClubMark className="h-6" />
             Overclock · Staff
           </div>
           <h1 className="mt-3 font-display text-[3.25rem] leading-[0.9] font-extrabold uppercase">{title}</h1>
@@ -50,6 +53,8 @@ export function StaffSignIn({ title, onSignedIn }: { title: string; onSignedIn: 
           Sign in <kbd>Enter</kbd>
         </Button>
       </form>
+      </div>
+      <ClubFooter />
     </div>
   );
 }

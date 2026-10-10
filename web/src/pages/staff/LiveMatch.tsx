@@ -40,7 +40,7 @@ export function Featured({ match, action }: { match: ScreenMatch; /** e.g. the P
       className="flex min-h-0 flex-1 animate-rise-in flex-col"
       style={match.theme ? accentVars(match.theme) : undefined}
     >
-      <div className="flex items-center justify-between border-b-4 border-black px-[2.5vw] py-[1.2vh]">
+      <div className="flex items-center justify-between border-b-2 border-night-line px-[2.5vw] py-[1.2vh]">
         <div className="flex items-center gap-4">
           {match.theme && <ThemeLogo theme={match.theme} className="h-[4vh]" fallback="none" />}
           <div>
@@ -67,19 +67,22 @@ export function Featured({ match, action }: { match: ScreenMatch; /** e.g. the P
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto]">
         <div className="grid min-h-0 place-items-center px-[1.5vw] py-[1vh]">
           {match.sites ? (
-            <Arena
-              theme={match.theme}
-              words={words}
-              left={match.sites[1]}
-              right={match.sites[2]}
-              leftName={match.teams[1].name}
-              rightName={match.teams[2].name}
-            />
+            // the arena keeps its 3:1 shape, so a narrower box doesn't crop the names off its sides
+            <div className="relative" style={{ aspectRatio: "1366 / 450", width: "min(100%, calc((100vh - 46vh - 3rem) * 3.036))" }}>
+              <Arena
+                theme={match.theme}
+                words={words}
+                left={match.sites[1]}
+                right={match.sites[2]}
+                leftName={match.teams[1].name}
+                rightName={match.teams[2].name}
+              />
+            </div>
           ) : (
             <p className="font-display text-[4.6vh] font-extrabold tracking-[0.04em] text-faint uppercase">{WAITING[match.phase]}</p>
           )}
         </div>
-        <div className="grid grid-cols-2 border-t-4 border-black">
+        <div className="grid grid-cols-2 border-t-2 border-night-line">
           {([1, 2] as const).map((side) => (
             <TeamPanel key={side} match={match} side={side} leading={leader === side} />
           ))}
@@ -95,7 +98,7 @@ function TeamPanel({ match, side, leading }: { match: ScreenMatch; side: Side; l
   const health = site?.health ?? null;
   const players = team.players.join(" · ");
   return (
-    <div className="min-w-0 px-[2.5vw] py-[1.4vh] not-first:border-l-4 not-first:border-black">
+    <div className="min-w-0 px-[2.5vw] py-[1.4vh] not-first:border-l-2 not-first:border-night-line">
       <p className="truncate font-display text-[4.4vh] leading-none font-extrabold uppercase">{team.name}</p>
       {players !== team.name && <p className="truncate font-display text-[2.2vh] font-bold tracking-[0.04em] text-muted uppercase">{players}</p>}
       <div className="mt-[0.8vh] flex items-baseline gap-4">

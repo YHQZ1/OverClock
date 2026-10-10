@@ -31,7 +31,7 @@ export function Board({ format, boards }: { format: Format; boards: Leaderboards
   const fresh = useNewEntries(rows);
   return (
     <div className="flex min-h-0 flex-col px-[2.5vw] pt-[2.4vh] pb-[1.5vh]">
-      <div className="flex items-baseline justify-between border-b-4 border-ink pb-[0.8vh]">
+      <div className="flex items-baseline justify-between border-b-2 border-ink pb-[0.8vh]">
         <h2 className="font-display text-[7vh] leading-[0.85] font-extrabold uppercase">{format}</h2>
         <span className="font-display text-[2.4vh] font-bold tracking-[0.14em] text-muted uppercase">points</span>
       </div>
@@ -73,14 +73,14 @@ export function Board({ format, boards }: { format: Format; boards: Leaderboards
 // ---------- awards ----------
 
 const AWARDS: Record<keyof Awards, { title: string; block: string }> = {
-  comeback: { title: "Comeback of the day", block: "bg-boost" },
-  destroyer: { title: "Most destructive", block: "bg-attack" },
-  unbreakable: { title: "Unbreakable", block: "bg-defend" },
+  comeback: { title: "Comeback of the day", block: "bg-gdsc-yellow" },
+  destroyer: { title: "Most destructive", block: "bg-gdsc-red" },
+  unbreakable: { title: "Unbreakable", block: "bg-gdsc-blue" },
 };
 
 export function AwardsRow({ awards }: { awards: Awards | null }) {
   return (
-    <div className="grid border-t-4 border-black sm:grid-cols-3">
+    <div className="grid border-t-2 border-night-line sm:grid-cols-3">
       {(Object.keys(AWARDS) as (keyof Awards)[]).map((key) => (
         <AwardCard key={key} title={AWARDS[key].title} block={AWARDS[key].block} award={awards?.[key] ?? null} />
       ))}
@@ -90,7 +90,7 @@ export function AwardsRow({ awards }: { awards: Awards | null }) {
 
 function AwardCard({ title, block, award }: { title: string; block: string; award: Award | null }) {
   return (
-    <div className={cx("min-w-0 border-black px-4 py-[1.6vh] text-bg not-first:border-t-4 sm:px-[1.4vw] sm:not-first:border-t-0 sm:not-first:border-l-4", award ? block : "bg-surface text-ink")}>
+    <div className={cx("min-w-0 border-night-line px-4 py-[1.6vh] text-bg not-first:border-t-2 sm:px-[1.4vw] sm:not-first:border-t-0 sm:not-first:border-l-2", award ? block : "bg-surface text-ink")}>
       <p className="font-display text-[2vh] font-extrabold tracking-[0.14em] uppercase opacity-80">{title}</p>
       <p className="mt-[0.2vh] truncate font-display text-[4.4vh] leading-none font-extrabold uppercase">{award ? award.team : "Up for grabs"}</p>
       <p className="line-clamp-2 font-display text-[2.2vh] leading-tight font-bold tracking-[0.02em] uppercase opacity-80">

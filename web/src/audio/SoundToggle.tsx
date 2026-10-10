@@ -21,7 +21,7 @@ export function SoundToggle() {
   return (
     <div className="flex items-center gap-3 sm:gap-5">
       {!muted && !running && (
-        <span className="hidden animate-fade-pulse text-[0.8125rem] whitespace-nowrap text-accent lg:inline">Click to start sound</span>
+        <span className="hidden animate-fade-pulse text-[0.8125rem] whitespace-nowrap text-ink lg:inline">Click to start sound</span>
       )}
       <button type="button" onClick={toggleSound} className={button} title="Sound on/off (M)">
         <span className={cx("hidden sm:inline", muted ? "text-faint" : "text-ink")}>{muted ? "Sound off" : "Sound on"}</span>

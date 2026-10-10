@@ -17,7 +17,7 @@ describe("socket payload validation", () => {
   it("requires a short, non-empty name", () => {
     expect(createRoomSchema.safeParse({ playerName: "   " }).success).toBe(false);
     expect(createRoomSchema.safeParse({ playerName: "x".repeat(17) }).success).toBe(false);
-    expect(createRoomSchema.parse({ playerName: "  Priya " }).playerName).toBe("Priya");
+    expect(createRoomSchema.parse({ playerName: "  Alpha " }).playerName).toBe("Alpha");
   });
 
   it("only accepts real slots and themes", () => {

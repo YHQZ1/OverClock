@@ -1,6 +1,8 @@
 import type { AdminBoards, AdminEntry, AdminRoom, Format, Phase } from "@server/types/contracts.js";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
+import { ClubFooter } from "../../components/ClubFooter";
+import { ClubMark } from "../../components/ClubMark";
 import { Button, cx } from "../../components/ui";
 import { request } from "../../socket/api";
 import { clearToken } from "../../staff/auth";
@@ -39,6 +41,9 @@ const PHASE: Record<Phase, string> = {
   final: "Finished",
 };
 
+/** One GDSC colour per letter of a room code. */
+const CODE_COLOURS = ["bg-gdsc-blue", "bg-gdsc-red", "bg-gdsc-yellow", "bg-gdsc-green"];
+
 function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const rooms = useRooms(feed.connected);
@@ -52,10 +57,11 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
   };
 
   return (
-    <div className="grid min-h-full grid-rows-[auto_minmax(0,1fr)] bg-bg lg:h-full lg:min-h-[37.5rem]">
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b-4 border-black px-4 py-3 sm:px-8 lg:h-[4.5rem] lg:py-0">
+    <div className="grid min-h-full grid-rows-[auto_minmax(0,1fr)_auto] bg-bg lg:h-full lg:min-h-[37.5rem]">
+      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b-2 border-night-line px-4 py-3 sm:px-8 lg:h-[4.5rem] lg:py-0">
         <div className="flex items-center gap-3 font-display text-xl font-extrabold tracking-[0.06em] uppercase">
-          <span className="size-3.5 bg-accent" aria-hidden />
+          <ClubMark />
+          <span className="h-5 w-0.5 bg-line-strong" aria-hidden />
           Overclock <span className="text-muted">· Control panel</span>
           {!feed.connected && <span className="ml-3 text-base font-bold text-bad">Reconnecting…</span>}
         </div>
@@ -86,7 +92,13 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
               <ul>
                 {rooms.map((r) => (
                   <li key={r.code} className="flex items-center gap-5 border-b-[3px] border-line-strong px-4 py-3 sm:px-8">
-                    <span className="w-24 bg-accent px-2 text-center font-display text-3xl leading-[1.4] font-extrabold tracking-[0.08em] text-on-accent">{r.code}</span>
+                    <span className="flex gap-1" aria-label={`Room ${r.code}`}>
+                      {r.code.split("").map((ch, i) => (
+                        <span key={i} className={cx("grid h-11 w-9 place-items-center font-display text-3xl leading-none font-extrabold text-bg", CODE_COLOURS[i % 4])}>
+                          {ch}
+                        </span>
+                      ))}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-display text-[1.625rem] leading-none font-extrabold uppercase">
                         {r.teamNames[1]} <span className="text-faint">vs</span> {r.teamNames[2]}
@@ -118,7 +130,7 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
         </section>
 
         {/* ---- leaderboard ---- */}
-        <section className="flex flex-col border-t-4 border-black lg:min-h-0 lg:border-t-0 lg:border-l-4">
+        <section className="flex flex-col border-t-2 border-night-line lg:min-h-0 lg:border-t-0 lg:border-l-2">
           <SectionHead title="Leaderboard" note="Hide takes a team off the projector; Unhide puts it back.">
             <div className="flex border-[3px] border-line-strong">
               {(["1v1", "2v2"] as const).map((f) => (
@@ -172,13 +184,14 @@ function Admin({ feed, signOut }: { feed: StaffFeed; signOut: () => void }) {
           </div>
         </section>
       </main>
+      <ClubFooter />
     </div>
   );
 }
 
 function SectionHead({ title, note, children }: { title: string; note: string; children?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4 border-b-4 border-black px-4 pt-5 pb-3 sm:px-8">
+    <div className="flex items-end justify-between gap-4 border-b-2 border-night-line px-4 pt-5 pb-3 sm:px-8">
       <div>
         <h2 className="font-display text-[2.25rem] leading-none font-extrabold uppercase">{title}</h2>
         <p className="mt-1 text-sm text-muted">{note}</p>
@@ -207,7 +220,7 @@ function BoardRow({ entry: e, onToggle }: { entry: AdminEntry; onToggle: () => v
         {e.hidden && <span className="ml-2 text-xs font-medium text-warn">hidden</span>}
       </span>
       <span className="font-display text-2xl font-extrabold tabular-nums">{e.points.toLocaleString("en-IN")}</span>
-      <SmallButton danger={!e.hidden} onClick={onToggle}>
+      <SmallButton onClick={onToggle}>
         {e.hidden ? "Unhide" : "Hide"}
       </SmallButton>
     </li>

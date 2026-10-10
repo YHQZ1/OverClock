@@ -80,6 +80,12 @@ screen is now in the poster language; typecheck, unit, integration and all 9
 e2e green. To test next: a full match on lab-size screens, the demo step,
 `/live` on the projector.
 
+**Club look (Sat 10 Oct):** every outer page — landing, room, `/live`,
+`/leaderboard`, `/admin`, sign-in — is soft black with GDSC's four colours as
+small accents, the club logo top-left (and as the tab icon) and the club
+footer. The default accent is now paper, so nothing falls back to violet;
+in-match screens still take the app's colour.
+
 If time: the demo looping on Home and `/live` between matches.
 
 ## Build queue (duel)

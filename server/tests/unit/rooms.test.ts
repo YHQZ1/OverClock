@@ -63,11 +63,11 @@ describe("RoomService", () => {
 
   it("names teams after their players until renamed", () => {
     const { rooms } = fresh();
-    const { room, player } = rooms.create("Priya");
-    rooms.join(room.code, "Rahul");
-    expect(rooms.teamName(room, 1)).toBe("Priya");
+    const { room, player } = rooms.create("Alpha");
+    rooms.join(room.code, "Bravo");
+    expect(rooms.teamName(room, 1)).toBe("Alpha");
     rooms.setTeamName(room, player.id, "Night Owls");
-    expect(rooms.view(room, 3).teamNames).toEqual({ 1: "Night Owls", 2: "Rahul" });
+    expect(rooms.view(room, 3).teamNames).toEqual({ 1: "Night Owls", 2: "Bravo" });
   });
 
   it("is full at four", () => {

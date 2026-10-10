@@ -5,25 +5,25 @@ import { ITEM_INFO } from "../../src/game/items";
 
 describe("feed lines", () => {
   it("speak from your team's point of view", () => {
-    expect(line({ side: 1, type: "attackLanded", attack: "bots" }, 1, "Priya")).toEqual({ text: "Bot army hit you", tone: "bad" });
-    expect(line({ side: 2, type: "attackLanded", attack: "bots" }, 1, "Priya")).toEqual({ text: "Bot army hit them", tone: "good" });
-    expect(line({ side: 2, type: "crashed" }, 1, "Priya")).toEqual({ text: "Their site went down!", tone: "good" });
+    expect(line({ side: 1, type: "attackLanded", attack: "bots" }, 1, "Alpha")).toEqual({ text: "Bot army hit you", tone: "bad" });
+    expect(line({ side: 2, type: "attackLanded", attack: "bots" }, 1, "Alpha")).toEqual({ text: "Bot army hit them", tone: "good" });
+    expect(line({ side: 2, type: "crashed" }, 1, "Alpha")).toEqual({ text: "Their site went down!", tone: "good" });
   });
 
   it("say who on your team spent the coins", () => {
-    expect(line({ side: 1, type: "bought", item: "bouncer", by: "Priya" }, 1, "Priya")?.text).toBe("You bought Bouncer");
-    expect(line({ side: 1, type: "bought", item: "bouncer", by: "Rahul" }, 1, "Priya")?.text).toBe("Rahul bought Bouncer");
-    expect(line({ side: 2, type: "bought", item: "bouncer", by: "Aisha" }, 1, "Priya")).toBeNull(); // their shopping stays secret
+    expect(line({ side: 1, type: "bought", item: "bouncer", by: "Alpha" }, 1, "Alpha")?.text).toBe("You bought Bouncer");
+    expect(line({ side: 1, type: "bought", item: "bouncer", by: "Bravo" }, 1, "Alpha")?.text).toBe("Bravo bought Bouncer");
+    expect(line({ side: 2, type: "bought", item: "bouncer", by: "Delta" }, 1, "Alpha")).toBeNull(); // their shopping stays secret
   });
 
   it("explain your own failed presses, not your teammate's", () => {
-    expect(line({ side: 1, type: "rejected", kind: "buy", item: "bouncer", reason: "coins", by: "Priya" }, 1, "Priya")?.text).toBe(
+    expect(line({ side: 1, type: "rejected", kind: "buy", item: "bouncer", reason: "coins", by: "Alpha" }, 1, "Alpha")?.text).toBe(
       "Not enough coins — Bouncer",
     );
-    expect(line({ side: 1, type: "rejected", kind: "use", item: "shield", reason: "jammed", by: "Priya" }, 1, "Priya")?.text).toBe(
+    expect(line({ side: 1, type: "rejected", kind: "use", item: "shield", reason: "jammed", by: "Alpha" }, 1, "Alpha")?.text).toBe(
       "Your controls are jammed — Shield",
     );
-    expect(line({ side: 1, type: "rejected", kind: "buy", item: "server", reason: "coins", by: "Rahul" }, 1, "Priya")).toBeNull();
+    expect(line({ side: 1, type: "rejected", kind: "buy", item: "server", reason: "coins", by: "Bravo" }, 1, "Alpha")).toBeNull();
   });
 
   it("never use technical terms", () => {

@@ -5,29 +5,13 @@
 // Signal chain: voices → (dry + reverb send) → compressor → master → speakers.
 // Musical sounds use A minor pentatonic so everything sounds like one game.
 
-const MUTE_KEY = "overclock.muted";
-const MUSIC_KEY = "overclock.music";
+// ---------- settings ----------
+// Every visit starts with sound and music on. M and N change it for this page
+// only — nothing is saved, so on a shared lab PC the next player never inherits
+// someone else's mute.
 
-// ---------- settings (remembered per browser) ----------
-
-function readFlag(key: string, fallback: boolean): boolean {
-  try {
-    const v = localStorage.getItem(key);
-    return v === null ? fallback : v === "1";
-  } catch {
-    return fallback;
-  }
-}
-function writeFlag(key: string, value: boolean): void {
-  try {
-    localStorage.setItem(key, value ? "1" : "0");
-  } catch {
-    // ignore — just won't be remembered
-  }
-}
-
-let muted = readFlag(MUTE_KEY, false);
-let musicOn = readFlag(MUSIC_KEY, true);
+let muted = false;
+let musicOn = true;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((l) => l());
 
@@ -42,13 +26,11 @@ export function onSoundSettingsChange(listener: () => void): () => void {
 }
 export function setMuted(value: boolean): void {
   muted = value;
-  writeFlag(MUTE_KEY, value);
   if (value) music.stop();
   notify();
 }
 export function setMusicOn(value: boolean): void {
   musicOn = value;
-  writeFlag(MUSIC_KEY, value);
   if (!value) music.stop();
   notify();
 }
